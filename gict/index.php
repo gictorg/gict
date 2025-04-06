@@ -4,8 +4,8 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <img src="images/university_gate.jpg" alt="University of Lucknow Main Gate" class="hero-image">
-                <h2>Welcome to University of Lucknow</h2>
+                <img src="images/university_gate.jpg" alt="GICT Main Gate" class="hero-image">
+                <h2>Welcome to GICT</h2>
                 <p>Excellence in Education Since 1921</p>
             </div>
         </div>

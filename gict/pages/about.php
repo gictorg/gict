@@ -2,7 +2,7 @@
 
     <section class="page-content">
         <div class="container">
-            <h1>About University of Lucknow</h1>
+            <h1>About GICT</h1>
             <!-- Content will be added here -->
         </div>
     </section>

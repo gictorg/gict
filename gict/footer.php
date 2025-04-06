@@ -3,7 +3,7 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>Contact Us</h3>
-                    <p>University of Lucknow</p>
+                    <p>GICT</p>
                     <p>Lucknow - 226007, India</p>
                     <p>Email: info@lkouniv.ac.in</p>
                 </div>
@@ -27,7 +27,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; <?php echo date('Y'); ?> University of Lucknow. All rights reserved.</p>
+                <p>&copy; <?php echo date('Y'); ?> GICT. All rights reserved.</p>
             </div>
         </div>
     </footer>
