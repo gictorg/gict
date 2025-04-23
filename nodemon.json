@@ -1,0 +1,13 @@
+{
+    "watch": [
+        "*.php",
+        "*.html",
+        "*.css",
+        "assets/*"
+    ],
+    "ext": "php,html,css,js",
+    "ignore": [
+        "node_modules/*"
+    ],
+    "exec": "php -S localhost:8000"
+} 

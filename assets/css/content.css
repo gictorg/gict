@@ -1,0 +1,35 @@
+/* Main Content Layout */
+.main-content {
+    display: flex;
+    margin: 20px auto;
+    max-width: 1200px;
+    gap: 20px;
+}
+
+.content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+/* Mobile stack */
+@media (max-width: 768px) {
+    .content-area {
+        flex-direction: column;
+    }
+}
+
+/* Featured Image */
+.featured-image {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.image-caption {
+    background: #000080;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+}
