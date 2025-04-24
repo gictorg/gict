@@ -1,17 +1,16 @@
 /* Common Gallery Styles */
 .gallery-wrapper {
-    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
     background: #fff;
     margin-top: 20px;
 }
 
 .gallery-section {
-    padding: 20px;
     width: 100%;
     box-sizing: border-box;
     background: #fff;
-    max-width: 1400px;
-    margin: 0 auto;
 }
 
 .section-title {
