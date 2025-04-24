@@ -17,11 +17,27 @@
 
         <!-- Content Area -->
         <div class="content-area">
-            <div class="main-image">
-                <img src="assets/images/home_image.jpg" alt="Digital Training" class="featured-image">
-                <div class="image-caption">
-                    Mission Digital India Training & Placement with GICT Team
+            <!-- Main Image Section -->
+            <div class="slideshow-container">
+                <div class="slide active">
+                    <img src="assets/images/slide 1.jpg" alt="Training Session">
                 </div>
+                <div class="slide">
+                    <img src="assets/images/slide 2.jpg" alt="Classroom">
+                </div>
+                <div class="slide">
+                    <img src="assets/images/slide 3.jpg" alt="Computer Lab">
+                </div>
+                <div class="slide">
+                    <img src="assets/images/slide 4.jpg" alt="Students">
+                </div>
+            </div>
+
+            <!-- Include slideshow script -->
+            <script src="assets/js/slideshow.js"></script>
+
+            <div class="mission-wrapper">
+                <h1 class="mission-heading">Mission Digital India Training & Placement with GICT Team</h1>
             </div>
 
             <div class="director-section">
@@ -51,6 +67,8 @@
     </div>
 </div>
 
+<?php include 'gallery.php'; ?>
+
 <!-- WhatsApp Button -->
 <div class="whatsapp-float">
     <a href="https://wa.me/917690948855" target="_blank">
@@ -58,4 +76,4 @@
     </a>
 </div>
 
-<!-- <?php include 'footer.php'; ?> -->
+<?php include 'footer.php'; ?>

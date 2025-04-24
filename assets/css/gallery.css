@@ -1,0 +1,479 @@
+/* Common Gallery Styles */
+.gallery-wrapper {
+    width: 100%;
+    background: #fff;
+    margin-top: 20px;
+}
+
+.gallery-section {
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.section-title {
+    text-align: center;
+    color: #000080;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 30px auto;
+    text-transform: uppercase;
+    background: #f8dc65;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    max-width: 1400px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Common Container Styles */
+.gallery-container {
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+    background: #fff;
+    margin: 0 auto 40px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Scrollbar Styles */
+.gallery-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.gallery-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.gallery-container::-webkit-scrollbar-thumb {
+    background: #000080;
+    border-radius: 4px;
+}
+
+.gallery-container::-webkit-scrollbar-thumb:hover {
+    background: #000060;
+}
+
+/* Course Gallery Styles */
+.courses-gallery {
+    grid-template-columns: repeat(5, 1fr);
+    max-height: none;
+    overflow: visible;
+}
+
+.course-item {
+    position: relative;
+    border: 3px solid #000080;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.course-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.course-item .caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 128, 0.9);
+    color: #fff;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.course-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Override common gallery item styles for courses */
+.courses-gallery .gallery-item .caption {
+    transform: none;
+}
+
+.courses-gallery .gallery-item:hover .caption {
+    transform: none;
+}
+
+/* Students Gallery Styles */
+.students-gallery {
+    grid-template-columns: repeat(6, 1fr);
+    max-height: 400px;
+}
+
+.students-gallery .gallery-item,
+.student-item {
+    position: relative;
+    border: 3px solid #1a75ff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    background: #fff;
+    aspect-ratio: initial;
+    height: auto;
+}
+
+.students-gallery .gallery-item img,
+.student-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    transform: none !important;
+}
+
+.students-gallery .gallery-item .caption,
+.student-item .caption {
+    position: relative !important;
+    background: #1a75ff !important;
+    padding: 10px;
+    transform: none !important;
+    text-align: center;
+    color: #fff;
+    display: block !important;
+}
+
+.students-gallery .gallery-item:hover,
+.student-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.students-gallery .gallery-item:hover img,
+.student-item:hover img {
+    transform: none !important;
+}
+
+.students-gallery .gallery-item:hover .caption,
+.student-item:hover .caption {
+    transform: none !important;
+}
+
+/* Centers Gallery Styles */
+.centers-gallery {
+    grid-template-columns: repeat(6, 1fr);
+    max-height: 400px;
+}
+
+.center-item {
+    border-color: #004d00;
+}
+
+.center-item .caption {
+    background: rgba(0, 77, 0, 0.9);
+}
+
+/* Faculty Gallery Styles */
+.faculty-gallery {
+    grid-template-columns: repeat(6, 1fr);
+    max-height: 400px;
+}
+
+.faculty-gallery .gallery-item,
+.faculty-item {
+    position: relative;
+    border: 3px solid #000080;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    background: #fff;
+    aspect-ratio: initial;
+    height: auto;
+}
+
+.faculty-gallery .gallery-item img,
+.faculty-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    transform: none !important;
+}
+
+.faculty-gallery .gallery-item .caption,
+.faculty-item .caption {
+    position: relative !important;
+    background: #000080 !important;
+    padding: 10px;
+    transform: none !important;
+    text-align: center;
+    color: #fff;
+    display: block !important;
+}
+
+.faculty-gallery .gallery-item .caption h3,
+.faculty-item .caption h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    display: block;
+}
+
+.faculty-gallery .gallery-item .caption p,
+.faculty-item .caption p {
+    margin: 5px 0 0;
+    font-size: 12px;
+    color: #fff;
+    font-style: italic;
+    display: block;
+}
+
+.faculty-gallery .gallery-item:hover,
+.faculty-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.faculty-gallery .gallery-item:hover img,
+.faculty-item:hover img {
+    transform: none !important;
+}
+
+.faculty-gallery .gallery-item:hover .caption,
+.faculty-item:hover .caption {
+    transform: none !important;
+}
+
+/* Common Item Styles */
+.gallery-item {
+    position: relative;
+    border: 2px solid;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+.gallery-item .caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover .caption {
+    transform: translateY(0);
+}
+
+/* Update hover effect for faculty items */
+.faculty-item:hover .caption {
+    transform: translateY(0);
+}
+
+/* Responsive Styles */
+@media (max-width: 1400px) {
+    .courses-gallery {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .students-gallery,
+    .centers-gallery {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1200px) {
+    .courses-gallery {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .students-gallery,
+    .centers-gallery {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .gallery-container {
+        max-height: 600px;
+    }
+    .faculty-gallery {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .faculty-item .caption h3 {
+        font-size: 13px;
+    }
+    
+    .faculty-item .caption p {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 992px) {
+    .courses-gallery,
+    .students-gallery,
+    .centers-gallery {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .gallery-container {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 10px;
+        gap: 15px;
+        max-height: 500px;
+    }
+    
+    .gallery-section {
+        padding: 10px;
+    }
+
+    .section-title {
+        font-size: 24px;
+        padding: 10px;
+        margin: 20px auto;
+    }
+
+    .faculty-item .caption {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        max-height: 400px;
+    }
+}
+
+/* Slideshow Styles */
+.slideshow-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    overflow: hidden;
+    margin: 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.8s ease;
+    display: none;
+}
+
+.slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    display: block;
+    z-index: 1;
+}
+
+.slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.slide .caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #000080;
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+/* Slide Indicators */
+.slide-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 2;
+}
+
+.slide-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.slide-indicator.active {
+    background: #fff;
+    transform: scale(1.2);
+}
+
+/* Navigation Arrows */
+.slide-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 128, 0.6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 24px;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.slide-nav:hover {
+    background: rgba(0, 0, 128, 0.9);
+}
+
+.slide-nav.prev {
+    left: 20px;
+}
+
+.slide-nav.next {
+    right: 20px;
+} 
