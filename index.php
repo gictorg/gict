@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/sidebar.css">
     <link rel="stylesheet" href="assets/css/footer.css">
+    <link rel="stylesheet" href="assets/css/news-events.css">
 </head>
 
 <?php include 'header.php'; ?>
@@ -78,6 +79,7 @@
     </div>
 </div>
 
+<?php include 'news-events.php'; ?>
 <?php include 'gallery.php'; ?>
 
 <!-- WhatsApp Button -->
