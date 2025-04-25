@@ -93,7 +93,7 @@ body {
     height: 100%;
 }
 
-.profile-card {
+/* .profile-card {
     background-color: #fff;
     padding: 20px;
     max-width: 320px;
@@ -102,7 +102,7 @@ body {
     border-radius: 10px;
     text-align: center;
     border: 1px solid #ddd;
-}
+} */
 
 .profile-card img {
     width: 120px;
@@ -203,6 +203,8 @@ body {
     z-index: 2;
     background: #fff;
     padding: 20px 0;
+    width: 100%;
+    overflow: hidden;
 }
 
 .students-grid {
@@ -210,8 +212,9 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
     padding: 0 20px;
-    max-width: 1200px;
     margin: 0 auto;
+    width: calc(100% - 40px);
+    max-width: 1200px;
 }
 
 .student-card {
@@ -219,6 +222,7 @@ body {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 100%;
 }
 
 .student-card img {
@@ -233,4 +237,41 @@ body {
     padding: 10px;
     text-align: center;
     font-size: 16px;
+}
+
+.courses-container {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin: 20px auto;
+    max-width: 600px;
+}
+
+.courses-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.courses-container li {
+    font-size: 24px;
+    color: #333;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.courses-container li:last-child {
+    border-bottom: none;
+}
+
+.download-app-section {
+    padding-left: 80px;
+    margin: 10px 0;
+}
+
+.download-app-section h2 {
+    font-size: 32px;
+    margin-bottom: 15px;
+    font-weight: bold;
 } 

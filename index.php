@@ -84,7 +84,7 @@
 
 <!-- WhatsApp Button -->
 <div class="whatsapp-float">
-    <a href="https://wa.me/917690948855" target="_blank">
+    <a href="https://wa.me/918433377466" target="_blank">
         <i class="fab fa-whatsapp"></i>
     </a>
 </div>

@@ -116,6 +116,7 @@
     position: relative;
     width: 100%;
     padding: 20px;
+    box-sizing: border-box;
 }
 
 .students-gallery-track {
@@ -124,10 +125,11 @@
     animation: scroll 40s linear infinite;
     width: fit-content;
     will-change: transform;
+    padding-right: 20px;
 }
 
 .students-gallery .gallery-item {
-    flex: 0 0 auto;
+    flex: 0 0 250px;
     width: 250px;
     transform: translateZ(0);
 }
