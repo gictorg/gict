@@ -42,7 +42,7 @@
                 </div>
                 <div class="connect-right">
                     <h3>SEND YOUR COMMENTS/FEEDBACK</h3>
-                    <a href="https://www.gict.org.in" class="website" target="_blank" rel="noopener noreferrer">www.gict.org.in</a>
+                    <span class="email-text">connect@gict.org.in</span>
                 </div>
             </div>
         </div>

@@ -1,9 +1,9 @@
 /* WhatsApp Float Button */
 .whatsapp-float {
     position: fixed;
-    bottom: 20px;
+    bottom: 120px;
     right: 20px;
-    background: #25d366;
+    background: transparent;
     color: #fff;
     width: 55px;
     height: 55px;
@@ -16,6 +16,14 @@
 }
 
 .whatsapp-float a {
-    color: #fff;
+    color: #25d366;
     display: block;
+    text-shadow: 0 0 10px rgba(37, 211, 102, 0.5);
+    transition: all 0.3s ease;
+}
+
+.whatsapp-float:hover a {
+    color: #128C7E;
+    text-shadow: 0 0 15px rgba(37, 211, 102, 0.7);
+    transform: scale(1.1);
 } 
