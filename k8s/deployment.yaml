@@ -16,7 +16,7 @@ spec:
         app: gict-web
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: default-standard
+        cloud.google.com/gke-nodepool: default-pool-new
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

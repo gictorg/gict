@@ -111,8 +111,39 @@
 
 /* Students Gallery Styles */
 .students-gallery {
-    grid-template-columns: repeat(6, 1fr);
-    max-height: 400px;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    padding: 20px;
+}
+
+.students-gallery-track {
+    display: flex;
+    gap: 20px;
+    animation: scroll 40s linear infinite;
+    width: fit-content;
+    will-change: transform;
+}
+
+.students-gallery .gallery-item {
+    flex: 0 0 auto;
+    width: 250px;
+    transform: translateZ(0);
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(calc(-250px * 6 - 20px * 6));
+    }
+}
+
+/* Pause animation on hover */
+.students-gallery:hover .students-gallery-track {
+    animation-play-state: paused;
 }
 
 .students-gallery .gallery-item,

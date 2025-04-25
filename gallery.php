@@ -1,6 +1,53 @@
 <!-- Gallery Section -->
 <div class="gallery-wrapper">
     <section class="gallery-section">
+        <!-- Faculty Members Section -->
+        <h2 class="section-title">Faculty Members</h2>
+        <div class="gallery-container faculty-gallery">
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/sarita.png" alt="Faculty 1">
+                <div class="caption">
+                    <h3>Sarita Patel</h3>
+                    <p>Tally</p>
+                </div>
+            </div>
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/anand sir.png" alt="Faculty 2">
+                <div class="caption">
+                    <h3>Anand Sir</h3>
+                    <p>Web Development</p>
+                </div>
+            </div>
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/mukesh.png" alt="Faculty 3">
+                <div class="caption">
+                    <h3>Mukesh Gupta</h3>
+                    <p>Harware Networking</p>
+                </div>
+            </div>
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/madhu.jpeg" alt="Faculty 4">
+                <div class="caption">
+                    <h3>Madhu Ma'am</h3>
+                    <p>Beauty & Aesthetics</p>
+                </div>
+            </div>
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/tanu.jpeg" alt="Faculty 5">
+                <div class="caption">
+                    <h3>Tanu Tiwari</h3>
+                    <p>Artificial Intelligence</p>
+                </div>
+            </div>
+            <div class="gallery-item faculty-item">
+                <img src="assets/images/anjali.jpeg" alt="Faculty 6">
+                <div class="caption">
+                    <h3>Anjali Prajapati</h3>
+                    <p>Professional Courses</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Course Offered Section -->
         <h2 class="section-title">Course Offered</h2>
         <div class="gallery-container courses-gallery">
@@ -54,52 +101,6 @@
                 <div class="caption">Student 6</div>
             </div>
         </div>
-
-        <!-- Faculty Members Section -->
-        <h2 class="section-title">Faculty Members</h2>
-        <div class="gallery-container faculty-gallery">
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/sarita.png" alt="Faculty 1">
-                <div class="caption">
-                    <h3>Sarita Patel</h3>
-                    <p>Tally</p>
-                </div>
-            </div>
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/anand sir.png" alt="Faculty 2">
-                <div class="caption">
-                    <h3>Anand Sir</h3>
-                    <p>Web Development</p>
-                </div>
-            </div>
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/mukesh.png" alt="Faculty 3">
-                <div class="caption">
-                    <h3>Mukesh Gupta</h3>
-                    <p>Harware Networking</p>
-                </div>
-            </div>
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/madhu.jpeg" alt="Faculty 4">
-                <div class="caption">
-                    <h3>Madhu Ma'am</h3>
-                    <p>Beauty & Aesthetics</p>
-                </div>
-            </div>
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/tanu.jpeg" alt="Faculty 5">
-                <div class="caption">
-                    <h3>Tanu Tiwari</h3>
-                    <p>Artificial Intelligence</p>
-                </div>
-            </div>
-            <div class="gallery-item faculty-item">
-                <img src="assets/images/anjali.jpeg" alt="Faculty 6">
-                <div class="caption">
-                    <h3>Anjali Prajapati</h3>
-                    <p>Professional Courses</p>
-                </div>
-            </div>
-        </div>
     </section>
-</div> 
+</div>
+<script src="assets/js/student-gallery.js"></script> 
