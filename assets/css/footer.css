@@ -230,6 +230,12 @@
     font-weight: 500;
 }
 
+/* Hide Statcounter link */
+.visitor-count a {
+    text-decoration: none;
+    color: #fff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
     .certification-logos {

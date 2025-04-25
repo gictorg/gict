@@ -56,7 +56,7 @@
         <nav class="main-nav">
             <div class="container">
                 <div class="nav-left">
-                    <a href="#" class="home-icon">
+                    <a href="index.php" class="home-icon">
                         <i class="fas fa-home"></i>
                     </a>
                     <div class="nav-links">
@@ -70,7 +70,7 @@
                     </div>
                 </div>
                 <div class="nav-right">
-                    CENTER
+                    <a href="center-map.php" style="text-decoration: none; color: #fff;">CENTER MAP</a>
                 </div>
             </div>
         </nav>
