@@ -227,6 +227,7 @@
 
 .quotes-wrapper {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     gap: 40px;
     background-color: #000080;
@@ -236,19 +237,19 @@
     margin: 0 auto;
 }
 
-.quotes-wrapper {
-    flex-direction: column;
+/* .quotes-wrapper {
     gap: 20px;
     padding: 0 10px !important;
     width: 100% !important;
     box-sizing: border-box;
     margin: 0 auto;
-}
+} */
+
 
 .quote {
     flex: 1;
     text-align: center;
-    font-size: 26px;
+    font-size: 22px;
     line-height: 1.4;
     color: #fff;
     padding: 0 20px;
@@ -284,30 +285,34 @@
 @media (max-width: 768px) {
     .quotes-wrapper {
         flex-direction: column;
-        gap: 20px;
+        gap: 10px;
+        width: 100% !important;
+        padding: 0 4px !important;
+        box-sizing: border-box;
     }
-    
+    .quote {
+        font-size: 16px;
+        padding: 0 4px;
+        white-space: normal; /* Allow wrapping */
+        overflow: visible;
+        text-overflow: unset;
+    }
     .event-slide {
         flex: 0 0 100%; /* Full width for single item */
     }
-    
     .event-content {
         position: absolute;
     }
-    
     .event-content h3 {
         font-size: 16px;
     }
-    
     .event-content p {
         font-size: 12px;
     }
-    
     .event-controls {
         bottom: 10px;
         right: 10px;
     }
-    
     .slider-controls {
         width: 100%;
         justify-content: center;
