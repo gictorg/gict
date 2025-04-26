@@ -1,8 +1,8 @@
 /* Footer styles */
 .footer {
-    max-width: 1400px;
+    /* max-width: 1400px; */
     margin: 0 auto;
-    padding: 0 20px;
+    /* padding: 0 20px; */
 }
 
 .footer .container,
@@ -10,7 +10,6 @@
 .connect-container,
 .footer-container,
 .footer-bottom-container {
-    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -19,7 +18,7 @@
 
 /* Certification section */
 .certification {
-    padding: 40px 0;
+    /* padding: 0 20px; */
     background: #F8F8F8;
     width: 100%;
 }
@@ -34,7 +33,7 @@
 .certification h2 {
     font-size: 42px;
     color: #000;
-    margin: 0 0 50px;
+    margin: 20px 0 50px;
     font-weight: 700;
     text-align: center;
     text-transform: uppercase;
@@ -46,6 +45,7 @@
     justify-content: center;
     width: 100%;
     gap: 60px;
+    padding-bottom: 40px;
 }
 
 .certification-logos img {
@@ -132,7 +132,7 @@
 /* Footer navigation */
 .footer-nav {
     background: #000080;
-    padding: 40px 0;
+    padding: 20px 20px;
     width: 100%;
 }
 
@@ -211,7 +211,6 @@
 /* Footer bottom */
 .footer-bottom {
     background: #000080;
-    padding: 20px 0;
     border-top: 1px solid rgba(255,255,255,0.2);
     width: 100%;
 }
@@ -222,12 +221,15 @@
     align-items: center;
     color: #fff;
     font-size: 16px;
-    padding: 0 20px;
-    margin-right: 50px;
 }
 
 .visitor-count {
     font-weight: 500;
+    margin-right: 40px;
+}
+
+.update-info {
+    margin-left: 20px;
 }
 
 /* Hide Statcounter link */
@@ -303,4 +305,4 @@
     .store-name {
         font-size: 16px;
     }
-} 
+}

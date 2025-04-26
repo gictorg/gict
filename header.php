@@ -60,20 +60,70 @@
                         <i class="fas fa-home"></i>
                     </a>
                     <div class="nav-links">
-                        <a href="#">ABOUT US</a>
-                        <a href="#">STUDENT</a>
-                        <a href="#">COURSES</a>
-                        <a href="#">PROJECT</a>
-                        <a href="#">GALLERY</a>
-                        <a href="#">CONTACT</a>
-                        <a href="#">CERTIFICATE VERIFICATION</a>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">ABOUT US <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">STUDENT <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">COURSES <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">PROJECT <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">GALLERY <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">CONTACT <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn">CERTIFICATE VERIFICATION <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="#">Option 1</a>
+                                <a href="#">Option 2</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="nav-right">
-                    <a href="center-map.php" style="text-decoration: none; color: #fff;">CENTER MAP</a>
+                <div class="nav-right login-dropdown">
+                    <div class="login-btn">
+                        Login <i class="fas fa-caret-down"></i>
+                    </div>
+                    <div class="login-dropdown-content">
+                        <a href="#"><i class="fas fa-sign-in-alt"></i> Student Login</a>
+                        <a href="#"><i class="fas fa-sign-in-alt"></i> Center Login</a>
+                        <a href="#"><i class="fas fa-sign-in-alt"></i> Faculty Login</a>
+                    </div>
                 </div>
             </div>
         </nav>
     </div>
+    <script src="assets/js/nav-dropdown.js"></script>
 </body>
 </html> 

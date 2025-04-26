@@ -49,7 +49,7 @@
         </div>
 
         <!-- Course Offered Section -->
-        <h2 class="section-title">Course Offered</h2>
+        <h2 class="section-title">Courses Offered</h2>
         <div class="gallery-container courses-gallery">
             <div class="gallery-item course-item">
                 <img src="assets/images/computer course.jpeg" alt="Computer Course">

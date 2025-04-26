@@ -1,3 +1,8 @@
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* Top Links Bar */
 .top-links {
     background: #fff;
@@ -76,7 +81,7 @@
 
 /* Logo Section */
 .logo-section {
-    padding: 15px 0;
+    padding: 0 0;
 }
 
 .logo-section .container {
@@ -100,25 +105,23 @@
 }
 
 .logo-section img {
-    height: 140px;
+    /* max-width: 200px; */
+    height: 100px;
     width: auto;
     object-fit: contain;
+    margin-left: 20px;
+    margin-right: 20px;
 }
 
-/* Main Navigation */
-.main-nav {
-    background: #000080;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-}
 
 .main-nav .container {
+    background: #000080;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 50px;
+    height: 60px;
     padding: 0;
+    margin-bottom: 0;
 }
 
 .nav-left {
@@ -127,17 +130,19 @@
     height: 100%;
 }
 
+
 .main-nav .nav-left .home-icon {
     background: #ffffff;
     color: #000080;
-    width: 42px;
-    height: 42px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    margin-right: 30px;
+    margin-left: 20px;
+    margin-right: 40px;
     border: 2px solid #ffffff;
 }
 
@@ -156,7 +161,7 @@
 
 .nav-links {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     height: 100%;
     gap: 30px;
 }
@@ -168,11 +173,18 @@
     font-weight: 500;
     text-transform: uppercase;
     transition: all 0.3s ease;
-    height: 100%;
+    height: 40px;
     display: flex;
     align-items: center;
-    padding: 0 5px;
+    padding: 0 18px;
+    margin-top: 0;
 }
+
+.nav-links a:hover {
+    background: #f4b400;;
+    color: #000080;
+    border-radius: 0;
+} 
 
 .nav-right {
     color: #fff;
@@ -228,4 +240,134 @@
     .nav-right {
         display: none;
     }
-} 
+}
+
+/* Login Dropdown Styles */
+.login-dropdown {
+    position: relative;
+    display: inline-block;
+    height: 100%;
+}
+
+.login-dropdown .login-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+    padding: 0 15px;
+    position: relative;
+    z-index: 9999;
+    color: #fff;
+    font-weight: bold;
+    font-size: 15px;
+    text-transform: uppercase;
+}
+
+.login-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #000080;
+    min-width: 180px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    z-index: 9999;
+    border-radius: 0 0 8px 8px;
+}
+
+.login-dropdown-content a {
+    color: #fff;
+    padding: 12px 18px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    background: #000080;
+    gap: 10px;
+}
+
+.login-dropdown-content a i {
+    font-size: 16px;
+    margin-right: 8px;
+}
+
+.login-dropdown-content a:hover {
+    background: #1a237e;
+    color: #fff;
+}
+
+.login-dropdown:hover .login-dropdown-content {
+    display: block;
+}
+
+/* NAV BUTTON STYLES */
+.nav-btn {
+    gap: 5px;
+}
+
+/* DROPDOWN MENU */
+.nav-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.nav-dropdown-content {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background: #fff;
+    min-width: 180px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    z-index: 9999;
+    flex-direction: column;
+    border: .2px solid #c3c8e7;
+}
+
+.nav-dropdown.open .nav-dropdown-content {
+    display: flex;
+}
+
+.nav-dropdown-content a {
+    color: #000;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.nav-dropdown-content a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: #f4b400;
+    transition: width 0.3s;
+}
+
+.nav-dropdown-content a:hover::after {
+    width: 100%;
+}
+
+.nav-dropdown-content a:hover {
+    color: #000;
+    background: #fff;
+}
+
+/* Make nav-btn yellow when its dropdown is open */
+.nav-dropdown.open .nav-btn {
+    background: #f4b400;
+    color: #003366;
+}
+
+/* Remove background color change on dropdown option hover */
+.nav-dropdown-content a:hover {
+    background: transparent;
+    color: #003366;
+}
