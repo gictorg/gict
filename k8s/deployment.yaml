@@ -15,8 +15,8 @@ spec:
       labels:
         app: gict-web
     spec:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: default-pool-new
+      # nodeSelector:
+      #   cloud.google.com/gke-nodepool: default-pool-new
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -31,7 +31,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: gict-web
-        image: docker.io/zolovin2022/gict-web:v3
+        image: docker.io/zolovin2022/gict-web:v5
         ports:
         - containerPort: 80
         resources:

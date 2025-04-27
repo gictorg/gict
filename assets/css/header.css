@@ -177,6 +177,12 @@ html, body {
     align-items: flex-start;
     height: 100%;
     gap: 30px;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.nav-links .nav-dropdown {
+    min-width: 0;
 }
 
 .nav-links a {
@@ -191,6 +197,7 @@ html, body {
     align-items: center;
     padding: 0 18px;
     margin-top: 0;
+    gap: 8px;
 }
 
 .nav-links a:hover {
@@ -399,4 +406,21 @@ html, body {
 
 .main-content {
   padding-top: 180px;
+}
+
+.nav-btn,
+.login-btn {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.nav-btn i,
+.login-btn i {
+  font-size: 14px;
+  vertical-align: middle;
 }
