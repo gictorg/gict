@@ -5,6 +5,9 @@ html, body {
 
 /* Top Links Bar */
 .top-links {
+    position: static;
+    width: 100%;
+    z-index: 10001;
     background: #fff;
     padding: 2px 0;
     border-bottom: 1px solid #ddd;
@@ -27,6 +30,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 15px;
+    padding-left: 20px;
 }
 
 .quick-links a {
@@ -45,6 +49,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 10px;
+    padding-right: 20px;
 }
 
 .accessibility-tools a {
@@ -73,14 +78,21 @@ html, body {
 
 /* Header Container */
 .header-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 10000;
     background: #fff;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 0 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Logo Section */
 .logo-section {
+    position: static;
     padding: 0 0;
 }
 
@@ -122,6 +134,7 @@ html, body {
     height: 60px;
     padding: 0;
     margin-bottom: 0;
+    position: static;
 }
 
 .nav-left {
@@ -268,25 +281,32 @@ html, body {
     display: none;
     position: absolute;
     right: 0;
+    left: auto;
     top: 100%;
-    background: #000080;
+    background: #fff;
     min-width: 180px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
     z-index: 9999;
     border-radius: 0 0 8px 8px;
+    border: .2px solid #c3c8e7;
+    flex-direction: column;
+    max-width: 100%;
+    /* overflow-x: auto; */
 }
 
 .login-dropdown-content a {
-    color: #fff;
-    padding: 12px 18px;
-    text-decoration: none;
+    color: #000;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
     display: flex;
     align-items: center;
-    font-size: 15px;
+    gap: 10px;
+    padding: 12px 18px;
+    text-decoration: none;
     transition: all 0.3s ease;
     white-space: nowrap;
-    background: #000080;
-    gap: 10px;
 }
 
 .login-dropdown-content a i {
@@ -294,18 +314,28 @@ html, body {
     margin-right: 8px;
 }
 
+.login-dropdown-content a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 0;
+    background: #f4b400;
+    transition: width 0.3s;
+}
+
+.login-dropdown-content a:hover::after {
+    width: 100%;
+}
+
 .login-dropdown-content a:hover {
-    background: #1a237e;
-    color: #fff;
+    background: transparent;
+    color: #003366;
 }
 
 .login-dropdown:hover .login-dropdown-content {
-    display: block;
-}
-
-/* NAV BUTTON STYLES */
-.nav-btn {
-    gap: 5px;
+    display: flex;
 }
 
 /* DROPDOWN MENU */
@@ -355,11 +385,6 @@ html, body {
     width: 100%;
 }
 
-.nav-dropdown-content a:hover {
-    color: #000;
-    background: #fff;
-}
-
 /* Make nav-btn yellow when its dropdown is open */
 .nav-dropdown.open .nav-btn {
     background: #f4b400;
@@ -370,4 +395,8 @@ html, body {
 .nav-dropdown-content a:hover {
     background: transparent;
     color: #003366;
+}
+
+.main-content {
+  padding-top: 180px;
 }

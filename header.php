@@ -12,31 +12,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Top Links Bar -->
-    <div class="top-links">
-        <div class="container">
-            <div class="quick-links">
-                <a href="#"><i class="fas fa-link"></i> Quick Links</a>
-                <a href="#">₹ Fee Portal</a>
-                <a href="#"><i class="fas fa-question-circle"></i> FAQs</a>
-                <a href="#"><i class="fas fa-user-graduate"></i> Admission 2024-2025</a>
-                <a href="#"><i class="fas fa-mobile-alt"></i> Download Android Mobile App</a>
-                <a href="#"><i class="fas fa-bullhorn"></i> Notices & Circulars</a>
-            </div>
-            <div class="accessibility-tools">
-                <a href="#" title="Download"><i class="fas fa-download"></i></a>
-                <a href="#" title="Screen Reader"><i class="fas fa-desktop"></i></a>
-                <a href="#" title="Time"><i class="far fa-clock"></i></a>
-                <a href="#" title="Font Size"><i class="fas fa-font"></i></a>
-                <a href="#" title="High Contrast"><i class="fas fa-adjust"></i></a>
-                <a href="#" class="font-decrease" title="Decrease Font Size">A-</a>
-                <a href="#" class="font-increase" title="Increase Font Size">A+</a>
-                <a href="#" title="Search"><i class="fas fa-search"></i></a>
+    <div class="header-container">
+        <!-- Top Links Bar -->
+        <div class="top-links">
+            <div class="container">
+                <div class="quick-links">
+                    <a href="#"><i class="fas fa-link"></i> Quick Links</a>
+                    <a href="#">₹ Fee Portal</a>
+                    <a href="#"><i class="fas fa-question-circle"></i> FAQs</a>
+                    <a href="#"><i class="fas fa-user-graduate"></i> Admission 2024-2025</a>
+                    <a href="#"><i class="fas fa-mobile-alt"></i> Download Android Mobile App</a>
+                    <a href="#"><i class="fas fa-bullhorn"></i> Notices & Circulars</a>
+                </div>
+                <div class="accessibility-tools">
+                    <a href="#" title="Download"><i class="fas fa-download"></i></a>
+                    <a href="#" title="Screen Reader"><i class="fas fa-desktop"></i></a>
+                    <a href="#" title="Time"><i class="far fa-clock"></i></a>
+                    <a href="#" title="Font Size"><i class="fas fa-font"></i></a>
+                    <a href="#" title="High Contrast"><i class="fas fa-adjust"></i></a>
+                    <a href="#" class="font-decrease" title="Decrease Font Size">A-</a>
+                    <a href="#" class="font-increase" title="Increase Font Size">A+</a>
+                    <a href="#" title="Search"><i class="fas fa-search"></i></a>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="header-container">
         <!-- Logo Section -->
         <div class="logo-section">
             <div class="container">
@@ -51,7 +50,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Main Navigation -->
         <nav class="main-nav">
             <div class="container">
@@ -109,16 +107,14 @@
                                 <a href="#">Option 2</a>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="nav-right login-dropdown">
-                    <div class="login-btn">
-                        Login <i class="fas fa-caret-down"></i>
-                    </div>
-                    <div class="login-dropdown-content">
-                        <a href="#"><i class="fas fa-sign-in-alt"></i> Student Login</a>
-                        <a href="#"><i class="fas fa-sign-in-alt"></i> Center Login</a>
-                        <a href="#"><i class="fas fa-sign-in-alt"></i> Faculty Login</a>
+                        <div class="nav-dropdown login-dropdown">
+                            <a href="#" class="nav-btn login-btn">Login <i class="fas fa-caret-down"></i></a>
+                            <div class="login-dropdown-content">
+                                <a href="#"><i class="fas fa-sign-in-alt"></i> Student Login</a>
+                                <a href="#"><i class="fas fa-sign-in-alt"></i> Center Login</a>
+                                <a href="#"><i class="fas fa-sign-in-alt"></i> Faculty Login</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
