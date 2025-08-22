@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,7 +60,10 @@
                     <a href="index.php" class="home-icon">
                         <i class="fas fa-home"></i>
                     </a>
-                    <div class="nav-links">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="nav-links" id="navLinks">
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">ABOUT US <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
@@ -107,19 +113,42 @@
                                 <a href="#">Option 2</a>
                             </div>
                         </div>
-                        <div class="nav-dropdown login-dropdown">
-                            <a href="#" class="nav-btn login-btn">Login <i class="fas fa-caret-down"></i></a>
-                            <div class="login-dropdown-content">
-                                <a href="#"><i class="fas fa-sign-in-alt"></i> Student Login</a>
-                                <a href="#"><i class="fas fa-sign-in-alt"></i> Center Login</a>
-                                <a href="#"><i class="fas fa-sign-in-alt"></i> Faculty Login</a>
+                        <?php if (isset($_SESSION['user_id']) && (isset($_SESSION['username']) || isset($_SESSION['full_name']))): ?>
+                            <!-- Logged in user dropdown -->
+                            <div class="nav-dropdown user-dropdown">
+                                <a href="#" class="nav-btn user-btn">
+                                    <i class="fas fa-user"></i> 
+                                    <?php 
+                                    $displayName = '';
+                                    if (isset($_SESSION['full_name']) && !empty($_SESSION['full_name'])) {
+                                        $displayName = $_SESSION['full_name'];
+                                    } elseif (isset($_SESSION['username']) && !empty($_SESSION['username'])) {
+                                        $displayName = $_SESSION['username'];
+                                    } else {
+                                        $displayName = 'User';
+                                    }
+                                    echo htmlspecialchars($displayName);
+                                    ?> 
+                                    <i class="fas fa-caret-down"></i>
+                                </a>
+                                <div class="user-dropdown-content">
+                                    <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                                    <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                                </div>
                             </div>
-                        </div>
+                        <?php else: ?>
+                            <!-- Login button for non-logged in users -->
+                            <div class="nav-dropdown login-dropdown">
+                                <a href="login.php" class="nav-btn login-btn">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </nav>
     </div>
-    <script src="assets/js/nav-dropdown.js"></script>
-</body>
-</html> 
+    <script src="assets/js/nav-dropdown.js"></script> 

@@ -1,3 +1,6 @@
+<?php
+// No authentication required for the main homepage
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,8 +22,8 @@
             <div class="sidebar-menu">
                 <a href="#" class="menu-item"><i class="fas fa-info-circle"></i> ABOUT GICT</a>
                 <a href="#" class="menu-item"><i class="fas fa-user-graduate"></i> STUDENT SECTION</a>
-                <a href="#" class="menu-item"><i class="fas fa-book"></i> COURSE SECTION</a>
-                <a href="#" class="menu-item"><i class="fas fa-download"></i> DOWNLOAD RESULT</a>
+                <!-- <a href="#" class="menu-item"><i class="fas fa-book"></i> COURSE SECTION</a>
+                <a href="#" class="menu-item"><i class="fas fa-download"></i> DOWNLOAD RESULT</a> -->
                 <a href="#" class="menu-item"><i class="fas fa-users"></i> GICT TEAM</a>
                 <a href="#" class="menu-item"><i class="fas fa-trophy"></i> ACHIEVEMENT</a>
                 <a href="#" class="menu-item"><i class="fas fa-laptop"></i> ONLINE STUDY MATERIAL</a>
@@ -92,6 +95,7 @@
 <?php include 'footer.php'; ?>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script src="assets/js/homepage-mobile-menu.js"></script>
     <script>
         // Add any custom JavaScript here
         document.addEventListener('DOMContentLoaded', function() {

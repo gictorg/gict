@@ -1,10 +1,10 @@
 /* Import all CSS files */
-@import 'assets/css/base.css';
-@import 'assets/css/header.css';
-@import 'assets/css/sidebar.css';
-@import 'assets/css/content.css';
-@import 'assets/css/profile.css';
-@import 'assets/css/whatsapp.css';
+@import 'base.css';
+@import 'header.css';
+@import 'sidebar.css';
+@import 'content.css';
+@import 'profile.css';
+@import 'whatsapp.css';
 
 body {
     margin: 0;
@@ -284,3 +284,4 @@ body {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
+
