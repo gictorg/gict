@@ -306,8 +306,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             object-fit: cover;
         }
         .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
-            text-align: center;
         }
         .page-header h1 {
             color: #333;
@@ -353,33 +355,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             color: #6c757d;
             font-size: 14px;
         }
-        .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .add-course-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-        .add-course-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
+
         .courses-table {
             background: white;
             border-radius: 16px;
@@ -387,17 +363,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             border: 1px solid #e9ecef;
         }
-        .table-header {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 20px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .table-header h2 {
-            margin: 0;
-            color: #495057;
-            font-size: 20px;
-            font-weight: 600;
-        }
+
         .table-container {
             overflow-x: auto;
         }
@@ -767,6 +733,13 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
         <main class="admin-content">
             <div class="page-header">
                 <h1><i class="fas fa-graduation-cap"></i> Course Management</h1>
+                <button class="add-course-btn" onclick="openAddCourseModal()">
+                    <i class="fas fa-plus"></i> Add New Course
+                </button>
+            </div>
+
+            <div class="section-header">
+                <h2><i class="fas fa-list"></i> All Courses</h2>
                 <p>Manage all courses, add new courses, and track enrollment statistics</p>
             </div>
 
@@ -812,18 +785,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                 </div>
             </div>
 
-            <!-- Action Bar -->
-            <div class="action-bar">
-                <button class="add-course-btn" onclick="openAddCourseModal()">
-                    <i class="fas fa-plus"></i> Add New Course
-                </button>
-            </div>
+
 
             <!-- Courses Table -->
             <div class="courses-table">
-                <div class="table-header">
-                    <h2><i class="fas fa-list"></i> All Courses</h2>
-                </div>
                 
                 <?php if (empty($courses)): ?>
                     <div class="empty-state">

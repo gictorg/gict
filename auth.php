@@ -1,13 +1,9 @@
 <?php
-session_start();
+// Include session manager
+require_once 'includes/session_manager.php';
 
 // Include database configuration
 require_once 'config/database.php';
-
-// Function to check if user is logged in
-function isLoggedIn() {
-    return isset($_SESSION['user_id']) && isset($_SESSION['username']);
-}
 
 // Function to require login (redirect if not logged in)
 function requireLogin() {
@@ -25,7 +21,6 @@ function getCurrentUser() {
             $user = getRow($sql, [$_SESSION['user_id']]);
             
             if ($user) {
-                error_log("getCurrentUser: Database lookup successful for user ID: " . $_SESSION['user_id']);
                 return [
                     'id' => $user['id'],
                     'username' => $user['username'],
@@ -36,18 +31,14 @@ function getCurrentUser() {
                     'address' => $user['address'],
                     'status' => $user['status']
                 ];
-            } else {
-                error_log("getCurrentUser: User not found in database for ID: " . $_SESSION['user_id']);
             }
         } catch (Exception $e) {
-            error_log("Error getting current user: " . $e->getMessage());
+            // Silent fail for security
         }
         
         // If database lookup fails, don't return session data - it might be corrupted
-        error_log("getCurrentUser: Database lookup failed, not returning session data");
         return null;
     }
-    error_log("getCurrentUser: User not logged in");
     return null;
 }
 
@@ -57,7 +48,7 @@ function getUserById($userId) {
         $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE id = ?";
         return getRow($sql, [$userId]);
     } catch (Exception $e) {
-        error_log("Error getting user by ID: " . $e->getMessage());
+        // Silent fail for security
         return false;
     }
 }
@@ -68,7 +59,7 @@ function getUserByUsername($username) {
         $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE username = ?";
         return getRow($sql, [$username]);
     } catch (Exception $e) {
-        error_log("Error getting user by username: " . $e->getMessage());
+        // Silent fail for security
         return false;
     }
 }
@@ -80,7 +71,7 @@ function updateUserProfile($userId, $data) {
         $params = [$data['full_name'], $data['email'], $data['phone'], $data['address'], $userId];
         return updateData($sql, $params);
     } catch (Exception $e) {
-        error_log("Error updating user profile: " . $e->getMessage());
+        // Silent fail for security
         return false;
     }
 }
@@ -99,7 +90,7 @@ function changePassword($userId, $currentPassword, $newPassword) {
         $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?";
         return updateData($sql, [$hashedPassword, $userId]);
     } catch (Exception $e) {
-        error_log("Error changing password: " . $e->getMessage());
+        // Silent fail for security
         return false;
     }
 }
@@ -112,35 +103,12 @@ function logout() {
             $logout_sql = "INSERT INTO user_logins (user_id, login_time, ip_address, status) VALUES (?, NOW(), ?, 'logout')";
             insertData($logout_sql, [$_SESSION['user_id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
         } catch (Exception $e) {
-            error_log("Error logging logout: " . $e->getMessage());
+            // Silent fail for security
         }
     }
     
-    // Destroy session
-    session_destroy();
-    header('Location: index.php');
-    exit();
-}
-
-// Function to check if user has specific role
-function hasRole($role) {
-    $user = getCurrentUser();
-    return $user && $user['type'] === $role;
-}
-
-// Function to check if user is admin
-function isAdmin() {
-    return hasRole('admin');
-}
-
-// Function to check if user is faculty
-function isFaculty() {
-    return hasRole('faculty');
-}
-
-// Function to check if user is student
-function isStudent() {
-    return hasRole('student');
+    // Use secure logout from session manager
+    secureLogout();
 }
 
 // Function to require specific role

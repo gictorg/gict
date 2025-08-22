@@ -1,16 +1,14 @@
 <?php
-session_start();
+// Include session manager first
+require_once 'includes/session_manager.php';
 
 // Include database configuration
 require_once 'config/database.php';
 
 // Check if user is already logged in
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['user_type'] === 'admin') {
-        header('Location: dashboard.php');
-    } else {
-        header('Location: student/dashboard.php');
-    }
+if (isLoggedIn()) {
+    $dashboard_url = getDashboardUrl();
+    header('Location: ' . $dashboard_url);
     exit();
 }
 
@@ -27,20 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Test database connection first
             if (!testDBConnection()) {
                 $error_message = 'Database connection failed. Please check configuration.';
-                error_log("Login: Database connection failed");
             } else {
                 // Get user from database
                 $sql = "SELECT id, username, password, user_type, full_name, email FROM users WHERE username = ? AND status = 'active'";
                 $user = getRow($sql, [$username]);
                 
-                // Debug logging
-                error_log("Login attempt for username: " . $username);
-                error_log("User found: " . ($user ? 'Yes' : 'No'));
-                
                 if ($user) {
-                    error_log("User data: " . json_encode($user));
                     $passwordValid = password_verify($password, $user['password']);
-                    error_log("Password valid: " . ($passwordValid ? 'Yes' : 'No'));
                     
                     if ($passwordValid) {
                         // Login successful
@@ -50,41 +41,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['full_name'] = $user['full_name'];
                         $_SESSION['email'] = $user['email'];
                         
-                        error_log("Session set: " . json_encode($_SESSION));
-                        
                         // Log successful login
                         $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";
                         insertData($login_sql, [$user['id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
                         
-                        error_log("Redirecting to dashboard...");
-                        
-                        // Debug: Check if headers were already sent
-                        if (headers_sent($file, $line)) {
-                            error_log("Headers already sent in $file on line $line");
-                            $redirect_url = $user['user_type'] === 'admin' ? 'dashboard.php' : 'student/dashboard.php';
-                            echo "<script>window.location.href = '{$redirect_url}';</script>";
-                            echo "<p>Redirecting to dashboard... <a href='{$redirect_url}'>Click here if not redirected automatically</a></p>";
-                            exit();
-                        } else {
-                            // Redirect based on user type
-                            if ($user['user_type'] === 'admin') {
-                                header('Location: dashboard.php');
-                            } else {
-                                header('Location: student/dashboard.php');
-                            }
-                            exit();
-                        }
+                        // Redirect to appropriate dashboard
+                        $dashboard_url = getDashboardUrl();
+                        header('Location: ' . $dashboard_url);
+                        exit();
                     } else {
                         $error_message = 'Invalid password';
-                        error_log("Login: Invalid password for user: " . $username);
                     }
                 } else {
                     $error_message = 'User not found or inactive';
-                    error_log("Login: User not found or inactive: " . $username);
                 }
             }
         } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
             $error_message = 'Login failed. Please try again.';
         }
     }

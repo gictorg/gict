@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once 'includes/session_manager.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -113,26 +113,16 @@ session_start();
                                 <a href="#">Option 2</a>
                             </div>
                         </div>
-                        <?php if (isset($_SESSION['user_id']) && (isset($_SESSION['username']) || isset($_SESSION['full_name']))): ?>
+                        <?php if (isLoggedIn()): ?>
                             <!-- Logged in user dropdown -->
                             <div class="nav-dropdown user-dropdown">
                                 <a href="#" class="nav-btn user-btn">
                                     <i class="fas fa-user"></i> 
-                                    <?php 
-                                    $displayName = '';
-                                    if (isset($_SESSION['full_name']) && !empty($_SESSION['full_name'])) {
-                                        $displayName = $_SESSION['full_name'];
-                                    } elseif (isset($_SESSION['username']) && !empty($_SESSION['username'])) {
-                                        $displayName = $_SESSION['username'];
-                                    } else {
-                                        $displayName = 'User';
-                                    }
-                                    echo htmlspecialchars($displayName);
-                                    ?> 
+                                    <?php echo htmlspecialchars(getUserDisplayName()); ?> 
                                     <i class="fas fa-caret-down"></i>
                                 </a>
                                 <div class="user-dropdown-content">
-                                    <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                    <a href="<?php echo getDashboardUrl(); ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                                     <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
                                     <a href="#"><i class="fas fa-cog"></i> Settings</a>
                                     <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>

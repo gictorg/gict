@@ -18,14 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleMenu() {
         const isOpen = navLinks.classList.contains('mobile-open');
         
-        console.log('Toggle menu called, current state:', isOpen);
-        
         if (isOpen) {
             // Close menu
             navLinks.classList.remove('mobile-open');
             overlay.classList.remove('active');
             body.style.overflow = '';
-            console.log('Menu closed');
             
             // Close all dropdowns when closing menu
             const dropdowns = navLinks.querySelectorAll('.nav-dropdown');
@@ -41,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
             navLinks.classList.add('mobile-open');
             overlay.classList.add('active');
             body.style.overflow = 'hidden';
-            console.log('Menu opened');
         }
     }
     
@@ -117,8 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    console.log('Dropdown clicked:', dropdown);
-                    
                     // Close other open dropdowns
                     dropdowns.forEach(d => {
                         if (d !== dropdown) {
@@ -134,11 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (dropdown.classList.contains('open')) {
                         dropdown.classList.remove('open');
                         content.style.display = 'none';
-                        console.log('Dropdown closed');
                     } else {
                         dropdown.classList.add('open');
                         content.style.display = 'block';
-                        console.log('Dropdown opened');
                     }
                 }
             });

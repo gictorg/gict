@@ -1,4 +1,5 @@
 <?php
+require_once 'includes/session_manager.php';
 require_once 'auth.php';
 requireLogin();
 

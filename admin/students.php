@@ -3,12 +3,173 @@ require_once '../auth.php';
 requireLogin();
 requireRole('admin');
 
+// Include ImgBB helper for image uploads
+require_once '../includes/imgbb_helper.php';
+
 $user = getCurrentUser();
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
+            case 'add_student':
+                $username = $_POST['username'] ?? '';
+                $email = $_POST['email'] ?? '';
+                $full_name = $_POST['full_name'] ?? '';
+                $phone = $_POST['phone'] ?? '';
+                $address = $_POST['address'] ?? '';
+                $date_of_birth = $_POST['date_of_birth'] ?? '';
+                $gender = $_POST['gender'] ?? '';
+                $qualification = $_POST['qualification'] ?? '';
+                $joining_date = $_POST['joining_date'] ?? '';
+                
+                // Check if username already exists
+                $checkSql = "SELECT id FROM users WHERE username = ?";
+                $existingUser = getRow($checkSql, [$username]);
+                
+                if ($existingUser) {
+                    $error_message = "Username '$username' already exists. Please choose a different username.";
+                } else {
+                    // Handle file uploads to ImgBB
+                    $profile_image_url = '';
+                    $marksheet_url = '';
+                    $aadhaar_card_url = '';
+                    $uploaded_files = [];
+                    
+                    // Profile Image Upload
+                    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+                        $profile_file = $_FILES['profile_image'];
+                        $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
+                        $allowed_image_exts = ['jpg', 'jpeg', 'png'];
+                        
+                        if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 200 * 1024) {
+                            $imgbb_result = smartUpload(
+                                $profile_file['tmp_name'], 
+                                $username . '_profile'
+                            );
+                            
+                            if ($imgbb_result && $imgbb_result['success']) {
+                                $profile_image_url = $imgbb_result['url'];
+                                $uploaded_files[] = [
+                                    'type' => 'profile_image',
+                                    'url' => $imgbb_result['url'],
+                                    'display_url' => $imgbb_result['display_url'],
+                                    'imgbb_id' => $imgbb_result['id'],
+                                    'size' => $profile_file['size']
+                                ];
+                            } else {
+                                $error_message = "Failed to upload profile image to ImgBB.";
+                            }
+                        } else {
+                            $error_message = "Profile image must be JPG, JPEG, or PNG and under 200KB.";
+                        }
+                    }
+                    
+                    // Marksheet Upload
+                    if (isset($_FILES['marksheet']) && $_FILES['marksheet']['error'] == 0) {
+                        $marksheet_file = $_FILES['marksheet'];
+                        $marksheet_ext = strtolower(pathinfo($marksheet_file['name'], PATHINFO_EXTENSION));
+                        $allowed_doc_exts = ['pdf', 'jpg', 'jpeg', 'png'];
+                        
+                        if (in_array($marksheet_ext, $allowed_doc_exts) && $marksheet_file['size'] <= 200 * 1024) {
+                            $imgbb_result = smartUpload(
+                                $marksheet_file['tmp_name'], 
+                                $username . '_marksheet'
+                            );
+                            
+                            if ($imgbb_result && $imgbb_result['success']) {
+                                $marksheet_url = $imgbb_result['url'];
+                                $uploaded_files[] = [
+                                    'type' => 'marksheet',
+                                    'url' => $imgbb_result['url'],
+                                    'display_url' => $imgbb_result['display_url'],
+                                    'imgbb_id' => $imgbb_result['id'],
+                                    'size' => $marksheet_file['size']
+                                ];
+                            } else {
+                                $error_message = "Failed to upload marksheet to ImgBB.";
+                            }
+                        } else {
+                            $error_message = "Marksheet must be PDF, JPG, JPEG, or PNG and under 200KB.";
+                        }
+                    }
+                    
+                    // Aadhaar Card Upload
+                    if (isset($_FILES['aadhaar_card']) && $_FILES['aadhaar_card']['error'] == 0) {
+                        $aadhaar_file = $_FILES['aadhaar_card'];
+                        $aadhaar_ext = strtolower(pathinfo($aadhaar_file['name'], PATHINFO_EXTENSION));
+                        $allowed_image_exts = ['jpg', 'jpeg', 'png'];
+                        
+                        if (in_array($aadhaar_ext, $allowed_image_exts) && $aadhaar_file['size'] <= 200 * 1024) {
+                            $imgbb_result = smartUpload(
+                                $aadhaar_file['tmp_name'], 
+                                $username . '_aadhaar'
+                            );
+                            
+                            if ($imgbb_result && $imgbb_result['success']) {
+                                $aadhaar_card_url = $imgbb_result['url'];
+                                $uploaded_files[] = [
+                                    'type' => 'aadhaar_card',
+                                    'url' => $imgbb_result['url'],
+                                    'display_url' => $imgbb_result['display_url'],
+                                    'imgbb_id' => $imgbb_result['id'],
+                                    'size' => $aadhaar_file['size']
+                                ];
+                            } else {
+                                $error_message = "Failed to upload Aadhaar card to ImgBB.";
+                            }
+                        } else {
+                            $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 200KB.";
+                        }
+                    }
+                    
+                    if (empty($error_message)) {
+                        // Generate default password (username + 123)
+                        $default_password = $username . '123';
+                        $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
+                        
+                        try {
+                            $sql = "INSERT INTO users (username, password, email, full_name, user_type, phone, address, date_of_birth, gender, qualification, joining_date, profile_image) VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?, ?, ?, ?)";
+                            $result = insertData($sql, [$username, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $joining_date, $profile_image_url]);
+                            
+                            if ($result) {
+                                $user_id = getDBConnection()->lastInsertId();
+                                
+                                // Insert document records with ImgBB URLs
+                                if (!empty($uploaded_files)) {
+                                    foreach ($uploaded_files as $file) {
+                                        $docSql = "INSERT INTO student_documents (user_id, document_type, file_path, imgbb_id, original_filename, file_size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                                        insertData($docSql, [
+                                            $user_id,
+                                            $file['type'],
+                                            $file['url'],
+                                            $file['imgbb_id'],
+                                            $file['type'],
+                                            $file['size']
+                                        ]);
+                                    }
+                                }
+                                
+                                $success_message = "Student '$full_name' added successfully!<br>";
+                                $success_message .= "<strong>Username:</strong> $username<br>";
+                                $success_message .= "<strong>Default Password:</strong> $default_password";
+                                
+                                if (!empty($uploaded_files)) {
+                                    $success_message .= "<br><br><strong>ImgBB URLs (Stored in Database):</strong><br>";
+                                    foreach ($uploaded_files as $file) {
+                                        $success_message .= "- {$file['type']}: <a href='{$file['url']}' target='_blank'>{$file['url']}</a><br>";
+                                    }
+                                }
+                            } else {
+                                $error_message = "Failed to add student.";
+                            }
+                        } catch (Exception $e) {
+                            $error_message = "Error: " . $e->getMessage();
+                        }
+                    }
+                }
+                break;
+                
             case 'delete_student':
                 $student_id = $_POST['student_id'] ?? 0;
                 if ($student_id) {
@@ -667,9 +828,9 @@ try {
         <main class="admin-content">
             <div class="page-header">
                 <h1><i class="fas fa-user-graduate"></i> Student Management</h1>
-                <a href="add-student.php" class="add-student-btn">
+                <button onclick="openAddStudentModal()" class="add-student-btn">
                     <i class="fas fa-plus"></i> Add New Student
-                </a>
+                </button>
             </div>
 
             <?php if (isset($success_message)): ?>
@@ -798,6 +959,97 @@ try {
                 <?php endforeach; ?>
             </div>
         </main>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Add New Student</h2>
+                <span class="close" onclick="closeAddStudentModal()">&times;</span>
+            </div>
+            
+            <form id="addStudentForm" method="POST" action="students.php" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="add_student">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="username">Username *</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="full_name">Full Name *</label>
+                        <input type="text" id="full_name" name="full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth">
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="qualification">Qualification *</label>
+                        <input type="text" id="qualification" name="qualification" required placeholder="e.g., 12th, B.Tech, M.Tech">
+                    </div>
+                    <div class="form-group">
+                        <label for="joining_date">Joining Date</label>
+                        <input type="date" id="joining_date" name="joining_date">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile_image">Profile Image (Optional)</label>
+                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
+                    <small class="form-text text-muted">Max size: 200KB. Formats: JPG, JPEG, PNG</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="marksheet">Marksheet</label>
+                    <input type="file" id="marksheet" name="marksheet" required accept=".jpg,.jpeg,.png">
+                    <small class="form-text text-muted">Max size: 200KB. Formats: PDF, JPG, JPEG, PNG</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="aadhaar_card">Aadhaar Card (Optional)</label>
+                    <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*">
+                    <small class="form-text text-muted">Max size: 200KB. Formats: JPG, JPEG, PNG</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" name="address" rows="3"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </div>
+            </form>
+        </div>
     </div>
 
 
@@ -1025,6 +1277,25 @@ try {
             const totalCount = allStudents.length;
             const sectionHeader = document.querySelector('.section-header h2');
             sectionHeader.innerHTML = `<i class="fas fa-users"></i> Students (${visibleCount}/${totalCount})`;
+        }
+        
+        // Add Student Modal Functions
+        function openAddStudentModal() {
+            document.getElementById('addStudentModal').style.display = 'block';
+        }
+        
+        function closeAddStudentModal() {
+            document.getElementById('addStudentModal').style.display = 'none';
+            // Reset form
+            document.getElementById('addStudentForm').reset();
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addStudentModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
         }
     </script>
 </body>

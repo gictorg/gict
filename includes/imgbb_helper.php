@@ -20,30 +20,26 @@ function uploadToImgBB($file_path, $name = '') {
     try {
         // Check if file exists
         if (!file_exists($file_path)) {
-            error_log("ImgBB: File not found: $file_path");
             return false;
         }
         
-        // Check file size (ImgBB limit is 32MB, we'll allow up to 1MB for better compatibility)
+        // Check file size (ImgBB limit is 32MB, we'll allow up to 200KB for better compatibility)
         $file_size = filesize($file_path);
-        if ($file_size > 1024 * 1024) {
-            error_log("ImgBB: File too large: " . round($file_size / 1024, 2) . "KB");
+        if ($file_size > 200 * 1024) {
             return false;
         }
         
-        // Check if file type is supported
+        // Check if file type is supported (restricted to JPG, JPEG, PNG only)
         $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-        $supported_types = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg'];
+        $supported_types = ['jpg', 'jpeg', 'png'];
         
         if (!in_array($extension, $supported_types)) {
-            error_log("ImgBB: Unsupported file type: $extension");
             return false;
         }
         
         // Read file content and encode to base64
         $file_content = file_get_contents($file_path);
         if ($file_content === false) {
-            error_log("ImgBB: Cannot read file: $file_path");
             return false;
         }
         
@@ -76,7 +72,6 @@ function uploadToImgBB($file_path, $name = '') {
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         
         if (curl_errno($ch)) {
-            error_log("ImgBB cURL error: " . curl_error($ch));
             curl_close($ch);
             return false;
         }
@@ -85,15 +80,6 @@ function uploadToImgBB($file_path, $name = '') {
         
         // Check response
         if ($http_code !== 200) {
-            error_log("ImgBB upload failed with HTTP code: $http_code");
-            error_log("Response: $response");
-            
-            // Try to parse error message for better debugging
-            $error_data = json_decode($response, true);
-            if ($error_data && isset($error_data['error']['message'])) {
-                error_log("ImgBB Error: " . $error_data['error']['message'] . " (Code: " . $error_data['error']['code'] . ")");
-            }
-            
             return false;
         }
         
@@ -101,8 +87,6 @@ function uploadToImgBB($file_path, $name = '') {
         $result = json_decode($response, true);
         
         if (!$result || !isset($result['success']) || !$result['success']) {
-            $error_msg = isset($result['error']['message']) ? $result['error']['message'] : 'Unknown error';
-            error_log("ImgBB: Upload failed - $error_msg");
             return false;
         }
         
@@ -125,7 +109,6 @@ function uploadToImgBB($file_path, $name = '') {
         ];
         
     } catch (Exception $e) {
-        error_log("ImgBB upload exception: " . $e->getMessage());
         return false;
     }
 }
@@ -140,7 +123,6 @@ function uploadToLocalStorage($file_path, $name = '') {
     try {
         // Check if file exists
         if (!file_exists($file_path)) {
-            error_log("Local Storage: File not found: $file_path");
             return false;
         }
         
@@ -179,12 +161,10 @@ function uploadToLocalStorage($file_path, $name = '') {
                 'storage_type' => 'local'
             ];
         } else {
-            error_log("Local Storage: Failed to copy file to $target_path");
             return false;
         }
         
     } catch (Exception $e) {
-        error_log("Local Storage upload exception: " . $e->getMessage());
         return false;
     }
 }
@@ -205,7 +185,6 @@ function smartUpload($file_path, $name = '') {
     }
     
     // If ImgBB fails, fall back to local storage
-    error_log("ImgBB upload failed, falling back to local storage");
     $result = uploadToLocalStorage($file_path, $name);
     
     if ($result && $result['success']) {
