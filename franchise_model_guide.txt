@@ -1,0 +1,518 @@
+================================================================================
+                    GICT INSTITUTE - FRANCHISE MODEL IMPLEMENTATION GUIDE
+================================================================================
+
+📋 TABLE OF CONTENTS
+====================
+1. Overview
+2. Database Structure
+3. User Roles & Permissions
+4. Course Hierarchy
+5. Installation & Setup
+6. Usage Guide
+7. File Structure
+8. Technical Details
+9. Demo Credentials
+10. Troubleshooting
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+The GICT Institute Management System has been transformed into a comprehensive
+franchise model that supports multiple institutes under a single platform.
+
+KEY FEATURES:
+✅ Multi-institute support with data isolation
+✅ Super admin to manage all franchises
+✅ Institute-specific admin dashboards
+✅ Course hierarchy (main courses + sub-courses)
+✅ Role-based access control
+✅ Professional UI/UX design
+
+BENEFITS:
+- Scalable architecture for franchise expansion
+- Centralized management with decentralized operations
+- Secure data isolation between institutes
+- Professional branding for each institute
+- Comprehensive reporting and analytics
+
+================================================================================
+2. DATABASE STRUCTURE
+================================================================================
+
+CORE TABLES:
+------------
+
+1. INSTITUTES TABLE
+   - id (Primary Key)
+   - name (Institute name)
+   - slug (URL-friendly identifier)
+   - address, phone, email, website
+   - logo_url, banner_url
+   - status (active/inactive/pending)
+   - created_at, updated_at
+
+2. USERS TABLE (Enhanced)
+   - id (Primary Key)
+   - institute_id (Foreign Key to institutes)
+   - username, email, password
+   - full_name, phone, address
+   - profile_image
+   - user_type (super_admin/admin/student/faculty)
+   - status (active/inactive)
+   - created_at, updated_at
+
+3. COURSES TABLE (Enhanced)
+   - id (Primary Key)
+   - institute_id (Foreign Key to institutes)
+   - name, description, category
+   - duration_months, fee
+   - status (active/inactive)
+   - created_at, updated_at
+
+4. SUB_COURSES TABLE (New)
+   - id (Primary Key)
+   - course_id (Foreign Key to courses)
+   - name, description
+   - duration_weeks, fee
+   - status (active/inactive)
+   - created_at, updated_at
+
+5. STUDENT_ENROLLMENTS TABLE (Enhanced)
+   - id (Primary Key)
+   - user_id (Foreign Key to users)
+   - sub_course_id (Foreign Key to sub_courses)
+   - enrollment_date, completion_date
+   - status (active/completed/dropped)
+   - final_marks, certificate_url
+   - created_at, updated_at
+
+6. PAYMENTS TABLE (Enhanced)
+   - id (Primary Key)
+   - user_id (Foreign Key to users)
+   - sub_course_id (Foreign Key to sub_courses)
+   - amount, payment_date
+   - payment_method, transaction_id
+   - status (pending/completed/failed)
+   - receipt_url
+   - created_at, updated_at
+
+7. STUDENT_DOCUMENTS TABLE
+   - id (Primary Key)
+   - user_id (Foreign Key to users)
+   - document_type, document_name
+   - imgbb_url, file_extension
+   - status (pending/approved/rejected)
+   - uploaded_at
+
+RELATIONSHIPS:
+--------------
+- Institutes → Users (One-to-Many)
+- Institutes → Courses (One-to-Many)
+- Courses → Sub_Courses (One-to-Many)
+- Users → Student_Enrollments (One-to-Many)
+- Sub_Courses → Student_Enrollments (One-to-Many)
+- Users → Payments (One-to-Many)
+- Sub_Courses → Payments (One-to-Many)
+- Users → Student_Documents (One-to-Many)
+
+================================================================================
+3. USER ROLES & PERMISSIONS
+================================================================================
+
+SUPER ADMIN (super_admin)
+-------------------------
+ACCESS LEVEL: Global (All Institutes)
+PERMISSIONS:
+✅ View all institutes and their statistics
+✅ Add, edit, delete institutes
+✅ Manage all users across all institutes
+✅ View global reports and analytics
+✅ Access super admin dashboard
+✅ Create institute admins
+
+INSTITUTE ADMIN (admin)
+-----------------------
+ACCESS LEVEL: Institute-Specific
+PERMISSIONS:
+✅ Manage their own institute only
+✅ Add, edit, delete students
+✅ Add, edit, delete faculty
+✅ Manage courses and sub-courses
+✅ View institute-specific reports
+✅ Manage enrollments and payments
+✅ Access institute admin dashboard
+
+STUDENT (student)
+-----------------
+ACCESS LEVEL: Personal + Institute-Specific
+PERMISSIONS:
+✅ View their own profile and data
+✅ View enrolled courses (sub-courses)
+✅ Upload and manage documents
+✅ View payment history
+✅ Access student dashboard
+✅ View institute information
+
+FACULTY (faculty)
+-----------------
+ACCESS LEVEL: Institute-Specific
+PERMISSIONS:
+✅ View assigned courses
+✅ Manage student progress
+✅ Access faculty dashboard
+✅ View institute information
+
+================================================================================
+4. COURSE HIERARCHY
+================================================================================
+
+MAIN COURSES (Categories)
+-------------------------
+1. Computer Fundamentals
+   - CCC (Course on Computer Concepts)
+   - MS Office Suite
+   - Internet & Email
+
+2. Programming Languages
+   - C Programming
+   - Java Programming
+   - Python Programming
+
+3. Web Development
+   - HTML & CSS
+   - JavaScript
+   - PHP & MySQL
+
+4. Computer Basics
+   - Computer Operations
+   - MS Word
+   - MS Excel
+
+5. Digital Marketing
+   - Social Media Marketing
+   - Google Ads
+   - SEO Optimization
+
+6. Basic Tailoring
+   - Blouse Sewing
+   - Pants Sewing
+   - Skirt Making
+
+7. Advanced Tailoring
+   - Dress Making
+   - Suit Making
+   - Designer Wear
+
+STRUCTURE:
+----------
+Institute → Main Courses → Sub-Courses → Student Enrollments
+
+EXAMPLE:
+GICT Main Branch → Computer Fundamentals → CCC → Student Enrollment
+
+================================================================================
+5. INSTALLATION & SETUP
+================================================================================
+
+STEP 1: Database Setup
+---------------------
+1. Create a MySQL database
+2. Import the database structure:
+   - Option A: Run database_franchise_structure.sql
+   - Option B: Run migrate_to_franchise.php (for existing data)
+
+STEP 2: Configuration
+---------------------
+1. Update config/database.php with your database credentials
+2. Ensure all required PHP extensions are enabled
+3. Set up ImgBB API key for image uploads
+
+STEP 3: File Permissions
+-----------------------
+1. Ensure upload directories are writable
+2. Set proper file permissions for security
+
+STEP 4: Migration (If Upgrading)
+--------------------------------
+1. Backup existing database
+2. Run migrate_to_franchise.php
+3. Verify data migration
+4. Test all functionality
+
+STEP 5: Testing
+---------------
+1. Test login with demo credentials
+2. Verify all dashboards work correctly
+3. Test institute-specific functionality
+4. Verify data isolation
+
+================================================================================
+6. USAGE GUIDE
+================================================================================
+
+SUPER ADMIN WORKFLOW:
+--------------------
+1. Login as superadmin / password
+2. Access super-admin dashboard
+3. View all institutes overview
+4. Add new institutes as needed
+5. Create institute admins
+6. Monitor global statistics
+7. Generate reports
+
+INSTITUTE ADMIN WORKFLOW:
+------------------------
+1. Login with institute admin credentials
+2. Access institute-specific dashboard
+3. View institute information
+4. Manage students and faculty
+5. Create and manage courses
+6. Monitor enrollments and payments
+7. Generate institute reports
+
+STUDENT WORKFLOW:
+-----------------
+1. Login with student credentials
+2. Access student dashboard
+3. View enrolled courses
+4. Upload documents
+5. View payment history
+6. Access digital ID card
+7. Download certificates
+
+COURSE MANAGEMENT:
+------------------
+1. Institute admin creates main courses
+2. Add sub-courses under main courses
+3. Set fees and duration
+4. Enroll students in sub-courses
+5. Track progress and completion
+6. Generate certificates
+
+================================================================================
+7. FILE STRUCTURE
+================================================================================
+
+ROOT DIRECTORY:
+--------------
+├── config/
+│   └── database.php (Database configuration)
+├── includes/
+│   ├── session_manager.php (Session and authentication)
+│   ├── imgbb_helper.php (Image upload helper)
+│   └── qr_helper.php (QR code generation)
+├── assets/
+│   ├── css/
+│   │   ├── style.css (Main styles)
+│   │   └── admin-dashboard.css (Dashboard styles)
+│   └── images/
+│       ├── logo.png
+│       └── default-avatar.png
+├── super-admin/
+│   └── dashboard.php (Super admin dashboard)
+├── admin/
+│   └── dashboard.php (Institute admin dashboard)
+├── student/
+│   ├── dashboard.php (Student dashboard)
+│   ├── courses.php (Student courses)
+│   ├── documents.php (Document management)
+│   ├── payments.php (Payment history)
+│   └── profile.php (Profile management)
+├── index.php (Homepage)
+├── login.php (Login page)
+├── logout.php (Logout handler)
+├── id.php (ID card generation)
+├── database_franchise_structure.sql (Database schema)
+├── migrate_to_franchise.php (Migration script)
+└── franchise_model_guide.txt (This file)
+
+KEY FILES:
+----------
+- session_manager.php: Central authentication and authorization
+- database.php: Database connection and helper functions
+- dashboard files: Role-specific dashboards
+- migration script: Database upgrade tool
+
+================================================================================
+8. TECHNICAL DETAILS
+================================================================================
+
+AUTHENTICATION SYSTEM:
+---------------------
+- Session-based authentication
+- Role-based access control
+- Institute-specific data isolation
+- Secure session management
+- Automatic logout on inactivity
+
+SECURITY FEATURES:
+------------------
+- Password hashing (bcrypt)
+- SQL injection prevention (prepared statements)
+- XSS protection (output escaping)
+- CSRF protection
+- Secure session parameters
+
+DATABASE FEATURES:
+------------------
+- Foreign key constraints
+- Cascade deletes
+- Proper indexing
+- Data validation
+- Transaction support
+
+IMAGE HANDLING:
+---------------
+- ImgBB integration for image storage
+- Automatic image optimization
+- Secure file uploads
+- Multiple document types support
+
+QR CODE GENERATION:
+-------------------
+- PHP QR Code library integration
+- Dynamic QR code generation
+- Verification URL encoding
+- Base64 image generation
+
+PDF GENERATION:
+---------------
+- HTML to PDF conversion
+- Client-side PDF generation
+- Professional certificate design
+- Digital ID card generation
+
+================================================================================
+9. DEMO CREDENTIALS
+================================================================================
+
+SUPER ADMIN:
+------------
+Username: superadmin
+Password: password
+Access: Global system access
+
+INSTITUTE ADMINS:
+-----------------
+1. Main Branch Admin:
+   Username: admin
+   Password: password
+   Institute: GICT Computer Institute - Main Branch
+
+2. North Branch Admin:
+   Username: admin_north
+   Password: password
+   Institute: GICT Computer Institute - North Branch
+
+3. Tailoring Admin:
+   Username: admin_tailoring
+   Password: password
+   Institute: GICT Tailoring Institute
+
+STUDENTS:
+---------
+1. Main Branch Student:
+   Username: student1
+   Password: password
+   Institute: GICT Computer Institute - Main Branch
+
+2. North Branch Student:
+   Username: student3
+   Password: password
+   Institute: GICT Computer Institute - North Branch
+
+3. Tailoring Student:
+   Username: student4
+   Password: password
+   Institute: GICT Tailoring Institute
+
+================================================================================
+10. TROUBLESHOOTING
+================================================================================
+
+COMMON ISSUES:
+--------------
+
+1. Login Problems:
+   - Verify database connection
+   - Check user credentials
+   - Ensure session is working
+   - Clear browser cache
+
+2. Dashboard Not Loading:
+   - Check file permissions
+   - Verify database tables exist
+   - Check for PHP errors
+   - Ensure all required files are present
+
+3. Image Upload Issues:
+   - Verify ImgBB API key
+   - Check file size limits
+   - Ensure proper file permissions
+   - Check network connectivity
+
+4. Database Errors:
+   - Verify database credentials
+   - Check table structure
+   - Ensure foreign key constraints
+   - Run database migration if needed
+
+5. Session Issues:
+   - Check session configuration
+   - Verify session storage
+   - Clear browser cookies
+   - Check server session settings
+
+PERFORMANCE OPTIMIZATION:
+------------------------
+1. Database indexing on frequently queried columns
+2. Image optimization and caching
+3. CSS and JavaScript minification
+4. Database query optimization
+5. Session storage optimization
+
+SECURITY CHECKLIST:
+-------------------
+1. Change default passwords
+2. Update ImgBB API key
+3. Configure secure session parameters
+4. Enable HTTPS in production
+5. Regular security updates
+6. Database backup procedures
+
+MAINTENANCE TASKS:
+------------------
+1. Regular database backups
+2. Log file monitoring
+3. Performance monitoring
+4. Security updates
+5. User account management
+6. System health checks
+
+================================================================================
+SUPPORT & CONTACT
+================================================================================
+
+For technical support or questions about the franchise model implementation:
+
+1. Check this documentation first
+2. Review the code comments
+3. Test with demo credentials
+4. Check error logs
+5. Verify database structure
+
+The system is designed to be scalable and maintainable. Regular updates and
+maintenance will ensure optimal performance and security.
+
+================================================================================
+VERSION INFORMATION
+================================================================================
+
+Franchise Model Version: 1.0
+Last Updated: [Current Date]
+Compatibility: PHP 7.4+, MySQL 5.7+
+Browser Support: Modern browsers (Chrome, Firefox, Safari, Edge)
+
+================================================================================

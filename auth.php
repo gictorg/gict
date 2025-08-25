@@ -5,96 +5,6 @@ require_once 'includes/session_manager.php';
 // Include database configuration
 require_once 'config/database.php';
 
-// Function to require login (redirect if not logged in)
-function requireLogin() {
-    if (!isLoggedIn()) {
-        header('Location: login.php');
-        exit();
-    }
-}
-
-// Function to get current user info from database
-function getCurrentUser() {
-    if (isLoggedIn()) {
-        try {
-            $sql = "SELECT id, username, user_type, full_name, email, phone, address, status FROM users WHERE id = ? AND status = 'active'";
-            $user = getRow($sql, [$_SESSION['user_id']]);
-            
-            if ($user) {
-                return [
-                    'id' => $user['id'],
-                    'username' => $user['username'],
-                    'type' => $user['user_type'],
-                    'full_name' => $user['full_name'],
-                    'email' => $user['email'],
-                    'phone' => $user['phone'],
-                    'address' => $user['address'],
-                    'status' => $user['status']
-                ];
-            }
-        } catch (Exception $e) {
-            // Silent fail for security
-        }
-        
-        // If database lookup fails, don't return session data - it might be corrupted
-        return null;
-    }
-    return null;
-}
-
-// Function to get user by ID
-function getUserById($userId) {
-    try {
-        $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE id = ?";
-        return getRow($sql, [$userId]);
-    } catch (Exception $e) {
-        // Silent fail for security
-        return false;
-    }
-}
-
-// Function to get user by username
-function getUserByUsername($username) {
-    try {
-        $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE username = ?";
-        return getRow($sql, [$username]);
-    } catch (Exception $e) {
-        // Silent fail for security
-        return false;
-    }
-}
-
-// Function to update user profile
-function updateUserProfile($userId, $data) {
-    try {
-        $sql = "UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?, updated_at = NOW() WHERE id = ?";
-        $params = [$data['full_name'], $data['email'], $data['phone'], $data['address'], $userId];
-        return updateData($sql, $params);
-    } catch (Exception $e) {
-        // Silent fail for security
-        return false;
-    }
-}
-
-// Function to change password
-function changePassword($userId, $currentPassword, $newPassword) {
-    try {
-        // Verify current password
-        $user = getUserById($userId);
-        if (!$user || !password_verify($currentPassword, $user['password'])) {
-            return false;
-        }
-        
-        // Update password
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?";
-        return updateData($sql, [$hashedPassword, $userId]);
-    } catch (Exception $e) {
-        // Silent fail for security
-        return false;
-    }
-}
-
 // Function to logout user
 function logout() {
     // Log logout activity if user was logged in
@@ -111,11 +21,5 @@ function logout() {
     secureLogout();
 }
 
-// Function to require specific role
-function requireRole($role) {
-    if (!hasRole($role)) {
-        header('Location: dashboard.php');
-        exit();
-    }
-}
+
 ?> 

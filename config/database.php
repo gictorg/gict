@@ -1,115 +1,206 @@
 <?php
 /**
- * Database Configuration for GICT Application
- * 
- * This file contains database connection settings and helper functions
- * for the Global Institute of Computer Technology application.
+ * Database Configuration for GICT Institute Franchise Model
+ * Updated to use gict_franchise database
  */
 
 // Database configuration
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'gict_db');
+define('DB_NAME', 'gict_franchise');  // Updated to use new franchise database
 define('DB_USER', 'root');
 define('DB_PASS', 'root_pass');
 define('DB_CHARSET', 'utf8mb4');
 
-// Create database connection
-function getDBConnection() {
+// ImgBB API Configuration
+define('IMGBB_API_KEY', '3acdbb8d9ce98d6f3ff4e61a5902c75a');
+define('IMGBB_EXPIRATION', 0); // 0 = never expire
+
+// Application Configuration
+define('SITE_NAME', 'GICT Institute');
+define('SITE_URL', 'http://localhost/gict');
+define('UPLOAD_MAX_SIZE', 200 * 1024); // 200KB
+define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png']);
+
+// PDO Database Connection
+try {
+    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+
+/**
+ * Test database connection
+ */
+function testDBConnection() {
+    global $pdo;
     try {
-        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
-        $pdo = new PDO($dsn, DB_USER, DB_PASS);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        return $pdo;
+        $pdo->query("SELECT 1");
+        return true;
     } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
         return false;
     }
 }
 
-// Test database connection
-function testDBConnection() {
-    $pdo = getDBConnection();
-    if ($pdo) {
-        try {
-            $stmt = $pdo->query("SELECT 1");
-            return true;
-        } catch (PDOException $e) {
-            error_log("Database test failed: " . $e->getMessage());
-            return false;
-        }
-    }
-    return false;
-}
-
-// Close database connection
-function closeDBConnection($pdo) {
-    $pdo = null;
-}
-
-// Execute a query and return results
-function executeQuery($sql, $params = []) {
-    $pdo = getDBConnection();
-    if (!$pdo) return false;
-    
+/**
+ * Get a single row from database
+ */
+function getRow($sql, $params = []) {
+    global $pdo;
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return $stmt;
+        return $stmt->fetch();
     } catch (PDOException $e) {
-        error_log("Query execution failed: " . $e->getMessage());
+        error_log("Database Error: " . $e->getMessage());
         return false;
     }
 }
 
-// Get a single row
-function getRow($sql, $params = []) {
-    $stmt = executeQuery($sql, $params);
-    if ($stmt) {
-        return $stmt->fetch();
-    }
-    return false;
-}
-
-// Get multiple rows
+/**
+ * Get multiple rows from database
+ */
 function getRows($sql, $params = []) {
-    $stmt = executeQuery($sql, $params);
-    if ($stmt) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        return [];
     }
-    return [];
 }
 
-// Insert data and return last insert ID
+/**
+ * Insert data into database
+ */
 function insertData($sql, $params = []) {
-    $pdo = getDBConnection();
-    if (!$pdo) return false;
-    
+    global $pdo;
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $pdo->lastInsertId();
     } catch (PDOException $e) {
-        error_log("Insert failed: " . $e->getMessage());
+        error_log("Database Error: " . $e->getMessage());
         return false;
     }
 }
 
-// Update data and return affected rows
+/**
+ * Update data in database
+ */
 function updateData($sql, $params = []) {
-    $stmt = executeQuery($sql, $params);
-    if ($stmt) {
-        return $stmt->rowCount();
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        return false;
     }
-    return 0;
 }
 
-// Delete data and return affected rows
+/**
+ * Delete data from database
+ */
 function deleteData($sql, $params = []) {
-    $stmt = executeQuery($sql, $params);
-    if ($stmt) {
-        return $stmt->rowCount();
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        return false;
     }
-    return 0;
+}
+
+/**
+ * Execute raw SQL query
+ */
+function executeQuery($sql) {
+    global $pdo;
+    try {
+        return $pdo->exec($sql);
+    } catch (PDOException $e) {
+        error_log("Database Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get database statistics
+ */
+function getDatabaseStats() {
+    $stats = [];
+    
+    // Get table counts
+    $tables = ['institutes', 'users', 'courses', 'sub_courses', 'student_enrollments', 'payments', 'student_documents'];
+    
+    foreach ($tables as $table) {
+        $result = getRow("SELECT COUNT(*) as count FROM $table");
+        $stats[$table] = $result ? $result['count'] : 0;
+    }
+    
+    return $stats;
+}
+
+/**
+ * Check if database exists
+ */
+function databaseExists($dbName) {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbName'");
+        return $stmt->fetch() !== false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Create database if it doesn't exist
+ */
+function createDatabase($dbName) {
+    global $pdo;
+    try {
+        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        return true;
+    } catch (PDOException $e) {
+        error_log("Database Creation Error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get database connection status
+ */
+function getConnectionStatus() {
+    global $pdo;
+    try {
+        $pdo->query("SELECT 1");
+        return [
+            'status' => 'connected',
+            'database' => DB_NAME,
+            'host' => DB_HOST,
+            'charset' => DB_CHARSET
+        ];
+    } catch (PDOException $e) {
+        return [
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'database' => DB_NAME,
+            'host' => DB_HOST
+        ];
+    }
+}
+
+// Test connection on load
+if (!testDBConnection()) {
+    error_log("Warning: Database connection failed during initialization");
 }
 ?>
