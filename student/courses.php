@@ -49,165 +49,259 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
     <title>My Courses - Student Dashboard</title>
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
+        /* Student-specific overrides to match admin dashboard exactly */
+        .admin-sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .admin-topbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Digital ID Badge */
+        .digital-id-badge {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border: 2px solid #fff;
+        }
+        
+        .digital-id-badge:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .digital-id-badge i {
+            color: white;
+            font-size: 14px;
+        }
+        
+        .profile-card-mini {
+            position: relative;
+        }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        
+        .stat-card .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        /* Course cards */
         .course-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
         
         .course-card {
             background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
         }
         
         .course-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
         }
         
         .course-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
         
         .course-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #333;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
             margin: 0;
         }
         
         .course-status {
-            padding: 6px 12px;
+            padding: 0.25rem 0.75rem;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
         }
         
         .status-active {
-            background: #e8f5e8;
-            color: #28a745;
+            background: #d1fae5;
+            color: #065f46;
         }
         
         .status-completed {
-            background: #e8f4fd;
-            color: #007bff;
+            background: #dbeafe;
+            color: #1e40af;
         }
         
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
+            background: #fef3c7;
+            color: #92400e;
         }
         
         .course-details {
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
         
         .course-detail {
             display: flex;
             align-items: center;
-            margin-bottom: 10px;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .course-detail i {
-            width: 20px;
-            margin-right: 10px;
-            color: #667eea;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: #6b7280;
+            font-size: 0.875rem;
         }
         
         .course-actions {
             display: flex;
-            gap: 10px;
+            gap: 0.5rem;
         }
         
         .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
+            padding: 0.75rem 1.5rem;
             border: none;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #667eea;
             color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: #16a34a;
             color: white;
         }
         
-        .btn-warning {
-            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        .btn-success:hover {
+            background: #15803d;
+        }
+        
+        .btn-info {
+            background: #0891b2;
             color: white;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .btn-info:hover {
+            background: #0e7490;
         }
         
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
         }
         
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stat-number {
-            font-size: 36px;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .text-muted {
+            color: #6b7280;
         }
     </style>
 </head>
-<body>
+<body class="admin-dashboard-body">
     <div class="admin-layout">
-        <?php 
-        $page_title = 'My Courses';
-        include 'includes/sidebar.php'; 
-        ?>
-        
-        <?php include 'includes/topbar.php'; ?>
-        
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-brand">
+                <img src="../assets/images/logo.png" alt="logo" />
+                <div class="brand-title">STUDENT PORTAL</div>
+            </div>
+            
+            <div class="profile-card-mini">
+                <div style="position: relative;">
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <div class="digital-id-badge" onclick="viewID()" title="View Digital ID">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="name"><?php echo htmlspecialchars(strtoupper($student['full_name'])); ?></div>
+                    <div class="role">Student</div>
+                </div>
+            </div>
+            
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="courses.php" class="active"><i class="fas fa-book"></i> My Courses</a></li>
+                <li><a href="documents.php"><i class="fas fa-file-upload"></i> Documents</a></li>
+                <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="profile.php"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="../index.php"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="breadcrumbs">
+                    <span>My Courses</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-chip">
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
+                </div>
+            </div>
+        </header>
+
         <!-- Main Content -->
         <main class="admin-content">
-            <!-- Statistics -->
-            <div class="stats-row">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-number"><?php echo $total_enrolled; ?></div>
                     <div class="stat-label">Total Enrolled</div>
@@ -223,33 +317,24 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
             </div>
             
             <!-- Enrolled Courses -->
-            <div class="section">
-                <div class="section-header">
-                    <h2><i class="fas fa-book"></i> My Enrolled Courses</h2>
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fas fa-book"></i> Enrolled Courses</span>
                 </div>
-                <div class="section-body">
+                <div class="panel-body">
                     <?php if (empty($enrolled_courses)): ?>
-                        <div style="text-align: center; padding: 40px; color: #666;">
-                            <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
-                            <h3>No Courses Enrolled</h3>
-                            <p>You haven't enrolled in any courses yet.</p>
-                            <a href="#available-courses" class="btn btn-primary">Browse Available Courses</a>
-                        </div>
+                        <p class="text-muted">You haven't enrolled in any courses yet.</p>
                     <?php else: ?>
                         <div class="course-grid">
                             <?php foreach ($enrolled_courses as $course): ?>
                                 <div class="course-card">
                                     <div class="course-header">
-                                        <h3 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h3>
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
                                         <span class="course-status status-<?php echo $course['enrollment_status']; ?>">
                                             <?php echo ucfirst($course['enrollment_status']); ?>
                                         </span>
                                     </div>
                                     <div class="course-details">
-                                        <div class="course-detail">
-                                            <i class="fas fa-clock"></i>
-                                            <span>Duration: <?php echo htmlspecialchars($course['duration']); ?></span>
-                                        </div>
                                         <div class="course-detail">
                                             <i class="fas fa-calendar"></i>
                                             <span>Enrolled: <?php echo date('M d, Y', strtotime($course['enrollment_date'])); ?></span>
@@ -262,10 +347,13 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
                                         <?php endif; ?>
                                     </div>
                                     <div class="course-actions">
-                                        <?php if ($course['enrollment_status'] === 'active'): ?>
-                                            <a href="#" class="btn btn-primary">Continue Learning</a>
-                                        <?php elseif ($course['enrollment_status'] === 'completed'): ?>
-                                            <a href="#" class="btn btn-success">View Certificate</a>
+                                        <button class="btn btn-info btn-sm">
+                                            <i class="fas fa-play"></i> Continue Learning
+                                        </button>
+                                        <?php if ($course['enrollment_status'] === 'completed'): ?>
+                                            <button class="btn btn-success btn-sm">
+                                                <i class="fas fa-certificate"></i> View Certificate
+                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -276,37 +364,34 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
             </div>
             
             <!-- Available Courses -->
-            <div class="section" id="available-courses">
-                <div class="section-header">
-                    <h2><i class="fas fa-plus-circle"></i> Available Courses</h2>
+            <div class="panel" style="margin-top: 1.5rem;">
+                <div class="panel-header">
+                    <span><i class="fas fa-plus-circle"></i> Available Courses</span>
                 </div>
-                <div class="section-body">
+                <div class="panel-body">
                     <?php if (empty($available_courses)): ?>
-                        <div style="text-align: center; padding: 40px; color: #666;">
-                            <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
-                            <h3>All Courses Enrolled</h3>
-                            <p>You have enrolled in all available courses!</p>
-                        </div>
+                        <p class="text-muted">No new courses available for enrollment.</p>
                     <?php else: ?>
                         <div class="course-grid">
                             <?php foreach ($available_courses as $course): ?>
                                 <div class="course-card">
                                     <div class="course-header">
-                                        <h3 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h3>
-                                        <span class="course-status status-pending">Available</span>
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
                                     </div>
                                     <div class="course-details">
                                         <div class="course-detail">
                                             <i class="fas fa-clock"></i>
-                                            <span>Duration: <?php echo htmlspecialchars($course['duration']); ?></span>
+                                            <span>Duration: <?php echo $course['duration']; ?> months</span>
                                         </div>
                                         <div class="course-detail">
-                                            <i class="fas fa-info-circle"></i>
-                                            <span><?php echo htmlspecialchars($course['description'] ?? 'No description available'); ?></span>
+                                            <i class="fas fa-dollar-sign"></i>
+                                            <span>Fee: $<?php echo number_format($course['fee'], 2); ?></span>
                                         </div>
                                     </div>
                                     <div class="course-actions">
-                                        <a href="#" class="btn btn-primary">Enroll Now</a>
+                                        <button class="btn btn-primary btn-sm">
+                                            <i class="fas fa-plus"></i> Enroll Now
+                                        </button>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -316,7 +401,13 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
             </div>
         </main>
     </div>
-    
-    <script src="../assets/js/mobile-menu.js"></script>
+
+    <script>
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.admin-sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+    </script>
 </body>
 </html>

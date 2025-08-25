@@ -1,11 +1,9 @@
 <header class="admin-topbar">
     <div class="topbar-left">
-        <button class="menu-toggle"><i class="fas fa-bars"></i></button>
-        <div class="breadcrumbs">
-            <a href="../index.php" class="topbar-home-link"><i class="fas fa-home"></i> Home</a>
-            <span style="opacity:.7; margin: 0 6px;">/</span>
-            <span><?php echo $page_title ?? 'Student Dashboard'; ?></span>
-        </div>
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h2 class="page-title"><?php echo ucfirst($current_page ?? 'Dashboard'); ?></h2>
     </div>
     <div class="topbar-right">
         <div class="user-chip">
@@ -16,7 +14,22 @@
                     <i class="fas fa-user"></i>
                 </div>
             <?php endif; ?>
-            <?php echo htmlspecialchars($student['full_name']); ?>
+            <span><?php echo htmlspecialchars($student['full_name']); ?></span>
         </div>
     </div>
 </header>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const adminContent = document.querySelector('.admin-content');
+    
+    if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        adminContent.style.marginLeft = '280px';
+    } else {
+        sidebar.classList.add('collapsed');
+        adminContent.style.marginLeft = '0';
+    }
+}
+</script>

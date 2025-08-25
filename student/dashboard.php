@@ -13,44 +13,22 @@ $user_id = $_SESSION['user_id'];
 // Get student information
 $student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
 if (!$student) {
-    header('Location: login.php');
+    header('Location: ../login.php');
     exit;
 }
 
-// Get enrolled courses
+// Get student enrollment information
 $enrolled_courses = getRows("
-    SELECT c.*, se.status as enrollment_status, se.enrollment_date, se.final_marks
-    FROM courses c
-    JOIN student_enrollments se ON c.id = se.course_id
+    SELECT c.name, se.status as enrollment_status, se.enrollment_date, se.final_marks
+    FROM student_enrollments se
+    JOIN courses c ON se.course_id = c.id
     WHERE se.user_id = ?
     ORDER BY se.enrollment_date DESC
 ", [$user_id]);
 
-// Get pending payments
-$pending_payments = getRows("
-    SELECT c.name as course_name, sp.amount, sp.payment_date, sp.status
-    FROM student_payments sp
-    JOIN courses c ON sp.course_id = c.id
-    WHERE sp.user_id = ? AND sp.status = 'pending'
-    ORDER BY sp.payment_date DESC
-", [$user_id]);
-
-// Get total fees paid
-$total_paid = getRow("
-    SELECT SUM(amount) as total FROM student_payments 
-    WHERE user_id = ? AND status = 'completed'
-", [$user_id])['total'] ?? 0;
-
-// Get documents
-$documents = getRows("
-    SELECT * FROM student_documents 
-    WHERE user_id = ? 
-    ORDER BY uploaded_at DESC
-", [$user_id]);
-
-$total_courses = count($enrolled_courses);
-$completed_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment_status'] === 'completed'));
-$pending_documents = count(array_filter($documents, fn($d) => $d['status'] === 'pending'));
+$total_enrolled = count($enrolled_courses);
+$active_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollment_status'] === 'active'));
+$completed_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollment_status'] === 'completed'));
 ?>
 
 <!DOCTYPE html>
@@ -61,939 +39,629 @@ $pending_documents = count(array_filter($documents, fn($d) => $d['status'] === '
     <title>Student Dashboard - GICT Institute</title>
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- html2canvas and jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
-        /* Custom styles for student dashboard */
+        /* Student-specific overrides to match admin dashboard exactly */
+        .admin-sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .admin-topbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        /* Digital ID Badge */
+        .digital-id-badge {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border: 2px solid #fff;
+        }
+        
+        .digital-id-badge:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .digital-id-badge i {
+            color: white;
+            font-size: 14px;
+        }
+        
+        .profile-card-mini {
+            position: relative;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .modal-actions {
+            padding: 1rem 2rem 2rem;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #15803d;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        /* Feature items */
+        .feature-item {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .feature-item i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-item h6 {
+            margin: 0 0 0.5rem 0;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .feature-item p {
+            margin: 0 0 1rem 0;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        /* Welcome section */
         .welcome-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 25px;
-            padding: 50px 40px;
-            margin-bottom: 40px;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .welcome-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
         }
         
         .welcome-section h1 {
-            font-size: 42px;
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
             font-weight: 700;
-            margin: 0 0 20px 0;
-            position: relative;
-            z-index: 2;
-            line-height: 1.2;
         }
         
         .welcome-section p {
-            font-size: 18px;
-            opacity: 0.9;
             margin: 0;
-            position: relative;
-            z-index: 2;
-            line-height: 1.5;
+            opacity: 0.9;
+            font-size: 1.1rem;
         }
         
-        /* Statistics Cards */
+        /* Stats grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
         
         .stat-card {
             background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(102, 126, 234, 0.05);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 0 20px 0 60px;
-            opacity: 0.1;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
-            border-color: rgba(102, 126, 234, 0.2);
-        }
-        
-        .stat-card .icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .stat-card .icon i {
-            font-size: 24px;
-            color: white;
-        }
-        
-        .stat-card .number {
-            font-size: 36px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .stat-card .label {
-            color: #666;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .stat-card .trend {
-            font-size: 16px;
-            color: #28a745;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            opacity: 0.9;
-            line-height: 1.4;
-        }
-        
-        /* Section Styling */
-        .section {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            margin-bottom: 35px;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(102, 126, 234, 0.05);
-        }
-        
-        .section:hover {
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.12);
-            transform: translateY(-3px);
-            border-color: rgba(102, 126, 234, 0.15);
-        }
-        
-        .section-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 35px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .section-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        
-        .section-header h2 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            position: relative;
-            z-index: 2;
-            line-height: 1.3;
-        }
-        
-        .section-header h2 i {
-            font-size: 30px;
-            opacity: 0.9;
-        }
-        
-        .section-body {
-            padding: 35px;
-        }
-        
-        /* Course Cards */
-        .course-card {
-            background: #f8f9fa;
+            padding: 1.5rem;
             border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border-left: 5px solid #28a745;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            text-align: center;
         }
         
-        .course-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            border-radius: 0 12px 0 40px;
-            opacity: 0.1;
+        .stat-card .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        /* Course cards */
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .course-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
         }
         
         .course-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
         }
         
-        .course-card h3 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .course-card p {
-            margin: 0 0 15px 0;
-            color: #666;
-            line-height: 1.6;
-        }
-        
-        .course-meta {
+        .course-header {
             display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
         }
         
-        .meta-item {
+        .course-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .course-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .course-details {
+            margin-bottom: 1rem;
+        }
+        
+        .course-detail {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .meta-item i {
-            color: #667eea;
-            width: 16px;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: #6b7280;
+            font-size: 0.875rem;
         }
         
         .course-actions {
             display: flex;
-            gap: 15px;
+            gap: 0.5rem;
         }
         
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+        .btn-info {
+            background: #0891b2;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #0e7490;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #667eea;
             color: white;
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
-            color: white;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Document Items */
-        .document-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s ease;
-        }
-        
-        .document-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .document-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .document-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-        }
-        
-        .document-details h4 {
-            margin: 0 0 5px 0;
-            color: #333;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .document-details p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .document-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-approved {
-            background: #e8f5e8;
-            color: #28a745;
-        }
-        
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        /* Quick Actions */
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        
-        .quick-actions-grid .btn {
-            padding: 20px;
-            text-align: center;
-            justify-content: center;
-            font-size: 16px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .quick-actions-grid .btn:hover {
-            transform: translateY(-5px) scale(1.03);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .quick-actions-grid .btn i {
-            font-size: 20px;
-            margin-right: 12px;
-        }
-        
-        /* Digital ID & Certificates Styles */
-        .id-certificates-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        
-        .digital-id-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
-        }
-        
-        .id-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        
-        .id-header i {
-            font-size: 24px;
-            opacity: 0.9;
-        }
-        
-        .id-header h3 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .id-content {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        
-        .id-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .id-photo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .id-photo-placeholder {
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-        }
-        
-        .id-details p {
-            margin: 8px 0;
-            font-size: 14px;
-        }
-        
-        .id-details strong {
-            font-weight: 600;
-        }
-        
-        .status-active {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .id-actions {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .id-actions .btn {
-            flex: 1;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        
-        .id-actions .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .certificates-section {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
-        
-        .certificates-section h3 {
-            margin: 0 0 25px 0;
-            color: #333;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .no-certificates {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-        }
-        
-        .certificates-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .certificate-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border-left: 4px solid #28a745;
-        }
-        
-        .cert-info h4 {
-            margin: 0 0 8px 0;
-            color: #333;
-            font-size: 16px;
-        }
-        
-        .cert-info p {
-            margin: 5px 0;
-            color: #666;
-            font-size: 13px;
-        }
-        
-        .cert-actions .btn-sm {
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-        
-        @media (max-width: 768px) {
-            .id-certificates-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .id-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .id-actions {
-                flex-direction: column;
-            }
+        .btn-primary:hover {
+            background: #5a67d8;
         }
     </style>
 </head>
-<body>
+<body class="admin-dashboard-body">
     <div class="admin-layout">
-        <?php 
-        $page_title = 'Student Dashboard';
-        include 'includes/sidebar.php'; 
-        ?>
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-brand">
+                <img src="../assets/images/logo.png" alt="logo" />
+                <div class="brand-title">STUDENT PORTAL</div>
+            </div>
+            
+            <div class="profile-card-mini">
+                <div style="position: relative;">
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <div class="digital-id-badge" onclick="viewID()" title="View Digital ID">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="name"><?php echo htmlspecialchars(strtoupper($student['full_name'])); ?></div>
+                    <div class="role">Student</div>
+                </div>
+            </div>
+            
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="courses.php"><i class="fas fa-book"></i> My Courses</a></li>
+                <li><a href="documents.php"><i class="fas fa-file-upload"></i> Documents</a></li>
+                <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="profile.php"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="../index.php"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </aside>
 
-        <?php include 'includes/topbar.php'; ?>
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="breadcrumbs">
+                    <span>Student Dashboard</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-chip">
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
+                </div>
+            </div>
+        </header>
 
-        <!-- Mobile Overlay -->
-        <div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
-        
         <!-- Main Content -->
         <main class="admin-content">
-        <!-- Welcome Section -->
-        <div class="welcome-section">
-            <h1>Welcome back, <?php echo htmlspecialchars($student['full_name']); ?>! 👋</h1>
-            <p>Here's your academic overview and progress summary</p>
-        </div>
-
-        <!-- Digital ID & Certificates -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-id-card"></i> Digital ID & Certificates</h2>
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1><i class="fas fa-user-graduate"></i> Welcome, <?php echo htmlspecialchars($student['full_name']); ?>!</h1>
+                <p>This is your student dashboard. Here you can view your courses, documents, and manage your profile.</p>
             </div>
-            <div class="section-body">
-                <div class="id-certificates-grid">
-                    <div class="digital-id-card">
-                        <div class="id-header">
-                            <i class="fas fa-id-card"></i>
-                            <h3>Digital Student ID</h3>
-                        </div>
-                        <div class="id-content">
-                            <div class="id-photo">
-                                <?php if (!empty($student['profile_image']) && filter_var($student['profile_image'], FILTER_VALIDATE_URL)): ?>
-                                    <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Student Photo">
-                                <?php else: ?>
-                                    <div class="id-photo-placeholder">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="id-details">
-                                <p><strong>Name:</strong> <?php echo htmlspecialchars($student['full_name']); ?></p>
-                                <p><strong>ID:</strong> <?php echo $student['id']; ?></p>
-                                <p><strong>Username:</strong> <?php echo htmlspecialchars($student['username']); ?></p>
-                                <p><strong>Status:</strong> <span class="status-active">Active</span></p>
-                            </div>
-                        </div>
-                                                  <div class="id-actions">
-                              <button onclick="downloadID()" class="btn btn-primary">
-                                  <i class="fas fa-download"></i> Download ID
-                              </button>
-                              <a href="view-id.php" class="btn btn-success">
-                                  <i class="fas fa-eye"></i> View ID
-                              </a>
-                          </div>
-                    </div>
-                    
-                    <div class="certificates-section">
-                        <h3><i class="fas fa-certificate"></i> Approved Certificates</h3>
-                        <?php
-                        // Get approved certificates
-                        $approved_certificates = getRows("
-                            SELECT c.id as course_id, c.name as course_name, se.final_marks, se.completion_date, se.certificate_url
-                            FROM student_enrollments se
-                            JOIN courses c ON se.course_id = c.id
-                            WHERE se.user_id = ? AND se.status = 'completed' AND se.final_marks >= 40
-                            ORDER BY se.completion_date DESC
-                        ", [$user_id]);
-                        
-                        if (empty($approved_certificates)):
-                        ?>
-                            <div class="no-certificates">
-                                <i class="fas fa-certificate" style="font-size: 48px; opacity: 0.3; margin-bottom: 15px;"></i>
-                                <p>No certificates available yet</p>
-                                <small>Complete courses with passing marks to get certificates</small>
-                            </div>
-                        <?php else: ?>
-                            <div class="certificates-list">
-                                <?php foreach ($approved_certificates as $cert): ?>
-                                    <div class="certificate-item">
-                                        <div class="cert-info">
-                                            <h4><?php echo htmlspecialchars($cert['course_name']); ?></h4>
-                                            <p>Marks: <?php echo $cert['final_marks']; ?>%</p>
-                                            <p>Completed: <?php echo date('M d, Y', strtotime($cert['completion_date'])); ?></p>
-                                        </div>
-                                        <div class="cert-actions">
-                                            <a href="download-certificate.php?course_id=<?php echo $cert['course_id']; ?>" class="btn btn-success btn-sm">
-                                                <i class="fas fa-download"></i> Download
-                                            </a>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $total_enrolled; ?></div>
+                    <div class="stat-label">Enrolled Courses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $active_courses; ?></div>
+                    <div class="stat-label">Active Courses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?php echo $completed_courses; ?></div>
+                    <div class="stat-label">Completed</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Quick Actions -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-            </div>
-            <div class="section-body">
-                <div class="quick-actions-grid">
-                    <a href="documents.php" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Documents
-                    </a>
-                    <a href="courses.php" class="btn btn-success">
-                        <i class="fas fa-book-open"></i> Browse Courses
-                    </a>
-                    <a href="payments.php" class="btn btn-warning">
-                        <i class="fas fa-credit-card"></i> Make Payment
-                    </a>
-                    <a href="profile.php" class="btn btn-primary">
-                        <i class="fas fa-user-edit"></i> Edit Profile
-                    </a>
+            <!-- Enrolled Courses -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span><i class="fas fa-book"></i> Enrolled Courses</span>
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($enrolled_courses)): ?>
+                        <p class="text-muted">You haven't enrolled in any courses yet.</p>
+                    <?php else: ?>
+                        <div class="course-grid">
+                            <?php foreach ($enrolled_courses as $course): ?>
+                                <div class="course-card">
+                                    <div class="course-header">
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
+                                        <span class="course-status status-<?php echo $course['enrollment_status']; ?>">
+                                            <?php echo ucfirst($course['enrollment_status']); ?>
+                                        </span>
+                                    </div>
+                                    <div class="course-details">
+                                        <div class="course-detail">
+                                            <i class="fas fa-calendar"></i>
+                                            <span>Enrolled: <?php echo date('M d, Y', strtotime($course['enrollment_date'])); ?></span>
+                                        </div>
+                                        <?php if ($course['final_marks']): ?>
+                                            <div class="course-detail">
+                                                <i class="fas fa-star"></i>
+                                                <span>Final Marks: <?php echo $course['final_marks']; ?>%</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="course-actions">
+                                        <button class="btn btn-info btn-sm">
+                                            <i class="fas fa-play"></i> Continue Learning
+                                        </button>
+                                        <?php if ($course['enrollment_status'] === 'completed'): ?>
+                                            <button class="btn btn-success btn-sm">
+                                                <i class="fas fa-certificate"></i> View Certificate
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
-        </div>
 
-        <!-- Statistics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3><i class="fas fa-book"></i> Enrolled Courses</h3>
-                <div class="number"><?php echo $total_courses; ?></div>
-                <div class="trend">Active enrollments</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-check-circle"></i> Completed Courses</h3>
-                <div class="number"><?php echo $completed_courses; ?></div>
-                <div class="trend">Successfully finished</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-file-alt"></i> Pending Documents</h3>
-                <div class="number"><?php echo $pending_documents; ?></div>
-                <div class="trend">Awaiting approval</div>
-            </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-rupee-sign"></i> Total Paid</h3>
-                <div class="number">₹<?php echo number_format($total_paid, 2); ?></div>
-                <div class="trend">Fees completed</div>
-            </div>
-        </div>
-
-        <!-- Enrolled Courses -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-book"></i> My Enrolled Courses</h2>
-                <a href="courses.php" class="btn btn-primary">View All</a>
-            </div>
-            <div class="section-body">
-                <?php if (empty($enrolled_courses)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-book-open"></i>
-                        <h3>No Courses Enrolled</h3>
-                        <p>You haven't enrolled in any courses yet.</p>
-                        <a href="../courses.php" class="btn btn-primary">Browse Courses</a>
-                    </div>
-                <?php else: ?>
-                    <?php foreach (array_slice($enrolled_courses, 0, 3) as $course): ?>
-                        <div class="course-card <?php echo $course['enrollment_status']; ?>">
-                            <div class="course-name">
-                                <i class="fas fa-graduation-cap"></i>
-                                <?php echo htmlspecialchars($course['name']); ?>
-                            </div>
-                            <div class="course-details">
-                                <div class="course-detail">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <span><strong>Enrolled:</strong> <?php echo date('M d, Y', strtotime($course['enrollment_date'])); ?></span>
-                                </div>
-                                <div class="course-detail">
-                                    <i class="fas fa-clock"></i>
-                                    <span><strong>Duration:</strong> <?php echo htmlspecialchars($course['duration']); ?></span>
-                                </div>
-                                <div class="course-detail">
-                                    <i class="fas fa-rupee-sign"></i>
-                                    <span><strong>Fee:</strong> ₹<?php echo number_format($course['fee'], 2); ?></span>
-                                </div>
-                                <?php if ($course['final_marks']): ?>
-                                    <div class="course-detail">
-                                        <i class="fas fa-star"></i>
-                                        <span><strong>Marks:</strong> <?php echo $course['final_marks']; ?>%</span>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="course-actions">
-                                <span class="status-badge status-<?php echo $course['enrollment_status']; ?>">
-                                    <i class="fas fa-<?php echo $course['enrollment_status'] === 'completed' ? 'check-circle' : ($course['enrollment_status'] === 'in_progress' ? 'play-circle' : 'user-graduate'); ?>"></i>
-                                    <?php echo ucfirst(str_replace('_', ' ', $course['enrollment_status'])); ?>
-                                </span>
-                                <?php if ($course['enrollment_status'] === 'completed'): ?>
-                                    <a href="download-marksheet.php?course_id=<?php echo $course['id']; ?>" class="btn btn-success">
-                                        <i class="fas fa-download"></i> Download Marksheet
-                                    </a>
-                                <?php elseif ($course['enrollment_status'] === 'in_progress'): ?>
-                                    <a href="courses.php" class="btn btn-warning">
-                                        <i class="fas fa-play"></i> Continue Learning
-                                    </a>
-                                <?php else: ?>
-                                    <a href="courses.php" class="btn btn-primary">
-                                        <i class="fas fa-book-open"></i> Start Course
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Recent Documents -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-file-alt"></i> Recent Documents</h2>
-                <a href="documents.php" class="btn btn-primary">View All</a>
-            </div>
-            <div class="section-body">
-                <?php if (empty($documents)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-file-alt"></i>
-                        <h3>No Documents Uploaded</h3>
-                        <p>You haven't uploaded any documents yet.</p>
-                        <a href="documents.php" class="btn btn-primary">Upload Documents</a>
-                    </div>
-                <?php else: ?>
-                    <?php foreach (array_slice($documents, 0, 5) as $doc): ?>
-                        <div class="document-item">
-                            <div class="document-info">
-                                <div class="document-icon">
-                                    <i class="fas fa-<?php echo $doc['document_type'] === 'marksheet' ? 'file-alt' : ($doc['document_type'] === 'aadhaar' ? 'id-card' : 'image'); ?>"></i>
-                                </div>
-                                <div class="document-details">
-                                    <h4><?php echo ucfirst(str_replace('_', ' ', $doc['document_type'])); ?></h4>
-                                    <p><i class="fas fa-calendar"></i> Uploaded: <?php echo date('M d, Y', strtotime($doc['uploaded_at'])); ?></p>
-                                </div>
-                            </div>
-                            <div class="document-actions">
-                                <span class="status-badge status-<?php echo $doc['status']; ?>">
-                                    <i class="fas fa-<?php echo $doc['status'] === 'approved' ? 'check-circle' : ($doc['status'] === 'rejected' ? 'times-circle' : 'clock'); ?>"></i>
-                                    <?php echo ucfirst($doc['status']); ?>
-                                </span>
-                                <a href="<?php echo htmlspecialchars($doc['file_path']); ?>" target="_blank" class="btn btn-primary">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Pending Payments -->
-        <?php if (!empty($pending_payments)): ?>
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-credit-card"></i> Pending Payments</h2>
-                <a href="payments.php" class="btn btn-primary">View All</a>
-            </div>
-            <div class="section-body">
-                <?php foreach ($pending_payments as $payment): ?>
-                    <div class="document-item">
-                        <div class="document-info">
-                            <div class="document-icon">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-                            <div class="document-details">
-                                <h4><?php echo htmlspecialchars($payment['course_name']); ?></h4>
-                                <p><i class="fas fa-rupee-sign"></i> Amount: ₹<?php echo number_format($payment['amount'], 2); ?></p>
-                            </div>
-                        </div>
-                        <div class="document-actions">
-                            <span class="status-badge status-pending">
-                                <i class="fas fa-clock"></i> Pending
-                            </span>
-                            <a href="payments.php" class="btn btn-warning">
-                                <i class="fas fa-credit-card"></i> Pay Now
+            <!-- Digital ID & Certificates -->
+            <div class="panel" style="margin-top: 1.5rem;">
+                <div class="panel-header">
+                    <span><i class="fas fa-id-card"></i> Digital ID & Certificates</span>
+                </div>
+                <div class="panel-body">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                        <div class="feature-item">
+                            <i class="fas fa-certificate text-success"></i>
+                            <h6>Course Certificates</h6>
+                            <p>Download your course completion certificates</p>
+                            <a href="download-certificate.php" class="btn btn-success btn-sm" target="_blank">
+                                <i class="fas fa-download"></i> Download Certificate
                             </a>
                         </div>
+                        <div class="feature-item">
+                            <i class="fas fa-graduation-cap text-info"></i>
+                            <h6>Academic Records</h6>
+                            <p>Access your academic transcripts and records</p>
+                            <button class="btn btn-info btn-sm">
+                                <i class="fas fa-file-alt"></i> View Records
+                            </button>
+                        </div>
                     </div>
-                <?php endforeach; ?>
+                </div>
             </div>
-        </div>
-        <?php endif; ?>
         </main>
     </div>
 
+    <!-- ID Card Modal -->
+    <div id="idCardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Digital ID Card</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="idCardContainer"></div>
+            </div>
+            <div class="modal-actions">
+                <button id="modalDownloadBtn" onclick="downloadFromModal()" class="btn btn-success">
+                    <i class="fas fa-download"></i> Download ID Card
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function toggleMobileMenu() {
-            const sidebar = document.querySelector('.admin-sidebar');
-            const overlay = document.querySelector('.mobile-overlay');
+        // View ID function - shows modal with id.php content
+        function viewID() {
+            const modal = document.getElementById('idCardModal');
+            const container = document.getElementById('idCardContainer');
             
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
+            // Show the modal
+            modal.classList.add('show');
             
-            // Prevent body scroll when menu is open
-            document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
-        }
-        
-        // Close menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const sidebar = document.querySelector('.admin-sidebar');
-            const menuToggle = document.querySelector('.menu-toggle');
+            // Show loading
+            container.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #667eea;"></i><p style="margin-top: 10px;">Loading ID Card...</p></div>';
             
-            if (!sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
-                sidebar.classList.remove('open');
-                document.querySelector('.mobile-overlay').classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-        
-        // Close menu on window resize
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                const sidebar = document.querySelector('.admin-sidebar');
-                const overlay = document.querySelector('.mobile-overlay');
-                sidebar.classList.remove('open');
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-        
-        // Download ID function
-        function downloadID() {
-            // Open download page in new tab for printing
-            window.open('download-id.php', '_blank');
-        }
-        
-        // Generate QR codes when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            generateAllQRCodes();
-        });
-        
-        function generateAllQRCodes() {
-            const qrContainers = document.querySelectorAll('.qr-code-container');
-            qrContainers.forEach(container => {
-                const data = container.getAttribute('data-qr');
-                if (data) {
-                    // Clear the container first
-                    container.innerHTML = '';
+            // Create form data - only send student ID
+            const formData = new FormData();
+            formData.append('student_id', '<?php echo $student['id']; ?>');
+            
+            // Fetch the content from id.php
+            fetch('../id.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                // Create a temporary div to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Find the ID card element
+                const idCard = tempDiv.querySelector('#idCard');
+                
+                if (idCard) {
+                    // Create the styled ID card
+                    const styledCard = `
+                        <div id="idCard" style="width: 340px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; padding-bottom: 1rem; margin: 0 auto;">
+                            <div class="id-card-header" style="display: flex; align-items: center; background: #1d4ed8; color: #fff; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0;">
+                                <img src="../assets/images/logo.png" alt="Institute Logo" class="id-card-logo" style="height: 60px; width: 60px; border-radius: 50%; object-fit: cover; background: white; margin-right: 1rem; border: 2px solid #fff;" onerror="this.style.display='none'">
+                                <div class="id-card-header-text">
+                                    <h2 style="font-size: 1.4rem; margin: 0; font-weight: 700; line-height: 1.2;">GICT COMPUTER INSTITUTE</h2>
+                                    <p style="font-size: 0.9rem; margin: 0.2rem 0 0; opacity: 0.9;">Student Identification Card</p>
+                                </div>
+                            </div>
+                            <div class="id-card-body" style="padding: 1rem; text-align: center;">
+                                <img src="${idCard.querySelector('.id-card-photo')?.src || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzY2N2VlYSIvPjx0ZXh0IHg9IjYwIiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQ4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+RqDwvdGV4dD48L3N2Zz4='}" class="id-card-photo" alt="Student Photo" style="width: 120px; height: auto; border-radius: 2px; object-fit: cover; margin-bottom: 0.5rem; border: 3px solid #1d4ed8;">
+                                <p class="id-card-name" style="font-size: 1.2rem; font-weight: 700; margin: 0.3rem 0;">${idCard.querySelector('.id-card-name')?.textContent || '<?php echo htmlspecialchars($student['full_name']); ?>'}</p>
+                                <p class="id-card-studentid" style="font-size: 0.9rem; color: #374151; margin-bottom: 1rem;">STUDENT ID: ${idCard.querySelector('.id-card-studentid')?.textContent?.replace('STUDENT ID: ', '') || '<?php echo $student['id']; ?>'}</p>
+                                <div class="id-card-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0.8rem;">
+                                    <div class="id-card-info" style="text-align: left; font-size: 0.9rem;">
+                                        <p style="margin: 0.4rem 0;"><span class="label" style="font-weight: 600; color: #1f2937;">Batch:</span> ${idCard.querySelector('.id-card-info .label')?.nextSibling?.textContent?.trim() || '<?php echo date('Y'); ?>'}</p>
+                                        <p style="margin: 0.4rem 0;"><span class="label" style="font-weight: 600; color: #1f2937;">Expires:</span> ${idCard.querySelector('.id-card-info .label:last-child')?.nextSibling?.textContent?.trim() || '<?php echo date("m/Y", strtotime('+1 year')); ?>'}</p>
+                                    </div>
+                                    <img src="${idCard.querySelector('.id-card-qr')?.src || ''}" class="id-card-qr" alt="QR Code" style="width: 90px; height: 90px;">
+                                </div>
+                            </div>
+                            <div class="id-card-footer" style="margin-top: 1rem; font-size: 0.75rem; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">If found, please return to the university admin office.</div>
+                        </div>
+                    `;
                     
-                    QRCode.toCanvas(container, data, {
-                        width: container.offsetWidth - 4, // Account for border
-                        height: container.offsetHeight - 4,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        },
-                        errorCorrectionLevel: 'M'
-                    }, function(error, canvas) {
-                        if (error) {
-                            console.error('QR Code generation failed:', error);
-                            // Fallback to text display
-                            container.innerHTML = '<div style="color: white; text-align: center; padding: 10px; font-size: 10px; line-height: 1.2;">VERIFY<br>QR</div>';
-                        } else {
-                            // Clear container and append canvas
-                            container.appendChild(canvas);
-                        }
-                    });
+                    container.innerHTML = styledCard;
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading ID card:', error);
+                container.innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
+            });
+        }
+        
+        // Close modal function
+        function closeModal() {
+            const modal = document.getElementById('idCardModal');
+            modal.classList.remove('show');
+        }
+        
+        // Download from modal function - directly generate PDF
+        function downloadFromModal() {
+            // Get the ID card element from the modal
+            const idCardElement = document.getElementById('idCard');
+            if (!idCardElement) {
+                alert('ID card not found');
+                return;
+            }
+            
+            // Show loading
+            const downloadBtn = document.querySelector('#modalDownloadBtn');
+            if (downloadBtn) {
+                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+                downloadBtn.disabled = true;
+            }
+            
+            // Generate PDF using html2canvas and jsPDF
+            html2canvas(idCardElement, { 
+                scale: 4, 
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'px',
+                    format: [idCardElement.offsetWidth, idCardElement.offsetHeight]
+                });
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, idCardElement.offsetWidth, idCardElement.offsetHeight);
+                pdf.save('student-id-<?php echo $student['id']; ?>.pdf');
+                
+                // Reset button
+                if (downloadBtn) {
+                    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download ID Card';
+                    downloadBtn.disabled = false;
+                }
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+                
+                // Reset button
+                if (downloadBtn) {
+                    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download ID Card';
+                    downloadBtn.disabled = false;
                 }
             });
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('idCardModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.admin-sidebar');
+            sidebar.classList.toggle('mobile-open');
         }
     </script>
 </body>
