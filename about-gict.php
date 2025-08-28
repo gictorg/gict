@@ -20,7 +20,7 @@ require_once 'includes/session_manager.php';
             padding: 80px 0;
             text-align: center;
             margin-bottom: 60px;
-            margin-top: 20px; /* Reduced margin since body has padding-top */
+            margin-top: 192px; /* Reduced margin since body has padding-top */
         }
         
         .about-hero h1 {
@@ -264,7 +264,7 @@ require_once 'includes/session_manager.php';
         
         @media (max-width: 768px) {
             .about-hero {
-                margin-top: 20px; /* Reduced margin since body has padding-top */
+                margin-top: 262px; /* Reduced margin since body has padding-top */
                 padding: 60px 0; /* Reduce padding for mobile */
             }
             
@@ -341,7 +341,7 @@ require_once 'includes/session_manager.php';
         /* Extra small mobile devices */
         @media (max-width: 480px) {
             .about-hero {
-                margin-top: 10px; /* Minimal margin for very small screens */
+                margin-top: 262px; /* Minimal margin for very small screens */
                 padding: 40px 0;
             }
             
