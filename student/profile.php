@@ -61,8 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($new_password !== $confirm_password) {
             $message = 'New passwords do not match';
             $message_type = 'error';
-        } elseif (strlen($new_password) < 6) {
-            $message = 'New password must be at least 6 characters long';
+        } elseif (strlen($new_password) < 8) {
+            $message = 'New password must be at least 8 characters long';
+            $message_type = 'error';
+        } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/', $new_password)) {
+            $message = 'Password must contain at least one lowercase letter, one uppercase letter, and one number';
             $message_type = 'error';
         } else {
             try {
@@ -472,12 +475,6 @@ $documents = getRows("
                     <span>My Profile</span>
                 </div>
             </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
-                </div>
-            </div>
         </header>
 
         <!-- Main Content -->
@@ -567,13 +564,14 @@ $documents = getRows("
                             <div class="form-group">
                                 <label for="new_password">New Password</label>
                                 <input type="password" id="new_password" name="new_password" class="form-control" 
-                                       placeholder="Enter your new password" required>
+                                       placeholder="Enter your new password" required minlength="8">
+                                <small>Password must be at least 8 characters long and contain lowercase, uppercase, and number</small>
                             </div>
                             
                             <div class="form-group">
                                 <label for="confirm_password">Confirm New Password</label>
                                 <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
-                                       placeholder="Confirm your new password" required>
+                                       placeholder="Confirm your new password" required minlength="8">
                             </div>
                         </div>
                         

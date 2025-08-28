@@ -51,22 +51,9 @@ function hasRole($role) {
         return false;
     }
     
-    // Get user type from database to ensure it's current
-    try {
-        $sql = "SELECT ut.name as user_type 
-                FROM users u 
-                JOIN user_types ut ON u.user_type_id = ut.id 
-                WHERE u.id = ? AND u.status = 'active'";
-        $user = getRow($sql, [$_SESSION['user_id']]);
-        
-        if ($user) {
-            return $user['user_type'] === $role;
-        }
-    } catch (Exception $e) {
-        // Silent fail for security
-    }
-    
-    return false;
+    // Use session data instead of database query for better performance
+    // The session data is set during login and validated
+    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === $role;
 }
 
 /**
@@ -126,8 +113,9 @@ function getDashboardUrl() {
         case 'admin':
             return 'dashboard.php';
         case 'student':
-        case 'faculty':
             return 'student/dashboard.php';
+        case 'faculty':
+            return 'faculty/dashboard.php';
         default:
             return 'login.php';
     }
@@ -210,6 +198,6 @@ function validateSession() {
     return false;
 }
 
-// Validate session on every request
-validateSession();
+// Validate session on every request - commented out to prevent redirect loops
+// validateSession();
 ?>

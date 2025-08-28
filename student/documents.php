@@ -330,12 +330,6 @@ $document_types = [
                     <span>Document Management</span>
                 </div>
             </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
-                </div>
-            </div>
         </header>
 
         <!-- Main Content -->

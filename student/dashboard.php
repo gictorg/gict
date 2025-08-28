@@ -10,8 +10,8 @@ if (!isLoggedIn() || !isStudent()) {
 
 $user_id = $_SESSION['user_id'];
 
-// Get student information
-$student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
+// Get student information - use session data instead of joining with user_types
+$student = getRow("SELECT u.* FROM users u WHERE u.id = ?", [$user_id]);
 if (!$student) {
     header('Location: ../login.php');
     exit;
@@ -397,12 +397,6 @@ $completed_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollm
                 </button>
                 <div class="breadcrumbs">
                     <span>Student Dashboard</span>
-                </div>
-            </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
                 </div>
             </div>
         </header>

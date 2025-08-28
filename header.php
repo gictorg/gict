@@ -64,6 +64,9 @@ require_once 'includes/session_manager.php';
                         <i class="fas fa-bars"></i>
                     </button>
                     <div class="nav-links" id="navLinks">
+                        <button class="mobile-menu-close" id="mobileMenuClose" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">ABOUT US <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
@@ -141,4 +144,5 @@ require_once 'includes/session_manager.php';
             </div>
         </nav>
     </div>
-    <script src="assets/js/nav-dropdown.js"></script> 
+    <script src="assets/js/nav-dropdown.js"></script>
+    <script src="assets/js/homepage-mobile-menu.js"></script>

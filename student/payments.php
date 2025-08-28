@@ -311,12 +311,6 @@ $completed_amount = array_sum(array_column($completed_payments, 'amount'));
                     <span>Payments</span>
                 </div>
             </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <?php echo htmlspecialchars($student['full_name']); ?>
-                </div>
-            </div>
         </header>
 
         <!-- Main Content -->

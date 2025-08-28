@@ -99,10 +99,6 @@ body.admin-dashboard-body {
 .topbar-home-link i { margin-right: 6px; }
 .topbar-home-link:hover { text-decoration: underline; }
 
-.topbar-right { display: flex; align-items: center; gap: 14px; }
-.topbar-right .user-chip { display:flex; align-items:center; gap:8px; background: rgba(255,255,255,.18); padding: 6px 10px; border-radius: 20px; }
-.topbar-right .user-chip img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
-
 /* Content */
 .admin-content {
   grid-area: content;
@@ -237,14 +233,6 @@ body.admin-dashboard-body {
   }
   .topbar-home-link {
     font-size: 12px;
-  }
-  .user-chip {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-  .user-chip img {
-    width: 18px;
-    height: 18px;
   }
   .widget-row {
     gap: 12px;

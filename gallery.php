@@ -10,8 +10,7 @@
                 require_once 'config/database.php';
                 $faculty_sql = "SELECT u.full_name, u.qualification, u.experience_years, u.profile_image 
                 FROM users u 
-                JOIN user_types ut ON u.user_type_id = ut.id 
-                WHERE ut.name = 'faculty' AND u.status = 'active' 
+                WHERE u.user_type_id = 3 AND u.status = 'active' 
                 ORDER BY u.experience_years DESC";
                 $faculty_members = getRows($faculty_sql);
                 
@@ -49,30 +48,22 @@
         <h2 class="section-title">Courses Offered</h2>
         <div class="gallery-container courses-gallery">
             <?php
-            // Get active courses from database
+            // Get active courses from database with images
             try {
-                $courses_sql = "SELECT c.name, c.description, c.duration, cc.name as category_name
+                $courses_sql = "SELECT c.name, c.description, c.duration, c.course_image, c.course_image_alt, c.category_id
                 FROM courses c 
-                JOIN course_categories cc ON c.category_id = cc.id 
                 WHERE c.status = 'active' 
                 ORDER BY c.name";
                 $courses = getRows($courses_sql);
                 
                 if (!empty($courses)) {
                     foreach ($courses as $course) {
-                        // Map course names to images (you can add more mappings as needed)
-                        $course_images = [
-                            'Computer Course' => 'assets/images/computer course.jpeg',
-                            'Yoga Course' => 'assets/images/Yoga Certificate.jpeg',
-                            'Vocational Course' => 'assets/images/Vocational Course.jpeg',
-                            'Beautician Course' => 'assets/images/Beautician Certificate.jpeg',
-                            'Tailoring Course' => 'assets/images/Tailoring Certificate.jpeg'
-                        ];
-                        
-                        $course_image = $course_images[$course['name']] ?? 'assets/images/default-course.png';
+                        // Use ImgBB image if available, fallback to default
+                        $course_image = !empty($course['course_image']) ? $course['course_image'] : 'assets/images/computer course.jpeg';
+                        $image_alt = !empty($course['course_image_alt']) ? $course['course_image_alt'] : $course['name'];
                         
                         echo '<div class="gallery-item course-item">';
-                        echo '<img src="' . htmlspecialchars($course_image) . '" alt="' . htmlspecialchars($course['name']) . '">';
+                        echo '<img src="' . htmlspecialchars($course_image) . '" alt="' . htmlspecialchars($image_alt) . '" onerror="this.onerror=null; this.src=\'assets/images/computer course.jpeg\'">';
                         echo '<div class="caption">' . htmlspecialchars($course['name']) . '</div>';
                         echo '</div>';
                     }
@@ -93,8 +84,7 @@
             try {
                 $students_sql = "SELECT u.full_name, u.qualification, u.joining_date, u.profile_image 
                 FROM users u 
-                JOIN user_types ut ON u.user_type_id = ut.id 
-                WHERE ut.name = 'student' AND u.status = 'active' 
+                WHERE u.user_type_id = 2 AND u.status = 'active' 
                 ORDER BY u.joining_date DESC LIMIT 6";
                 $recent_students = getRows($students_sql);
                 

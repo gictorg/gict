@@ -25,14 +25,14 @@ if ($userType === 'admin') {
         require_once 'config/database.php';
         
         // Get total students count
-        $studentsSql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type = 'student' AND u.status = 'active'";
+        $studentsSql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type_id = 2 AND u.status = 'active'";
         $studentsResult = getRow($studentsSql);
         $totalStudents = $studentsResult['count'] ?? 0;
         
         // Get total faculty count
-        $facultySql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type = 'faculty' AND u.status = 'active'";
-        $facultyResult = getRow($facultySql);
-        $totalFaculty = $facultyResult['count'] ?? 0;
+        // $facultySql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type_id = 3 AND u.status = 'active'";
+        // $facultyResult = getRow($facultySql);
+        // $totalFaculty = $facultyResult['count'] ?? 0;
         
         // Get active students count
         $activeStudents = $totalStudents;
@@ -92,8 +92,8 @@ if ($userType === 'admin') {
                 <li><a href="admin/staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="admin/courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
                 <li><a href="admin/pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
-                <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="admin/payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="admin/settings.php"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
@@ -107,9 +107,6 @@ if ($userType === 'admin') {
                     <span>Dashboard</span>
                 </div>
             </div>
-            <div class="topbar-right">
-                <div class="user-chip"><img src="<?php echo $user['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="" onerror="this.src='assets/images/default-avatar.png'" /> <?php echo htmlspecialchars($user['full_name']); ?></div>
-            </div>
         </header>
 
         <main class="admin-content">
@@ -119,7 +116,7 @@ if ($userType === 'admin') {
                     <div class="panel-body certificate-body">
                         <div class="certificate-icon"><i class="fas fa-award"></i></div>
                         <div style="flex:1">
-                            <div style="font-weight:700; font-size:18px;">AICPE Authorization</div>
+                            <div style="font-weight:700; font-size:18px;">GICT Authorization</div>
                             <div style="opacity:.9; font-size:13px;">Valid and active</div>
                         </div>
                     </div>
@@ -130,12 +127,12 @@ if ($userType === 'admin') {
                     <div class="value"><?php echo $totalStudents; ?></div>
                     <div class="muted">Total Students</div>
                 </section>
-
+<!-- 
                 <section class="stat faculty">
                     <h3>Faculty</h3>
                     <div class="value"><?php echo $totalFaculty; ?></div>
                     <div class="muted">Total Staff</div>
-                </section>
+                </section> -->
 
                 <section class="stat enrollments">
                     <h3>Enrollments</h3>

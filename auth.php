@@ -88,6 +88,15 @@ function changePassword($userId, $currentPassword, $newPassword) {
             return false;
         }
         
+        // Validate new password strength
+        if (strlen($newPassword) < 8) {
+            return false;
+        }
+        
+        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/', $newPassword)) {
+            return false;
+        }
+        
         // Update password
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?";
@@ -100,15 +109,15 @@ function changePassword($userId, $currentPassword, $newPassword) {
 
 // Function to logout user
 function logout() {
-    // Log logout activity if user was logged in
-    if (isset($_SESSION['user_id'])) {
-        try {
-            $logout_sql = "INSERT INTO user_logins (user_id, login_time, ip_address, status) VALUES (?, NOW(), ?, 'logout')";
-            insertData($logout_sql, [$_SESSION['user_id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
-        } catch (Exception $e) {
-            // Silent fail for security
-        }
-    }
+    // Log logout activity if user was logged in (commented out as user_logins table doesn't exist)
+    // if (isset($_SESSION['user_id'])) {
+    //     try {
+    //         $logout_sql = "INSERT INTO user_logins (user_id, login_time, ip_address, status) VALUES (?, NOW(), ?, 'logout')";
+    //         insertData($logout_sql, [$_SESSION['user_id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
+    //     } catch (Exception $e) {
+    //         // Silent fail for security
+    //     }
+    // }
     
     // Use secure logout from session manager
     secureLogout();

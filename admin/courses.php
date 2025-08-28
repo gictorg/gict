@@ -22,9 +22,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                $sql = "INSERT INTO courses (category_id, name, description, duration, status, created_at) 
-                        VALUES (?, ?, ?, ?, ?, NOW())";
-                $result = insertData($sql, [$category_id, $name, $description, $duration, $status]);
+                // Handle course image upload to ImgBB
+                $course_image_url = '';
+                $course_image_alt = $name;
+                
+                if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
+                    require_once '../includes/imgbb_helper.php';
+                    
+                    $image_file = $_FILES['course_image'];
+                    $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
+                    $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
+                    
+                    if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1024) {
+                        $imgbb_name = strtolower(str_replace(' ', '_', $name)) . '_course';
+                        $imgbb_result = smartUpload($image_file['tmp_name'], $imgbb_name);
+                        
+                        if ($imgbb_result && $imgbb_result['success']) {
+                            $course_image_url = $imgbb_result['url'];
+                        } else {
+                            throw new Exception("Failed to upload course image to ImgBB.");
+                        }
+                    } else {
+                        throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
+                    }
+                }
+                
+                $sql = "INSERT INTO courses (name, description, category_id, course_image, course_image_alt, duration, status, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                $result = insertData($sql, [$name, $description, $category_id, $course_image_url, $course_image_alt, $duration, $status]);
                 
                 if ($result === false) {
                     throw new Exception("Failed to add course. Please try again.");
@@ -45,9 +70,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, duration = ?, status = ?, updated_at = NOW() 
-                        WHERE id = ?";
-                $result = updateData($sql, [$category_id, $name, $description, $duration, $status, $course_id]);
+                // Handle course image upload to ImgBB (if new image provided)
+                $course_image_url = '';
+                $course_image_alt = $name;
+                
+                if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
+                    require_once '../includes/imgbb_helper.php';
+                    
+                    $image_file = $_FILES['course_image'];
+                    $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
+                    $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
+                    
+                    if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1000) {
+                        $imgbb_name = strtolower(str_replace(' ', '_', $name)) . '_course';
+                        $imgbb_result = smartUpload($image_file['tmp_name'], $imgbb_name);
+                        
+                        if ($imgbb_result && $imgbb_result['success']) {
+                            $course_image_url = $imgbb_result['url'];
+                        } else {
+                            throw new Exception("Failed to upload course image to ImgBB.");
+                        }
+                    } else {
+                        throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
+                    }
+                }
+                
+                // If no new image, keep existing image
+                if (empty($course_image_url)) {
+                    $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, duration = ?, status = ?, updated_at = NOW() 
+                            WHERE id = ?";
+                    $result = updateData($sql, [$category_id, $name, $description, $duration, $status, $course_id]);
+                } else {
+                    $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, course_image = ?, course_image_alt = ?, duration = ?, status = ?, updated_at = NOW() 
+                            WHERE id = ?";
+                    $result = updateData($sql, [$category_id, $name, $description, $course_image_url, $course_image_alt, $duration, $status, $course_id]);
+                }
                 
                 if ($result === false) {
                     throw new Exception("Failed to update course. Please try again.");
@@ -211,31 +268,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get course categories
-$categories = getRows("SELECT * FROM course_categories WHERE status = 'active' ORDER BY name");
-
 // Get courses
 $courses = getRows("
-    SELECT c.*, cc.name as category_name,
+    SELECT c.*,
            COUNT(sc.id) as sub_courses_count,
            COUNT(DISTINCT se.user_id) as enrolled_students
     FROM courses c
-    JOIN course_categories cc ON c.category_id = cc.id
     LEFT JOIN sub_courses sc ON c.id = sc.course_id AND sc.status = 'active'
     LEFT JOIN student_enrollments se ON sc.id = se.sub_course_id
-    GROUP BY c.id, c.name, c.description, c.duration, c.status, c.created_at, c.updated_at, cc.name
+    GROUP BY c.id, c.name, c.description, c.duration, c.status, c.created_at, c.updated_at, c.category_id, c.course_image, c.course_image_alt
     ORDER BY c.created_at DESC
 ");
 
 // Get sub-courses
 $sub_courses = getRows("
-    SELECT sc.*, c.name as course_name, cc.name as category_name,
+    SELECT sc.*, c.name as course_name, c.category_id,
            COUNT(DISTINCT se.user_id) as enrolled_students
     FROM sub_courses sc
     JOIN courses c ON sc.course_id = c.id
-    JOIN course_categories cc ON c.category_id = cc.id
     LEFT JOIN student_enrollments se ON sc.id = se.sub_course_id
-    GROUP BY sc.id, sc.name, sc.description, sc.fee, sc.duration, sc.status, sc.created_at, sc.updated_at, c.name, cc.name
+    GROUP BY sc.id, sc.name, sc.description, sc.fee, sc.duration, sc.status, sc.created_at, sc.updated_at, c.name, c.category_id
     ORDER BY c.name, sc.name
 ");
 
@@ -415,26 +467,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         }
         .topbar-home-link:hover {
             text-decoration: underline;
-        }
-        .topbar-right {
-            display: flex;
-            align-items: center;
-        }
-        .user-chip {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255,255,255,0.1);
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .user-chip img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
         }
         .page-header {
             display: flex;
@@ -834,8 +866,9 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a class="active" href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
+                <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
@@ -851,12 +884,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                     <a href="../dashboard.php">Dashboard</a>
                     <span style="opacity:.7; margin: 0 6px;">/</span>
                     <span>Courses</span>
-                </div>
-            </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="../assets/images/brijendra.jpeg" alt="" /> 
-                    <?php echo htmlspecialchars($user['full_name']); ?>
                 </div>
             </div>
         </header>
@@ -937,6 +964,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                             <thead>
                                 <tr>
                                     <th>Course Name</th>
+                                    <th>Image</th>
                                     <th>Category</th>
                                     <th>Description</th>
                                     <th>Duration</th>
@@ -949,7 +977,18 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                 <?php foreach ($courses as $course): ?>
                                     <tr>
                                         <td class="course-name"><?php echo htmlspecialchars($course['name']); ?></td>
-                                        <td><?php echo htmlspecialchars($course['category_name']); ?></td>
+                                        <td class="course-image">
+                                            <?php if (!empty($course['course_image'])): ?>
+                                                <img src="<?php echo htmlspecialchars($course['course_image']); ?>" 
+                                                     alt="<?php echo htmlspecialchars($course['course_image_alt'] ?? $course['name']); ?>"
+                                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                                            <?php else: ?>
+                                                <div style="width: 50px; height: 50px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">
+                                                    No Image
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($course['category_id']); ?></td>
                                         <td class="course-description" title="<?php echo htmlspecialchars($course['description']); ?>">
                                             <?php echo htmlspecialchars($course['description']); ?>
                                         </td>
@@ -1009,6 +1048,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                 <tr>
                                     <th>Sub-Course Name</th>
                                     <th>Main Course</th>
+                                    <th>Category</th>
                                     <th>Description</th>
                                     <th>Duration</th>
                                     <th>Fee (₹)</th>
@@ -1022,6 +1062,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                     <tr>
                                         <td class="course-name"><?php echo htmlspecialchars($sub_course['name']); ?></td>
                                         <td><?php echo htmlspecialchars($sub_course['course_name']); ?></td>
+                                        <td><?php echo htmlspecialchars($sub_course['category_id']); ?></td>
                                         <td class="course-description" title="<?php echo htmlspecialchars($sub_course['description']); ?>">
                                             <?php echo htmlspecialchars($sub_course['description']); ?>
                                         </td>
@@ -1071,7 +1112,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                 <span class="close" onclick="closeCourseModal()">&times;</span>
             </div>
             
-            <form method="POST" action="courses.php">
+            <form method="POST" action="courses.php" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="<?php echo isset($edit_course) ? 'update_course' : 'add_course'; ?>">
                     <?php if (isset($edit_course)): ?>
@@ -1087,15 +1128,9 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                         </div>
                         <div class="form-group">
                             <label for="category_id">Category *</label>
-                            <select id="category_id" name="category_id" required>
-                                <option value="">Select Category</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>" 
-                                            <?php echo (isset($edit_course) && $edit_course['category_id'] == $category['id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($category['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" id="category_id" name="category_id" required 
+                                   value="<?php echo isset($edit_course) ? htmlspecialchars($edit_course['category_id']) : ''; ?>"
+                                   placeholder="e.g., Technology, Fashion, Marketing">
                         </div>
                     </div>
                     
@@ -1119,6 +1154,18 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                         <label for="description">Course Description *</label>
                         <textarea id="description" name="description" required rows="4"
                                   placeholder="Describe the main course category and what sub-courses it will contain..."><?php echo isset($edit_course) ? htmlspecialchars($edit_course['description']) : ''; ?></textarea>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="course_image">Course Image</label>
+                        <input type="file" id="course_image" name="course_image" accept="image/*">
+                        <small class="form-text">Upload JPG, PNG, or GIF image (max 500KB). Image will be uploaded to ImgBB.</small>
+                        <?php if (isset($edit_course) && !empty($edit_course['course_image'])): ?>
+                            <div class="current-image">
+                                <p><strong>Current Image:</strong></p>
+                                <img src="<?php echo htmlspecialchars($edit_course['course_image']); ?>" alt="Current course image" style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 

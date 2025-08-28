@@ -27,11 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $error_message = 'Database connection failed. Please check configuration.';
             } else {
                 // Get user from database with user type
-                $sql = "SELECT u.id, u.username, u.password, u.full_name, u.email, ut.name as user_type 
+                $sql = "SELECT u.id, u.username, u.password, u.full_name, u.email, u.user_type_id 
                         FROM users u 
-                        JOIN user_types ut ON u.user_type_id = ut.id 
                         WHERE u.username = ? AND u.status = 'active'";
                 $user = getRow($sql, [$username]);
+                
+                // Map user_type_id to user_type name
+                if ($user) {
+                    switch ($user['user_type_id']) {
+                        case 1:
+                            $user['user_type'] = 'admin';
+                            break;
+                        case 2:
+                            $user['user_type'] = 'student';
+                            break;
+                        case 3:
+                            $user['user_type'] = 'faculty';
+                            break;
+                        default:
+                            $user['user_type'] = 'unknown';
+                    }
+                }
                 
                 if ($user) {
                     $passwordValid = password_verify($password, $user['password']);
@@ -43,6 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['user_type'] = $user['user_type'];
                         $_SESSION['full_name'] = $user['full_name'];
                         $_SESSION['email'] = $user['email'];
+                        
+                        // Debug: Log what's being set in session
+                        error_log("Login Debug - User data: " . print_r($user, true));
+                        error_log("Login Debug - Session after login: " . print_r($_SESSION, true));
                         
                         // Log successful login (commented out as user_logins table doesn't exist in new schema)
                         // $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";

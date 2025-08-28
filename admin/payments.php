@@ -243,6 +243,94 @@ $total_completed_count = count($completed_payments);
         .modal-header {
             margin-bottom: 1rem;
             padding-bottom: 1rem;
+        }
+        
+        /* Table Styling */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .table th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+        }
+        
+        .table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        
+        .table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .table td {
+            padding: 16px 12px;
+            vertical-align: middle;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .table td:first-child {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .text-muted {
+            color: #6b7280;
+            font-style: italic;
+            text-align: center;
+            padding: 2rem;
+        }
             border-bottom: 1px solid #e9ecef;
         }
         .form-group {
@@ -284,8 +372,9 @@ $total_completed_count = count($completed_payments);
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="pending-enrollments.php"><i class="fas fa-clock"></i> Pending Enrollments</a></li>
+                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
                 <li><a href="payments.php" class="active"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
@@ -293,17 +382,10 @@ $total_completed_count = count($completed_payments);
         <!-- Topbar -->
         <header class="admin-topbar">
             <div class="topbar-left">
-                <button class="menu-toggle" onclick="toggleSidebar()">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button class="menu-toggle"><i class="fas fa-bars"></i></button>
                 <div class="breadcrumbs">
-                    <span>Payment Management</span>
-                </div>
-            </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="<?php echo $user['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <?php echo htmlspecialchars($user['full_name']); ?>
+                    <a href="../index.php" class="home-link">Home</a> / 
+                    <a href="../dashboard.php">Dashboard</a> / Payments
                 </div>
             </div>
         </header>

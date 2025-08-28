@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
                         
                         try {
-                            $sql = "INSERT INTO users (username, password, email, full_name, user_type, phone, address, date_of_birth, gender, qualification, experience_years, joining_date, profile_image) VALUES (?, ?, ?, ?, 'faculty', ?, ?, ?, ?, ?, ?, ?, ?)";
+                            $sql = "INSERT INTO users (username, password, email, full_name, user_type_id, phone, address, date_of_birth, gender, qualification, experience_years, joining_date, profile_image) VALUES (?, ?, ?, ?, 3, ?, ?, ?, ?, ?, ?, ?, ?)";
                             $result = insertData($sql, [$generated_user_id, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $experience_years, $joining_date, $profile_image_url]);
                             
                             if ($result) {
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $staff_id = $_POST['staff_id'] ?? 0;
                 if ($staff_id) {
                     try {
-                        $sql = "DELETE FROM users WHERE id = ? AND user_type = 'faculty'";
+                        $sql = "DELETE FROM users WHERE id = ? AND user_type_id = 3";
                         $result = deleteData($sql, [$staff_id]);
                         if ($result) {
                             $success_message = "Staff member deleted successfully!";
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $new_status = $_POST['new_status'] ?? '';
                 if ($staff_id) {
                     try {
-                        $sql = "UPDATE users SET status = ? WHERE id = ? AND user_type = 'faculty'";
+                        $sql = "UPDATE users SET status = ? WHERE id = ? AND user_type_id = 3";
                         $result = updateData($sql, [$new_status, $staff_id]);
                         if ($result) {
                             $success_message = "Staff status updated successfully!";
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($staff_id && !empty($new_password)) {
                     try {
                         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ? AND user_type = 'faculty'";
+                        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 3";
                         $result = updateData($sql, [$hashed_password, $staff_id]);
                         if ($result) {
                             $success_message = "Staff password updated successfully!";
@@ -151,7 +151,7 @@ try {
                 u.date_of_birth, u.gender, u.qualification, u.experience_years, 
                 u.joining_date, u.status, u.created_at, u.profile_image
                           FROM users u 
-              WHERE u.user_type = 'faculty' 
+              WHERE u.user_type_id = 3 
               ORDER BY u.created_at DESC";
     $staff = getRows($sql);
 } catch (Exception $e) {
@@ -647,8 +647,8 @@ try {
                 <li><a class="active" href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
                 <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
-                <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
@@ -659,12 +659,6 @@ try {
                 <div class="breadcrumbs">
                     <a href="../index.php" class="home-link">Home</a> / 
                     <a href="../dashboard.php">Dashboard</a> / Staff
-                </div>
-            </div>
-            <div class="topbar-right">
-                <div class="user-chip">
-                    <img src="../assets/images/brijendra.jpeg" alt="" /> 
-                    <?php echo htmlspecialchars($user['full_name']); ?>
                 </div>
             </div>
         </header>

@@ -66,13 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $rejection_reason = $_POST['rejection_reason'] ?? 'Enrollment rejected by admin';
                 if ($enrollment_id) {
                     try {
-                        $sql = "UPDATE student_enrollments SET status = 'dropped', updated_at = NOW() WHERE id = ? AND status = 'pending'";
-                        $result = updateData($sql, [$enrollment_id]);
-                        if ($result) {
-                            $success_message = "Enrollment rejected successfully!";
-                        } else {
-                            $error_message = "Failed to reject enrollment or enrollment already processed.";
+                        // Update enrollment status
+                        $enrollment_sql = "UPDATE student_enrollments SET status = 'rejected', updated_at = NOW() WHERE id = ? AND status = 'pending'";
+                        $enrollment_result = updateData($enrollment_sql, [$enrollment_id]);
+                        
+                        if (!$enrollment_result) {
+                            throw new Exception("Failed to reject enrollment. Please try again.");
                         }
+                        
+                        $success_message = "Enrollment rejected successfully!";
                     } catch (Exception $e) {
                         $error_message = "Error: " . $e->getMessage();
                     }
@@ -142,14 +144,172 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pending Approvals - GICT Admin</title>
+    <title>Pending Approvals & Enrollments - GICT Admin</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .admin-content {
-            padding: 20px;
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
         }
+        .admin-sidebar {
+            width: 260px;
+            background: #1f2d3d;
+            color: #e9eef3;
+            padding: 18px 14px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .admin-brand img {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+        .brand-title {
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .profile-card-mini {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 14px;
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .profile-card-mini img {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.25);
+        }
+        .profile-card-mini .name {
+            font-weight: 600;
+        }
+        .profile-card-mini .role {
+            color: #cbd5e1;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0 0;
+        }
+        .sidebar-nav li {
+            margin: 4px 0;
+        }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            text-decoration: none;
+            color: #e9eef3;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+        .sidebar-nav a i {
+            width: 18px;
+            text-align: center;
+        }
+        .sidebar-nav a.active,
+        .sidebar-nav a:hover {
+            background: rgba(255,255,255,0.09);
+        }
+        
+        .admin-topbar {
+            position: fixed;
+            top: 0;
+            left: 260px;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 999;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #64748b;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .breadcrumbs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        .breadcrumbs a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .topbar-home-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+            .admin-content {
+                margin-left: 0;
+            }
+            .admin-topbar {
+                left: 0;
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .admin-content {
+            flex: 1;
+            margin-left: 260px;
+            margin-top: 60px;
+            padding: 20px;
+            min-height: calc(100vh - 60px);
+            background: #f1f5f9;
+            width: calc(100vw - 260px);
+            box-sizing: border-box;
+        }
+        
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -290,14 +450,46 @@ try {
     </style>
 </head>
 <body>
-    <?php include '../header.php'; ?>
-    
     <div class="admin-container">
-        <?php include 'sidebar.php'; ?>
+        <aside class="admin-sidebar">
+            <div class="admin-brand">
+                <img src="../assets/images/logo.png" alt="logo" />
+                <div class="brand-title">GICT CONTROL</div>
+            </div>
+            <div class="profile-card-mini">
+                <img src="../assets/images/brijendra.jpeg" alt="Profile" />
+                <div>
+                    <div class="name"><?php echo htmlspecialchars(strtoupper($user['full_name'])); ?></div>
+                    <div class="role"><?php echo htmlspecialchars(ucfirst($user['user_type'] ?? 'admin')); ?></div>
+                </div>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="../index.php"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="../dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
+                <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
+                <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
+                <li><a class="active" href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
+                <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </aside>
         
-        <div class="admin-content">
+        <header class="admin-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle"><i class="fas fa-bars"></i></button>
+                <div class="breadcrumbs">
+                    <a href="../index.php" class="home-link">Home</a> / 
+                    <a href="../dashboard.php">Dashboard</a> / Pending Approvals
+                </div>
+            </div>
+        </header>
+
+        <main class="admin-content">
             <div class="page-header">
-                <h1><i class="fas fa-clock"></i> Pending Approvals</h1>
+                <h1><i class="fas fa-clock"></i> Pending Approvals & Enrollments</h1>
+                <p>Manage pending payment approvals and student enrollment requests</p>
                 <div class="header-actions">
                     <a href="dashboard.php" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Dashboard
@@ -474,12 +666,16 @@ try {
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
     
-    <?php include '../footer.php'; ?>
-    
     <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const sidebar = document.querySelector('.admin-sidebar');
+            sidebar.classList.toggle('open');
+        }
+        
         // Auto-refresh page every 30 seconds to show latest pending items
         setTimeout(function() {
             location.reload();
