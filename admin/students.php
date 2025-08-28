@@ -6,6 +6,9 @@ requireRole('admin');
 // Include ImgBB helper for image uploads
 require_once '../includes/imgbb_helper.php';
 
+// Include User ID Generator helper
+require_once '../includes/user_id_generator.php';
+
 $user = getCurrentUser();
 
 // Handle form submissions
@@ -13,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_student':
-                $username = $_POST['username'] ?? '';
                 $email = $_POST['email'] ?? '';
                 $full_name = $_POST['full_name'] ?? '';
                 $phone = $_POST['phone'] ?? '';
@@ -22,13 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $gender = $_POST['gender'] ?? '';
                 $qualification = $_POST['qualification'] ?? '';
                 $joining_date = $_POST['joining_date'] ?? '';
+                $previous_institute = $_POST['previous_institute'] ?? '';
                 
-                // Check if username already exists
-                $checkSql = "SELECT id FROM users WHERE username = ?";
-                $existingUser = getRow($checkSql, [$username]);
-                
-                if ($existingUser) {
-                    $error_message = "Username '$username' already exists. Please choose a different username.";
+                // Generate unique user ID for student
+                $generated_user_id = generateUniqueUserId('student');
+                if (!$generated_user_id) {
+                    $error_message = "Failed to generate unique user ID for student.";
                 } else {
                     // Handle file uploads to ImgBB
                     $profile_image_url = '';
@@ -36,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $aadhaar_card_url = '';
                     $uploaded_files = [];
                     
-                    // Profile Image Upload
+                                        // Profile Image Upload
                     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
                         $profile_file = $_FILES['profile_image'];
                         $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
@@ -45,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 200 * 1024) {
                             $imgbb_result = smartUpload(
                                 $profile_file['tmp_name'], 
-                                $username . '_profile'
+                                $generated_user_id . '_profile'
                             );
                             
                             if ($imgbb_result && $imgbb_result['success']) {
@@ -74,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (in_array($marksheet_ext, $allowed_doc_exts) && $marksheet_file['size'] <= 200 * 1024) {
                             $imgbb_result = smartUpload(
                                 $marksheet_file['tmp_name'], 
-                                $username . '_marksheet'
+                                $generated_user_id . '_marksheet'
                             );
                             
                             if ($imgbb_result && $imgbb_result['success']) {
@@ -103,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (in_array($aadhaar_ext, $allowed_image_exts) && $aadhaar_file['size'] <= 200 * 1024) {
                             $imgbb_result = smartUpload(
                                 $aadhaar_file['tmp_name'], 
-                                $username . '_aadhaar'
+                                $generated_user_id . '_aadhaar'
                             );
                             
                             if ($imgbb_result && $imgbb_result['success']) {
@@ -117,20 +118,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 ];
                             } else {
                                 $error_message = "Failed to upload Aadhaar card to ImgBB.";
-                            }
+                                }
                         } else {
                             $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 200KB.";
                         }
                     }
                     
                     if (empty($error_message)) {
-                        // Generate default password (username + 123)
-                        $default_password = $username . '123';
+                        // Generate default password (generated_user_id + 123)
+                        $default_password = $generated_user_id . '123';
                         $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
                         
                         try {
                             $sql = "INSERT INTO users (username, password, email, full_name, user_type, phone, address, date_of_birth, gender, qualification, joining_date, profile_image) VALUES (?, ?, ?, ?, 'student', ?, ?, ?, ?, ?, ?, ?)";
-                            $result = insertData($sql, [$username, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $joining_date, $profile_image_url]);
+                            $result = insertData($sql, [$generated_user_id, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $joining_date, $profile_image_url]);
                             
                             if ($result) {
                                 $user_id = getDBConnection()->lastInsertId();
@@ -138,26 +139,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 // Insert document records with ImgBB URLs
                                 if (!empty($uploaded_files)) {
                                     foreach ($uploaded_files as $file) {
-                                        $docSql = "INSERT INTO student_documents (user_id, document_type, file_path, imgbb_id, original_filename, file_size, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                                        $docSql = "INSERT INTO student_documents (user_id, document_type, file_url, file_name, file_size, uploaded_at) VALUES (?, ?, ?, ?, ?, NOW())";
                                         insertData($docSql, [
                                             $user_id,
                                             $file['type'],
                                             $file['url'],
-                                            $file['imgbb_id'],
-                                            $file['type'],
+                                            $file['type'] . '_' . $generated_user_id,
                                             $file['size']
                                         ]);
                                     }
                                 }
                                 
                                 $success_message = "Student '$full_name' added successfully!<br>";
-                                $success_message .= "<strong>Username:</strong> $username<br>";
+                                $success_message .= "<strong>User ID:</strong> $generated_user_id<br>";
                                 $success_message .= "<strong>Default Password:</strong> $default_password";
                                 
                                 if (!empty($uploaded_files)) {
                                     $success_message .= "<br><br><strong>ImgBB URLs (Stored in Database):</strong><br>";
                                     foreach ($uploaded_files as $file) {
-                                        $success_message .= "- {$file['type']}: <a href='{$file['url']}' target='_blank'>{$file['url']}</a><br>";
+                                        $success_message .= "- {$file['type']}: <a href='{$file['url']}' target='_blank'>{$file['url']}</a>";
                                     }
                                 }
                             } else {
@@ -174,16 +174,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $student_id = $_POST['student_id'] ?? 0;
                 if ($student_id) {
                     try {
-                        $sql = "DELETE FROM users WHERE id = ? AND user_type = 'student'";
-                        $result = deleteData($sql, [$student_id]);
-                        if ($result) {
-                            $success_message = "Student deleted successfully!";
+                        // First check if student exists and is actually a student
+                        $check_sql = "SELECT id, username, full_name FROM users WHERE id = ? AND user_type = 'student'";
+                        $student = getRow($check_sql, [$student_id]);
+                        
+                        if (!$student) {
+                            $error_message = "Student not found or invalid user type.";
                         } else {
-                            $error_message = "Failed to delete student.";
+                            // Delete student (cascade will handle related records)
+                            $sql = "DELETE FROM users WHERE id = ? AND user_type = 'student'";
+                            $result = deleteData($sql, [$student_id]);
+                            
+                            if ($result) {
+                                $success_message = "Student '{$student['full_name']}' (ID: {$student['username']}) deleted successfully!";
+                                // Note: Related records in student_enrollments, payments, and student_documents 
+                                // will be automatically deleted due to CASCADE constraints
+                            } else {
+                                $error_message = "Failed to delete student. Please check if there are any active enrollments or payments.";
+                            }
                         }
                     } catch (Exception $e) {
-                        $error_message = "Error: " . $e->getMessage();
+                        error_log("Student deletion error: " . $e->getMessage());
+                        $error_message = "Error deleting student: " . $e->getMessage();
                     }
+                } else {
+                    $error_message = "Invalid student ID provided.";
                 }
                 break;
                 
@@ -211,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($student_id && !empty($new_password)) {
                     try {
                         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ? AND user_type = 'student'";
+                        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 2";
                         $result = updateData($sql, [$hashed_password, $student_id]);
                         if ($result) {
                             $success_message = "Student password updated successfully!";
@@ -235,11 +250,11 @@ try {
     $sql = "SELECT 
                 u.id, u.username, u.email, u.full_name, u.phone, u.address, 
                 u.date_of_birth, u.gender, u.joining_date, u.status, u.created_at, u.profile_image,
-                COUNT(e.id) as total_enrollments,
-                COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses,
-                COUNT(CASE WHEN e.status = 'enrolled' THEN 1 END) as active_enrollments
+                COUNT(se.id) as total_enrollments,
+                COUNT(CASE WHEN se.status = 'completed' THEN 1 END) as completed_courses,
+                COUNT(CASE WHEN se.status = 'enrolled' THEN 1 END) as active_enrollments
             FROM users u 
-            LEFT JOIN enrollments e ON u.id = e.student_id 
+            LEFT JOIN student_enrollments se ON u.id = se.user_id 
             WHERE u.user_type = 'student' 
             GROUP BY u.id 
             ORDER BY u.created_at DESC";
@@ -781,6 +796,107 @@ try {
         }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* Enhanced Modal Styles */
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-section h3 i {
+            color: #667eea;
+            font-size: 20px;
+        }
+        
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .file-upload-wrapper:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-upload-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #6c757d;
+        }
+        
+        .file-upload-info i {
+            font-size: 24px;
+            color: #667eea;
+        }
+        
+        .file-upload-info span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview .file-info {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .form-text {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .form-text i {
+            margin-right: 5px;
+            color: #667eea;
+        }
     </style>
 </head>
 <body class="admin-dashboard-body">
@@ -803,6 +919,7 @@ try {
                 <li><a class="active" href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
+                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
                 <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -961,7 +1078,7 @@ try {
         </main>
     </div>
 
-    <!-- Add Student Modal -->
+        <!-- Add Student Modal -->
     <div id="addStudentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -972,81 +1089,154 @@ try {
             <form id="addStudentForm" method="POST" action="students.php" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_student">
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="username">Username *</label>
-                        <input type="text" id="username" name="username" required>
+                <!-- Info Alert -->
+                <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> A unique User ID will be automatically generated in the format: <code>s[YEAR][3-digit-number]</code> (e.g., s2025001)
+                </div>
+                
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> Personal Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="full_name">Full Name *</label>
+                            <input type="text" id="full_name" name="full_name" required placeholder="Enter student's full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required placeholder="student@example.com">
+                        </div>
                     </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+91-9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_of_birth">Date of Birth</label>
+                            <input type="date" id="date_of_birth" name="date_of_birth">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="qualification">Current Qualification *</label>
+                            <select id="qualification" name="qualification" required>
+                                <option value="">Select Qualification</option>
+                                <option value="10th">10th Standard</option>
+                                <option value="12th">12th Standard</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="M.Tech">M.Tech</option>
+                                <option value="B.Sc">B.Sc</option>
+                                <option value="M.Sc">M.Sc</option>
+                                <option value="B.Com">B.Com</option>
+                                <option value="M.Com">M.Com</option>
+                                <option value="BBA">BBA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="address">Address</label>
+                        <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="full_name">Full Name *</label>
-                        <input type="text" id="full_name" name="full_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" name="phone">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="date_of_birth">Date of Birth</label>
-                        <input type="date" id="date_of_birth" name="date_of_birth">
-                    </div>
-                    <div class="form-group">
-                        <label for="gender">Gender</label>
-                        <select id="gender" name="gender">
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
+                <!-- Academic Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="joining_date">Joining Date</label>
+                            <input type="date" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="previous_institute">Previous Institute (Optional)</label>
+                            <input type="text" id="previous_institute" name="previous_institute" placeholder="Name of previous institute">
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="qualification">Qualification *</label>
-                        <input type="text" id="qualification" name="qualification" required placeholder="e.g., 12th, B.Tech, M.Tech">
+                <!-- Document Upload Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profile_image">Profile Image *</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="profile_image" name="profile_image" required accept="image/*" onchange="previewImage(this, 'profile-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="profile-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Max size: 200KB. Formats: JPG, JPEG, PNG
+                            </small>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="joining_date">Joining Date</label>
-                        <input type="date" id="joining_date" name="joining_date">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="marksheet">Marksheet/Certificate *</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="marksheet" name="marksheet" required accept=".pdf,.jpg,.jpeg,.png" onchange="previewImage(this, 'marksheet-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="marksheet-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Max size: 200KB. Formats: PDF, JPG, JPEG, PNG
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="aadhaar_card">Aadhaar Card (Optional)</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*" onchange="previewImage(this, 'aadhaar-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="aadhaar-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Max size: 200KB. Formats: JPG, JPEG, PNG
+                            </small>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="profile_image">Profile Image (Optional)</label>
-                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
-                    <small class="form-text text-muted">Max size: 200KB. Formats: JPG, JPEG, PNG</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="marksheet">Marksheet</label>
-                    <input type="file" id="marksheet" name="marksheet" required accept=".jpg,.jpeg,.png">
-                    <small class="form-text text-muted">Max size: 200KB. Formats: PDF, JPG, JPEG, PNG</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="aadhaar_card">Aadhaar Card (Optional)</label>
-                    <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*">
-                    <small class="form-text text-muted">Max size: 200KB. Formats: JPG, JPEG, PNG</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" name="address" rows="3"></textarea>
-                </div>
-                
+                <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Student</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Student
+                    </button>
                 </div>
             </form>
         </div>
@@ -1090,6 +1280,108 @@ try {
     <script src="../assets/js/mobile-menu.js"></script>
     
     <script>
+        // Image preview functionality
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            
+            if (file) {
+                // Clear previous preview
+                preview.innerHTML = '';
+                
+                // Check file size (200KB limit)
+                const fileSize = file.size / 1024; // Convert to KB
+                if (fileSize > 200) {
+                    alert('File size must be less than 200KB. Current size: ' + fileSize.toFixed(1) + 'KB');
+                    input.value = '';
+                    return;
+                }
+                
+                // Check file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Please select a valid file type: JPG, JPEG, PNG, or PDF');
+                    input.value = '';
+                    return;
+                }
+                
+                if (file.type.startsWith('image/')) {
+                    // Show image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.alt = 'Preview';
+                        preview.appendChild(img);
+                        
+                        // Add file info
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'file-info';
+                        fileInfo.innerHTML = `
+                            <strong>${file.name}</strong><br>
+                            Size: ${fileSize.toFixed(1)}KB<br>
+                            Type: ${file.type}
+                        `;
+                        preview.appendChild(fileInfo);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // Show file info for PDFs
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-info';
+                    fileInfo.innerHTML = `
+                        <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i><br>
+                        <strong>${file.name}</strong><br>
+                        Size: ${fileSize.toFixed(1)}KB<br>
+                        Type: ${file.type}
+                    `;
+                    preview.appendChild(fileInfo);
+                }
+            }
+        }
+        
+        // Form validation
+        function validateStudentForm() {
+            const form = document.getElementById('addStudentForm');
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#dc3545';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#e1e5e9';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please fill in all required fields marked with *');
+            }
+            
+            return isValid;
+        }
+        
+        // Enhanced form submission
+        document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+            if (!validateStudentForm()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Student...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after a delay (in case of error)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 10000);
+        });
+        
         function editStudent(studentId) {
             // For now, redirect to a potential edit page or show a message
             alert('Edit functionality will be implemented in the next update. Student ID: ' + studentId);

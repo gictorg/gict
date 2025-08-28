@@ -11,7 +11,7 @@ if (!isLoggedIn() || !isStudent()) {
 $user_id = $_SESSION['user_id'];
 
 // Get student information
-$student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
+$student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
 if (!$student) {
     header('Location: ../login.php');
     exit;
@@ -19,21 +19,28 @@ if (!$student) {
 
 // Get enrolled courses
 $enrolled_courses = getRows("
-    SELECT c.*, se.status as enrollment_status, se.enrollment_date, se.final_marks
-    FROM courses c
-    JOIN student_enrollments se ON c.id = se.course_id
+    SELECT c.name as course_name, cc.name as category_name, sc.name as sub_course_name, 
+           sc.fee, sc.duration, se.status as enrollment_status, se.enrollment_date, se.completion_date
+    FROM student_enrollments se
+    JOIN sub_courses sc ON se.sub_course_id = sc.id
+    JOIN courses c ON sc.course_id = c.id
+    JOIN course_categories cc ON c.category_id = cc.id
     WHERE se.user_id = ?
     ORDER BY se.enrollment_date DESC
 ", [$user_id]);
 
-// Get available courses for enrollment
+// Get available sub-courses for enrollment
 $available_courses = getRows("
-    SELECT c.* FROM courses c
-    WHERE c.status = 'active' 
-    AND c.id NOT IN (
-        SELECT course_id FROM student_enrollments WHERE user_id = ?
+    SELECT sc.id, c.name as course_name, cc.name as category_name, sc.name as sub_course_name, 
+           sc.fee, sc.duration, sc.description
+    FROM sub_courses sc
+    JOIN courses c ON sc.course_id = c.id
+    JOIN course_categories cc ON c.category_id = cc.id
+    WHERE sc.status = 'active' 
+    AND sc.id NOT IN (
+        SELECT sub_course_id FROM student_enrollments WHERE user_id = ?
     )
-    ORDER BY c.name
+    ORDER BY c.name, sc.name
 ", [$user_id]);
 
 $total_enrolled = count($enrolled_courses);
@@ -329,20 +336,28 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
                             <?php foreach ($enrolled_courses as $course): ?>
                                 <div class="course-card">
                                     <div class="course-header">
-                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['sub_course_name']); ?></h6>
                                         <span class="course-status status-<?php echo $course['enrollment_status']; ?>">
                                             <?php echo ucfirst($course['enrollment_status']); ?>
                                         </span>
                                     </div>
                                     <div class="course-details">
                                         <div class="course-detail">
+                                            <i class="fas fa-book"></i>
+                                            <span>Course: <?php echo htmlspecialchars($course['course_name']); ?></span>
+                                        </div>
+                                        <div class="course-detail">
+                                            <i class="fas fa-tag"></i>
+                                            <span>Category: <?php echo htmlspecialchars($course['category_name']); ?></span>
+                                        </div>
+                                        <div class="course-detail">
                                             <i class="fas fa-calendar"></i>
                                             <span>Enrolled: <?php echo date('M d, Y', strtotime($course['enrollment_date'])); ?></span>
                                         </div>
-                                        <?php if ($course['final_marks']): ?>
+                                        <?php if ($course['completion_date']): ?>
                                             <div class="course-detail">
-                                                <i class="fas fa-star"></i>
-                                                <span>Final Marks: <?php echo $course['final_marks']; ?>%</span>
+                                                <i class="fas fa-trophy"></i>
+                                                <span>Completed: <?php echo date('M d, Y', strtotime($course['completion_date'])); ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -374,22 +389,36 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
                     <?php else: ?>
                         <div class="course-grid">
                             <?php foreach ($available_courses as $course): ?>
-                                <div class="course-card">
+                                                                <div class="course-card">
                                     <div class="course-header">
-                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['sub_course_name']); ?></h6>
                                     </div>
                                     <div class="course-details">
+                                        <div class="course-detail">
+                                            <i class="fas fa-book"></i>
+                                            <span>Course: <?php echo htmlspecialchars($course['course_name']); ?></span>
+                                        </div>
+                                        <div class="course-detail">
+                                            <i class="fas fa-tag"></i>
+                                            <span>Category: <?php echo htmlspecialchars($course['category_name']); ?></span>
+                                        </div>
                                         <div class="course-detail">
                                             <i class="fas fa-clock"></i>
                                             <span>Duration: <?php echo $course['duration']; ?> months</span>
                                         </div>
                                         <div class="course-detail">
-                                            <i class="fas fa-dollar-sign"></i>
-                                            <span>Fee: $<?php echo number_format($course['fee'], 2); ?></span>
+                                            <i class="fas fa-rupee-sign"></i>
+                                            <span>Fee: ₹<?php echo number_format($course['fee'], 2); ?></span>
                                         </div>
+                                        <?php if ($course['description']): ?>
+                                            <div class="course-detail">
+                                                <i class="fas fa-info-circle"></i>
+                                                <span><?php echo htmlspecialchars($course['description']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                     <div class="course-actions">
-                                        <button class="btn btn-primary btn-sm">
+                                        <button class="btn btn-primary btn-sm" onclick="enrollInCourse(<?php echo $course['id']; ?>)">
                                             <i class="fas fa-plus"></i> Enroll Now
                                         </button>
                                     </div>
@@ -407,6 +436,35 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
         function toggleSidebar() {
             const sidebar = document.querySelector('.admin-sidebar');
             sidebar.classList.toggle('mobile-open');
+        }
+        
+        // Enroll in course function
+        function enrollInCourse(subCourseId) {
+            if (confirm('Are you sure you want to enroll in this course?')) {
+                // Create form data
+                const formData = new FormData();
+                formData.append('enroll', '1');
+                formData.append('sub_course_id', subCourseId);
+                
+                // Send enrollment request
+                fetch('enroll.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Successfully enrolled in the course!');
+                        location.reload(); // Refresh the page to show updated data
+                    } else {
+                        alert('Enrollment failed: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Enrollment failed. Please try again.');
+                });
+            }
         }
     </script>
 </body>

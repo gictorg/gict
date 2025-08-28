@@ -8,27 +8,28 @@
             // Get active faculty members from database
             try {
                 require_once 'config/database.php';
-                $faculty_sql = "SELECT full_name, qualification, experience_years, profile_image FROM users WHERE user_type = 'faculty' AND status = 'active' ORDER BY experience_years DESC";
+                $faculty_sql = "SELECT u.full_name, u.qualification, u.experience_years, u.profile_image 
+                FROM users u 
+                JOIN user_types ut ON u.user_type_id = ut.id 
+                WHERE ut.name = 'faculty' AND u.status = 'active' 
+                ORDER BY u.experience_years DESC";
                 $faculty_members = getRows($faculty_sql);
                 
                 if (!empty($faculty_members)) {
                     foreach ($faculty_members as $faculty) {
                         $profile_img = !empty($faculty['profile_image']) ? $faculty['profile_image'] : 'assets/images/default-faculty.png';
                         
-                        // Map faculty names to specialties for display
-                        $specialty_map = [
-                            'Sarita Patel' => 'Tally',
-                            'Anand Sir' => 'Web Development',
-                            'Mukesh Gupta' => 'Hardware Networking',
-                            'Madhu Ma\'am' => 'Beauty & Aesthetics',
-                            'Tanu Tiwari' => 'Artificial Intelligence',
-                            'Anjali Prajapati' => 'Professional Courses'
-                        ];
+                        // Debug: Show what's being fetched
+                        if (empty($faculty['profile_image'])) {
+                            error_log("Faculty {$faculty['full_name']} has no profile image");
+                        }
                         
-                        $specialty = $specialty_map[$faculty['full_name']] ?? $faculty['qualification'];
+                        // Use qualification as specialty, fallback to experience years
+                        $specialty = !empty($faculty['qualification']) ? $faculty['qualification'] : 
+                                    ($faculty['experience_years'] > 0 ? $faculty['experience_years'] . ' years experience' : 'Faculty Member');
                         
                         echo '<div class="gallery-item faculty-item">';
-                        echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($faculty['full_name']) . '">';
+                        echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($faculty['full_name']) . '" onerror="this.onerror=null; this.src=\'assets/images/default-faculty.png\'">';
                         echo '<div class="caption">';
                         echo '<h3>' . htmlspecialchars($faculty['full_name']) . '</h3>';
                         echo '<p>' . htmlspecialchars($specialty) . '</p>';
@@ -36,46 +37,10 @@
                         echo '</div>';
                     }
                 } else {
-                    // Fallback to static faculty if no database data
-                    $static_faculty = [
-                        ['name' => 'Sarita Patel', 'specialty' => 'Tally', 'image' => 'assets/images/sarita.png'],
-                        ['name' => 'Anand Sir', 'specialty' => 'Web Development', 'image' => 'assets/images/anand sir.png'],
-                        ['name' => 'Mukesh Gupta', 'specialty' => 'Hardware Networking', 'image' => 'assets/images/mukesh.png'],
-                        ['name' => 'Madhu Ma\'am', 'specialty' => 'Beauty & Aesthetics', 'image' => 'assets/images/madhu.jpeg'],
-                        ['name' => 'Tanu Tiwari', 'specialty' => 'Artificial Intelligence', 'image' => 'assets/images/tanu.jpeg'],
-                        ['name' => 'Anjali Prajapati', 'specialty' => 'Professional Courses', 'image' => 'assets/images/anjali.jpeg']
-                    ];
-                    
-                    foreach ($static_faculty as $faculty) {
-                        echo '<div class="gallery-item faculty-item">';
-                        echo '<img src="' . $faculty['image'] . '" alt="' . $faculty['name'] . '">';
-                        echo '<div class="caption">';
-                        echo '<h3>' . $faculty['name'] . '</h3>';
-                        echo '<p>' . $faculty['specialty'] . '</p>';
-                        echo '</div>';
-                        echo '</div>';
-                    }
+                    echo '<p class="no-data">No faculty members available at the moment.</p>';
                 }
             } catch (Exception $e) {
-                // Fallback to static faculty if database fails
-                $static_faculty = [
-                    ['name' => 'Sarita Patel', 'specialty' => 'Tally', 'image' => 'assets/images/sarita.png'],
-                    ['name' => 'Anand Sir', 'specialty' => 'Web Development', 'image' => 'assets/images/anand sir.png'],
-                    ['name' => 'Mukesh Gupta', 'specialty' => 'Hardware Networking', 'image' => 'assets/images/mukesh.png'],
-                    ['name' => 'Madhu Ma\'am', 'specialty' => 'Beauty & Aesthetics', 'image' => 'assets/images/madhu.jpeg'],
-                    ['name' => 'Tanu Tiwari', 'specialty' => 'Artificial Intelligence', 'image' => 'assets/images/tanu.jpeg'],
-                    ['name' => 'Anjali Prajapati', 'specialty' => 'Professional Courses', 'image' => 'assets/images/anjali.jpeg']
-                ];
-                
-                foreach ($static_faculty as $faculty) {
-                    echo '<div class="gallery-item faculty-item">';
-                    echo '<img src="' . $faculty['image'] . '" alt="' . $faculty['name'] . '">';
-                    echo '<div class="caption">';
-                    echo '<h3>' . $faculty['name'] . '</h3>';
-                    echo '<p>' . $faculty['specialty'] . '</p>';
-                    echo '</div>';
-                    echo '</div>';
-                }
+                echo '<p class="no-data">Unable to load faculty information. Please try again later.</p>';
             }
             ?>
         </div>
@@ -83,26 +48,41 @@
         <!-- Course Offered Section -->
         <h2 class="section-title">Courses Offered</h2>
         <div class="gallery-container courses-gallery">
-            <div class="gallery-item course-item">
-                <img src="assets/images/computer course.jpeg" alt="Computer Course">
-                <div class="caption">Computer Course</div>
-            </div>
-            <div class="gallery-item course-item">
-                <img src="assets/images/Yoga Certificate.jpeg" alt="Yoga Certificate">
-                <div class="caption">Yoga Certificate</div>
-            </div>
-            <div class="gallery-item course-item">
-                <img src="assets/images/Vocational Course.jpeg" alt="Vocational Course">
-                <div class="caption">Vocational Course</div>
-            </div>
-            <div class="gallery-item course-item">
-                <img src="assets/images/Beautician Certificate.jpeg" alt="Beautician Certificate">
-                <div class="caption">Beautician Certificate</div>
-            </div>
-            <div class="gallery-item course-item">
-                <img src="assets/images/Tailoring Certificate.jpeg" alt="Tailoring Certificate">
-                <div class="caption">Tailoring Certificate</div>
-            </div>
+            <?php
+            // Get active courses from database
+            try {
+                $courses_sql = "SELECT c.name, c.description, c.duration, cc.name as category_name
+                FROM courses c 
+                JOIN course_categories cc ON c.category_id = cc.id 
+                WHERE c.status = 'active' 
+                ORDER BY c.name";
+                $courses = getRows($courses_sql);
+                
+                if (!empty($courses)) {
+                    foreach ($courses as $course) {
+                        // Map course names to images (you can add more mappings as needed)
+                        $course_images = [
+                            'Computer Course' => 'assets/images/computer course.jpeg',
+                            'Yoga Course' => 'assets/images/Yoga Certificate.jpeg',
+                            'Vocational Course' => 'assets/images/Vocational Course.jpeg',
+                            'Beautician Course' => 'assets/images/Beautician Certificate.jpeg',
+                            'Tailoring Course' => 'assets/images/Tailoring Certificate.jpeg'
+                        ];
+                        
+                        $course_image = $course_images[$course['name']] ?? 'assets/images/default-course.png';
+                        
+                        echo '<div class="gallery-item course-item">';
+                        echo '<img src="' . htmlspecialchars($course_image) . '" alt="' . htmlspecialchars($course['name']) . '">';
+                        echo '<div class="caption">' . htmlspecialchars($course['name']) . '</div>';
+                        echo '</div>';
+                    }
+                } else {
+                    echo '<p class="no-data">No courses available at the moment.</p>';
+                }
+            } catch (Exception $e) {
+                echo '<p class="no-data">Unable to load course information. Please try again later.</p>';
+            }
+            ?>
         </div>
 
         <!-- Recently Joined Student Section -->
@@ -111,52 +91,26 @@
             <?php
             // Get recent students from database
             try {
-                $students_sql = "SELECT full_name, qualification, joining_date, profile_image FROM users WHERE user_type = 'student' AND status = 'active' ORDER BY joining_date DESC LIMIT 6";
+                $students_sql = "SELECT u.full_name, u.qualification, u.joining_date, u.profile_image 
+                FROM users u 
+                JOIN user_types ut ON u.user_type_id = ut.id 
+                WHERE ut.name = 'student' AND u.status = 'active' 
+                ORDER BY u.joining_date DESC LIMIT 6";
                 $recent_students = getRows($students_sql);
                 
                 if (!empty($recent_students)) {
                     foreach ($recent_students as $student) {
                         $profile_img = !empty($student['profile_image']) ? $student['profile_image'] : 'assets/images/default-student.png';
                         echo '<div class="gallery-item student-item">';
-                        echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($student['full_name']) . '">';
+                        echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($student['full_name']) . '" onerror="this.onerror=null; this.src=\'assets/images/default-student.png\'">';
                         echo '<div class="caption">' . htmlspecialchars($student['full_name']) . '</div>';
                         echo '</div>';
                     }
                 } else {
-                    // Fallback to static students if no database data
-                    $static_students = [
-                        ['image' => 'assets/images/1.jpg', 'name' => 'Student 1'],
-                        ['image' => 'assets/images/2.jpg', 'name' => 'Student 2'],
-                        ['image' => 'assets/images/3.jpeg', 'name' => 'Student 3'],
-                        ['image' => 'assets/images/4.jpeg', 'name' => 'Student 4'],
-                        ['image' => 'assets/images/5.jpg', 'name' => 'Student 5'],
-                        ['image' => 'assets/images/6.jpeg', 'name' => 'Student 6']
-                    ];
-                    
-                    foreach ($static_students as $student) {
-                        echo '<div class="gallery-item student-item">';
-                        echo '<img src="' . $student['image'] . '" alt="' . $student['name'] . '">';
-                        echo '<div class="caption">' . $student['name'] . '</div>';
-                        echo '</div>';
-                    }
+                    echo '<p class="no-data">No students available at the moment.</p>';
                 }
             } catch (Exception $e) {
-                // Fallback to static students if database fails
-                $static_students = [
-                    ['image' => 'assets/images/1.jpg', 'name' => 'Student 1'],
-                    ['image' => 'assets/images/2.jpg', 'name' => 'Student 2'],
-                    ['image' => 'assets/images/3.jpeg', 'name' => 'Student 3'],
-                    ['image' => 'assets/images/4.jpeg', 'name' => 'Student 4'],
-                    ['image' => 'assets/images/5.jpg', 'name' => 'Student 5'],
-                    ['image' => 'assets/images/6.jpeg', 'name' => 'Student 6']
-                ];
-                
-                foreach ($static_students as $student) {
-                    echo '<div class="gallery-item student-item">';
-                    echo '<img src="' . $student['image'] . '" alt="' . $student['name'] . '">';
-                    echo '<div class="caption">' . $student['name'] . '</div>';
-                    echo '</div>';
-                }
+                echo '<p class="no-data">Unable to load student information. Please try again later.</p>';
             }
             ?>
         </div>

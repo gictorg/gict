@@ -11,7 +11,7 @@ if (!isLoggedIn() || !isStudent()) {
 $user_id = $_SESSION['user_id'];
 
 // Get student information
-$student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
+$student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
 if (!$student) {
     header('Location: ../login.php');
     exit;
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = 'Profile updated successfully!';
                     $message_type = 'success';
                     // Refresh student data
-                    $student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
+                    $student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
                 } else {
                     $message = 'Failed to update profile';
                     $message_type = 'error';

@@ -3,7 +3,7 @@
  * ImgBB Helper for GICT Institute
  * Uses your API key: 3acdbb8d9ce98d6f3ff4e61a5902c75a
  * Images NEVER expire (0 = permanent)
- * Includes fallback to local storage if ImgBB fails
+ * ONLY uploads to ImgBB - no local storage fallback
  */
 
 // ImgBB Configuration
@@ -20,12 +20,14 @@ function uploadToImgBB($file_path, $name = '') {
     try {
         // Check if file exists
         if (!file_exists($file_path)) {
+            error_log("ImgBB Upload Error: File does not exist: " . $file_path);
             return false;
         }
         
         // Check file size (ImgBB limit is 32MB, we'll allow up to 200KB for better compatibility)
         $file_size = filesize($file_path);
         if ($file_size > 200 * 1024) {
+            error_log("ImgBB Upload Error: File too large: " . $file_size . " bytes");
             return false;
         }
         
@@ -34,21 +36,39 @@ function uploadToImgBB($file_path, $name = '') {
         $supported_types = ['jpg', 'jpeg', 'png'];
         
         if (!in_array($extension, $supported_types)) {
+            error_log("ImgBB Upload Error: Unsupported file type: " . $extension);
             return false;
         }
         
         // Read file content and encode to base64
         $file_content = file_get_contents($file_path);
         if ($file_content === false) {
+            error_log("ImgBB Upload Error: Cannot read file content");
             return false;
         }
         
         $base64_image = base64_encode($file_content);
         
+        // Format the image name as username.format
+        $formatted_name = '';
+        if ($name) {
+            // Extract username and file type from the name
+            $name_parts = explode('_', $name);
+            if (count($name_parts) >= 2) {
+                $username = $name_parts[0];
+                $file_type = end($name_parts);
+                $formatted_name = $username . '.' . $extension;
+            } else {
+                $formatted_name = $name . '.' . $extension;
+            }
+        } else {
+            $formatted_name = 'image_' . time() . '.' . $extension;
+        }
+        
         // Prepare upload data with your API key and NO expiration
         $post_data = [
             'image' => $base64_image,
-            'name' => $name ?: basename($file_path)
+            'name' => $formatted_name
         ];
         
         // Only add expiration if it's not 0 (permanent)
@@ -72,6 +92,7 @@ function uploadToImgBB($file_path, $name = '') {
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         
         if (curl_errno($ch)) {
+            error_log("ImgBB Upload Error: cURL error: " . curl_error($ch));
             curl_close($ch);
             return false;
         }
@@ -80,6 +101,7 @@ function uploadToImgBB($file_path, $name = '') {
         
         // Check response
         if ($http_code !== 200) {
+            error_log("ImgBB Upload Error: HTTP " . $http_code . " - Response: " . $response);
             return false;
         }
         
@@ -87,6 +109,7 @@ function uploadToImgBB($file_path, $name = '') {
         $result = json_decode($response, true);
         
         if (!$result || !isset($result['success']) || !$result['success']) {
+            error_log("ImgBB Upload Error: API response indicates failure: " . $response);
             return false;
         }
         
@@ -105,93 +128,32 @@ function uploadToImgBB($file_path, $name = '') {
             'height' => $data['height'] ?? null,
             'format' => $data['extension'] ?? pathinfo($file_path, PATHINFO_EXTENSION),
             'expiration' => $data['expiration'] ?? 'Never',
-            'time' => $data['time'] ?? time()
+            'time' => $data['time'] ?? time(),
+            'storage_type' => 'imgbb'
         ];
         
     } catch (Exception $e) {
+        error_log("ImgBB Upload Error: Exception: " . $e->getMessage());
         return false;
     }
 }
 
 /**
- * Fallback function to store images locally if ImgBB fails
+ * Smart upload function that ONLY uses ImgBB - no local storage fallback
  * @param string $file_path Local file path
- * @param string $name Custom name for the file
- * @return array|false Upload result or false on failure
- */
-function uploadToLocalStorage($file_path, $name = '') {
-    try {
-        // Check if file exists
-        if (!file_exists($file_path)) {
-            return false;
-        }
-        
-        // Create uploads directory if it doesn't exist
-        $uploads_dir = 'uploads/';
-        if (!is_dir($uploads_dir)) {
-            mkdir($uploads_dir, 0755, true);
-        }
-        
-        $images_dir = $uploads_dir . 'images/';
-        if (!is_dir($images_dir)) {
-            mkdir($images_dir, 0755, true);
-        }
-        
-        // Generate unique filename
-        $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-        $filename = $name ?: 'image_' . time() . '_' . uniqid();
-        $filename = $filename . '.' . $extension;
-        $target_path = $images_dir . $filename;
-        
-        // Copy file to uploads directory
-        if (copy($file_path, $target_path)) {
-            return [
-                'success' => true,
-                'url' => $target_path,
-                'display_url' => $target_path,
-                'delete_url' => '',
-                'id' => $filename,
-                'title' => $name ?: 'Uploaded Image',
-                'size' => filesize($target_path),
-                'width' => null,
-                'height' => null,
-                'format' => $extension,
-                'expiration' => 'Never',
-                'time' => time(),
-                'storage_type' => 'local'
-            ];
-        } else {
-            return false;
-        }
-        
-    } catch (Exception $e) {
-        return false;
-    }
-}
-
-/**
- * Smart upload function that tries ImgBB first, falls back to local storage
- * @param string $file_path Local file path
- * @param string $name Custom name for the file
+ * @param string $name Custom name for the file (format: username_type)
  * @return array|false Upload result or false on failure
  */
 function smartUpload($file_path, $name = '') {
-    // Try ImgBB first
+    // Only try ImgBB - no fallback to local storage
     $result = uploadToImgBB($file_path, $name);
     
     if ($result && $result['success']) {
-        $result['storage_type'] = 'imgbb';
         return $result;
     }
     
-    // If ImgBB fails, fall back to local storage
-    $result = uploadToLocalStorage($file_path, $name);
-    
-    if ($result && $result['success']) {
-        $result['storage_type'] = 'local';
-        return $result;
-    }
-    
+    // Log the failure for debugging
+    error_log("Smart Upload Failed: Could not upload to ImgBB for file: " . $file_path);
     return false;
 }
 
@@ -201,133 +163,99 @@ function smartUpload($file_path, $name = '') {
  * @param string $name Custom name for the file
  * @return array|false Upload result or false on failure
  */
-function uploadFile($file_path, $name = '') {
+function uploadImage($file_path, $name = '') {
     return smartUpload($file_path, $name);
 }
 
 /**
- * Test ImgBB connection with your API key
- * @return array Test results
+ * Delete image from ImgBB (if needed)
+ * @param string $delete_url The delete URL from ImgBB
+ * @return bool Success status
  */
-function testImgBBConnection() {
-    $results = [];
+function deleteFromImgBB($delete_url) {
+    if (empty($delete_url)) {
+        return false;
+    }
     
-    // Test if cURL is available
-    $results['curl_available'] = function_exists('curl_init');
-    
-    // Test API key configuration
-    $results['api_key_configured'] = defined('IMGBB_API_KEY') && !empty(IMGBB_API_KEY);
-    $results['api_key'] = IMGBB_API_KEY;
-    $results['expiration'] = IMGBB_EXPIRATION === 0 ? 'Never (Permanent)' : IMGBB_EXPIRATION . ' seconds';
-    
-    // Test if we can make a simple request to ImgBB
-    if ($results['curl_available'] && $results['api_key_configured']) {
+    try {
         $ch = curl_init();
-        $url = 'https://api.imgbb.com/1/upload?key=' . IMGBB_API_KEY;
-        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_URL, $delete_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'GICT-Institute/1.0');
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         
-        $results['api_connection'] = $http_code === 200 ? 'Connected' : "Failed (HTTP $http_code)";
-        $results['api_accessible'] = $http_code === 200;
-    } else {
-        $results['api_connection'] = 'Not tested (cURL not available or API key not configured)';
-        $results['api_accessible'] = false;
-    }
-    
-    // Test file system access
-    $results['file_system_ok'] = is_writable('uploads/') || is_writable(sys_get_temp_dir());
-    
-    // Overall status - now includes local storage fallback
-    $results['ready_for_upload'] = $results['curl_available'] && $results['file_system_ok'];
-    
-    return $results;
-}
-
-/**
- * Get optimized image URL with size parameters
- * @param string $url Original ImgBB URL
- * @param int $width Desired width
- * @param int $height Desired height
- * @return string Optimized image URL
- */
-function getOptimizedImgBBUrl($url, $width = null, $height = null) {
-    if (!$width && !$height) {
-        return $url;
-    }
-    
-    // ImgBB supports URL parameters for resizing
-    $params = [];
-    if ($width) $params[] = "w=$width";
-    if ($height) $params[] = "h=$height";
-    
-    if (!empty($params)) {
-        return $url . '?' . implode('&', $params);
-    }
-    
-    return $url;
-}
-
-/**
- * Check if file type is supported by ImgBB
- * @param string $file_path File path to check
- * @return bool True if supported
- */
-function isImgBBSupported($file_path) {
-    $extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
-    $supported_types = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg'];
-    
-    return in_array($extension, $supported_types);
-}
-
-/**
- * Get file size in human readable format
- * @param int $bytes File size in bytes
- * @return string Formatted file size
- */
-function formatFileSize($bytes) {
-    if ($bytes >= 1024 * 1024) {
-        return round($bytes / (1024 * 1024), 2) . ' MB';
-    } elseif ($bytes >= 1024) {
-        return round($bytes / 1024, 2) . ' KB';
-    } else {
-        return $bytes . ' bytes';
+        return $http_code === 200;
+    } catch (Exception $e) {
+        error_log("ImgBB Delete Error: " . $e->getMessage());
+        return false;
     }
 }
 
 /**
- * Get thumbnail URL for profile images
- * @param string $imgbb_url Original ImgBB URL
- * @param int $size Size for thumbnail (default 150x150)
- * @return string Thumbnail URL
+ * Get image info from ImgBB URL
+ * @param string $imgbb_url The ImgBB URL
+ * @return array|false Image info or false on failure
  */
-function getProfileThumbnail($imgbb_url, $size = 150) {
-    if (empty($imgbb_url)) {
-        return 'assets/images/default-profile.png'; // Default image
+function getImgBBInfo($imgbb_url) {
+    if (empty($imgbb_url) || !strpos($imgbb_url, 'imgbb.com')) {
+        return false;
     }
     
-    // Add thumbnail parameters to ImgBB URL
-    return $imgbb_url . "?w={$size}&h={$size}&fit=crop";
+    // Extract image ID from URL
+    $parts = explode('/', $imgbb_url);
+    $image_id = end($parts);
+    
+    if (empty($image_id)) {
+        return false;
+    }
+    
+    return [
+        'id' => $image_id,
+        'url' => $imgbb_url,
+        'storage_type' => 'imgbb'
+    ];
 }
 
 /**
- * Get medium size URL for faculty images
- * @param string $imgbb_url Original ImgBB URL
- * @param int $width Width (default 300)
- * @param int $height Height (default 200)
- * @return string Medium size URL
+ * Validate if a URL is from ImgBB
+ * @param string $url The URL to validate
+ * @return bool True if it's an ImgBB URL
  */
-function getFacultyImage($imgbb_url, $width = 300, $height = 200) {
-    if (empty($imgbb_url)) {
-        return 'assets/images/default-faculty.png'; // Default image
-    }
+function isImgBBUrl($url) {
+    return !empty($url) && strpos($url, 'imgbb.com') !== false;
+}
+
+/**
+ * Generate a proper name for ImgBB uploads
+ * @param string $username The username/user ID
+ * @param string $type The type of file (profile, marksheet, aadhaar, etc.)
+ * @param string $extension The file extension
+ * @return string Formatted name for ImgBB
+ */
+function generateImgBBName($username, $type, $extension) {
+    return $username . '_' . $type . '.' . $extension;
+}
+
+/**
+ * Test ImgBB API connection
+ * @return array Test result
+ */
+function testImgBBConnection() {
+    $test_file = tempnam(sys_get_temp_dir(), 'imgbb_test');
+    $test_content = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfC+SJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+    file_put_contents($test_file, $test_content);
     
-    // Add size parameters to ImgBB URL
-    return $imgbb_url . "?w={$width}&h={$height}&fit=crop";
+    $result = uploadToImgBB($test_file, 'test_image');
+    unlink($test_file);
+    
+    return [
+        'success' => $result !== false,
+        'message' => $result ? 'ImgBB connection successful' : 'ImgBB connection failed',
+        'details' => $result
+    ];
 }
 ?>

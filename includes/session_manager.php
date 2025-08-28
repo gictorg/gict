@@ -51,7 +51,22 @@ function hasRole($role) {
         return false;
     }
     
-    return $_SESSION['user_type'] === $role;
+    // Get user type from database to ensure it's current
+    try {
+        $sql = "SELECT ut.name as user_type 
+                FROM users u 
+                JOIN user_types ut ON u.user_type_id = ut.id 
+                WHERE u.id = ? AND u.status = 'active'";
+        $user = getRow($sql, [$_SESSION['user_id']]);
+        
+        if ($user) {
+            return $user['user_type'] === $role;
+        }
+    } catch (Exception $e) {
+        // Silent fail for security
+    }
+    
+    return false;
 }
 
 /**

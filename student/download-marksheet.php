@@ -4,7 +4,7 @@ require_once '../config/database.php';
 require_once '../generate_marksheet.php';
 
 // Check if user is logged in and is a student
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'student') {
+if (!isset($_SESSION['user_id']) || !hasRole('student')) {
     header('Location: login.php');
     exit;
 }

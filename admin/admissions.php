@@ -11,12 +11,13 @@ try {
     $sql = "SELECT 
                 u.id, u.username, u.email, u.full_name, u.phone, u.address, 
                 u.date_of_birth, u.gender, u.joining_date, u.status, u.created_at,
-                COUNT(e.id) as total_enrollments,
-                COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_courses,
-                COUNT(CASE WHEN e.status = 'enrolled' THEN 1 END) as active_enrollments
+                COUNT(se.id) as total_enrollments,
+                COUNT(CASE WHEN se.status = 'completed' THEN 1 END) as completed_courses,
+                COUNT(CASE WHEN se.status = 'enrolled' THEN 1 END) as active_enrollments
             FROM users u 
-            LEFT JOIN enrollments e ON u.id = e.student_id 
-            WHERE u.user_type = 'student' 
+            JOIN user_types ut ON u.user_type_id = ut.id
+            LEFT JOIN student_enrollments se ON u.id = se.user_id 
+            WHERE ut.name = 'student' 
             GROUP BY u.id 
             ORDER BY u.created_at DESC";
     $students = getRows($sql);

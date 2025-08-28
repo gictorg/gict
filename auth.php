@@ -17,7 +17,10 @@ function requireLogin() {
 function getCurrentUser() {
     if (isLoggedIn()) {
         try {
-            $sql = "SELECT id, username, user_type, full_name, email, phone, address, status FROM users WHERE id = ? AND status = 'active'";
+            $sql = "SELECT u.id, u.username, u.full_name, u.email, u.phone, u.address, u.status, ut.name as user_type 
+                    FROM users u 
+                    JOIN user_types ut ON u.user_type_id = ut.id 
+                    WHERE u.id = ? AND u.status = 'active'";
             $user = getRow($sql, [$_SESSION['user_id']]);
             
             if ($user) {

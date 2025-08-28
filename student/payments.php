@@ -11,33 +11,122 @@ if (!isLoggedIn() || !isStudent()) {
 $user_id = $_SESSION['user_id'];
 
 // Get student information
-$student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
+$student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
 if (!$student) {
     header('Location: ../login.php');
     exit;
 }
 
-// Get payment history
+// Handle payment submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    try {
+        switch ($action) {
+            case 'make_payment':
+                $sub_course_id = intval($_POST['sub_course_id']);
+                $amount = floatval($_POST['amount']);
+                $payment_method = trim($_POST['payment_method']);
+                $payment_type = trim($_POST['payment_type']);
+                
+                if (empty($payment_method)) {
+                    throw new Exception("Please select a payment method.");
+                }
+                
+                if ($amount <= 0) {
+                    throw new Exception("Invalid payment amount.");
+                }
+                
+                // Get course details
+                $course = getRow("
+                    SELECT sc.*, c.name as course_name, cc.name as category_name
+                    FROM sub_courses sc
+                    JOIN courses c ON sc.course_id = c.id
+                    JOIN course_categories cc ON c.category_id = cc.id
+                    WHERE sc.id = ? AND sc.status = 'active'
+                ", [$sub_course_id]);
+                
+                if (!$course) {
+                    throw new Exception("Course not found.");
+                }
+                
+                // Check if student is already enrolled
+                $existing_enrollment = getRow("
+                    SELECT * FROM student_enrollments 
+                    WHERE user_id = ? AND sub_course_id = ?
+                ", [$user_id, $sub_course_id]);
+                
+                // Check existing payments for this course
+                $existing_payments = getRows("
+                    SELECT * FROM payments 
+                    WHERE user_id = ? AND sub_course_id = ?
+                    ORDER BY created_at DESC
+                ", [$user_id, $sub_course_id]);
+                
+                $total_paid = array_sum(array_column($existing_payments, 'amount'));
+                $remaining_amount = $course['fee'] - $total_paid;
+                
+                if ($amount > $remaining_amount) {
+                    throw new Exception("Payment amount exceeds remaining fee. Remaining: ₹{$remaining_amount}");
+                }
+                
+                // Create payment record
+                $payment_sql = "INSERT INTO payments (user_id, sub_course_id, amount, total_fee, remaining_amount, payment_date, payment_method, payment_type, status, created_at) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, 'pending', NOW())";
+                $payment_result = insertData($payment_sql, [
+                    $user_id, $sub_course_id, $amount, $course['fee'], 
+                    $remaining_amount - $amount, $payment_method, $payment_type
+                ]);
+                
+                if (!$payment_result) {
+                    throw new Exception("Failed to create payment record.");
+                }
+                
+                // If this is the first payment, create enrollment record
+                if (!$existing_enrollment) {
+                    $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status, created_at) VALUES (?, ?, CURDATE(), 'pending', NOW())";
+                    $enrollment_result = insertData($enrollment_sql, [$user_id, $sub_course_id]);
+                    
+                    if (!$enrollment_result) {
+                        throw new Exception("Failed to create enrollment record.");
+                    }
+                }
+                
+                $success_message = "Payment submitted successfully! Amount: ₹{$amount}. Your payment is pending approval.";
+                break;
+        }
+    } catch (Exception $e) {
+        $error_message = $e->getMessage();
+    }
+}
+
+// Get student's payments
 $payments = getRows("
-    SELECT sp.*, c.name as course_name
-    FROM student_payments sp
-    JOIN courses c ON sp.course_id = c.id
-    WHERE sp.user_id = ?
-    ORDER BY sp.payment_date DESC
+    SELECT p.*, sc.name as sub_course_name, c.name as course_name, cc.name as category_name
+    FROM payments p
+    JOIN sub_courses sc ON p.sub_course_id = sc.id
+    JOIN courses c ON sc.course_id = c.id
+    JOIN course_categories cc ON c.category_id = cc.id
+    WHERE p.user_id = ?
+    ORDER BY p.created_at DESC
 ", [$user_id]);
 
-// Get pending payments
-$pending_payments = getRows("
-    SELECT sp.*, c.name as course_name, c.fee as course_fee
-    FROM student_payments sp
-    JOIN courses c ON sp.course_id = c.id
-    WHERE sp.user_id = ? AND sp.status = 'pending'
-    ORDER BY sp.payment_date DESC
-", [$user_id]);
+// Get available courses for payment
+$available_courses = getRows("
+    SELECT sc.id, sc.name as sub_course_name, c.name as course_name, cc.name as category_name,
+           sc.fee, sc.duration, sc.description
+    FROM sub_courses sc
+    JOIN courses c ON sc.course_id = c.id
+    JOIN course_categories cc ON c.category_id = cc.id
+    WHERE sc.status = 'active'
+    ORDER BY c.name, sc.name
+", []);
 
-$total_paid = array_sum(array_column(array_filter($payments, fn($p) => $p['status'] === 'completed'), 'amount'));
-$total_pending = array_sum(array_column($pending_payments, 'amount'));
-$total_courses = count(array_unique(array_column($payments, 'course_id')));
+// Calculate payment statistics
+$total_paid = array_sum(array_column($payments, 'amount'));
+$pending_payments = array_filter($payments, fn($p) => $p['status'] === 'pending');
+$completed_payments = array_filter($payments, fn($p) => $p['status'] === 'completed');
+$pending_amount = array_sum(array_column($pending_payments, 'amount'));
+$completed_amount = array_sum(array_column($completed_payments, 'amount'));
 ?>
 
 <!DOCTYPE html>
@@ -45,239 +134,137 @@ $total_courses = count(array_unique(array_column($payments, 'course_id')));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Management - Student Dashboard</title>
+    <title>Payments - Student Dashboard</title>
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        /* Student-specific overrides to match admin dashboard exactly */
-        .admin-sidebar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .admin-topbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        /* Digital ID Badge */
-        .digital-id-badge {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            border: 2px solid #fff;
-        }
-        
-        .digital-id-badge:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .digital-id-badge i {
-            color: white;
-            font-size: 14px;
-        }
-        
-        .profile-card-mini {
-            position: relative;
-        }
-        
-        /* Stats grid */
-        .stats-grid {
+        .payment-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            gap: 1rem;
             margin-bottom: 2rem;
         }
-        
         .stat-card {
             background: white;
             padding: 1.5rem;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
-        
-        .stat-card .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #667eea;
+        .stat-card.total { border-left: 4px solid #667eea; }
+        .stat-card.pending { border-left: 4px solid #ffc107; }
+        .stat-card.completed { border-left: 4px solid #28a745; }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
             margin-bottom: 0.5rem;
         }
-        
-        .stat-card .stat-label {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-        
-        /* Payment cards */
-        .payment-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        
         .payment-card {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 1.5rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
         }
-        
-        .payment-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-        }
-        
         .payment-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             margin-bottom: 1rem;
         }
-        
-        .payment-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0;
+        .payment-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
         }
-        
         .payment-status {
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            text-transform: uppercase;
         }
-        
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .course-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef;
         }
-        
-        .status-completed {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-failed {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        .payment-details {
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1rem;
         }
-        
-        .payment-detail {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .course-fee {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .payment-form {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
             margin-bottom: 0.5rem;
-            color: #6b7280;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 0.875rem;
         }
-        
-        .payment-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
             border-radius: 6px;
-            font-weight: 600;
             cursor: pointer;
+            font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            transition: all 0.2s;
             font-size: 0.875rem;
         }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a67d8; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .payment-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
         }
-        
-        .btn-primary:hover {
-            background: #5a67d8;
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        
-        .btn-success {
-            background: #16a34a;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #15803d;
-        }
-        
-        .btn-info {
-            background: #0891b2;
-            color: white;
-        }
-        
-        .btn-info:hover {
-            background: #0e7490;
-        }
-        
-        .btn-sm {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.8rem;
-        }
-        
-        .text-muted {
-            color: #6b7280;
-        }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        
-        .table th,
-        .table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .table th {
-            background: #f9fafb;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .amount {
-            font-weight: 600;
-        }
-        
-        .amount.completed {
-            color: #16a34a;
-        }
-        
-        .amount.pending {
-            color: #f59e0b;
-        }
-        
-        .amount.failed {
-            color: #dc2626;
+        .detail-item i {
+            color: #667eea;
+            width: 20px;
         }
     </style>
 </head>
@@ -321,76 +308,49 @@ $total_courses = count(array_unique(array_column($payments, 'course_id')));
                     <i class="fas fa-bars"></i>
                 </button>
                 <div class="breadcrumbs">
-                    <span>Payment Management</span>
+                    <span>Payments</span>
                 </div>
             </div>
             <div class="topbar-right">
                 <div class="user-chip">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
-                    <span><?php echo htmlspecialchars($student['full_name']); ?></span>
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <?php echo htmlspecialchars($student['full_name']); ?>
                 </div>
             </div>
         </header>
 
         <!-- Main Content -->
         <main class="admin-content">
-            <!-- Statistics Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">$<?php echo number_format($total_paid, 2); ?></div>
+            <div class="page-header">
+                <h1><i class="fas fa-credit-card"></i> Payment Management</h1>
+            </div>
+
+            <?php if (isset($success_message)): ?>
+                <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+            <?php endif; ?>
+
+            <?php if (isset($error_message)): ?>
+                <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+            <?php endif; ?>
+
+            <!-- Payment Statistics -->
+            <div class="payment-stats">
+                <div class="stat-card total">
+                    <div class="stat-value">₹<?php echo number_format($total_paid, 2); ?></div>
                     <div class="stat-label">Total Paid</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number">$<?php echo number_format($total_pending, 2); ?></div>
-                    <div class="stat-label">Pending Amount</div>
+                <div class="stat-card pending">
+                    <div class="stat-value">₹<?php echo number_format($pending_amount, 2); ?></div>
+                    <div class="stat-label">Pending Approval</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number"><?php echo $total_courses; ?></div>
-                    <div class="stat-label">Courses Enrolled</div>
-                </div>
-            </div>
-            
-            <!-- Pending Payments -->
-            <?php if (!empty($pending_payments)): ?>
-            <div class="panel">
-                <div class="panel-header">
-                    <span><i class="fas fa-clock"></i> Pending Payments</span>
-                </div>
-                <div class="panel-body">
-                    <div class="payment-grid">
-                        <?php foreach ($pending_payments as $payment): ?>
-                            <div class="payment-card">
-                                <div class="payment-header">
-                                    <h6 class="payment-title"><?php echo htmlspecialchars($payment['course_name']); ?></h6>
-                                    <span class="payment-status status-pending">Pending</span>
-                                </div>
-                                <div class="payment-details">
-                                    <div class="payment-detail">
-                                        <i class="fas fa-dollar-sign"></i>
-                                        <span>Amount: $<?php echo number_format($payment['amount'], 2); ?></span>
-                                    </div>
-                                    <div class="payment-detail">
-                                        <i class="fas fa-calendar"></i>
-                                        <span>Due: <?php echo date('M d, Y', strtotime($payment['payment_date'])); ?></span>
-                                    </div>
-                                </div>
-                                <div class="payment-actions">
-                                    <button class="btn btn-primary btn-sm">
-                                        <i class="fas fa-credit-card"></i> Pay Now
-                                    </button>
-                                    <button class="btn btn-info btn-sm">
-                                        <i class="fas fa-info-circle"></i> View Details
-                                    </button>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                <div class="stat-card completed">
+                    <div class="stat-value">₹<?php echo number_format($completed_amount, 2); ?></div>
+                    <div class="stat-label">Approved Payments</div>
                 </div>
             </div>
-            <?php endif; ?>
-            
+
             <!-- Payment History -->
-            <div class="panel" style="margin-top: 1.5rem;">
+            <div class="panel">
                 <div class="panel-header">
                     <span><i class="fas fa-history"></i> Payment History</span>
                 </div>
@@ -398,50 +358,135 @@ $total_courses = count(array_unique(array_column($payments, 'course_id')));
                     <?php if (empty($payments)): ?>
                         <p class="text-muted">No payment history available.</p>
                     <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Course</th>
-                                        <th>Amount</th>
-                                        <th>Payment Date</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($payments as $payment): ?>
-                                        <tr>
-                                            <td>
-                                                <strong><?php echo htmlspecialchars($payment['course_name']); ?></strong>
-                                            </td>
-                                            <td>
-                                                <span class="amount <?php echo $payment['status']; ?>">
-                                                    $<?php echo number_format($payment['amount'], 2); ?>
-                                                </span>
-                                            </td>
-                                            <td><?php echo date('M d, Y', strtotime($payment['payment_date'])); ?></td>
-                                            <td>
-                                                <span class="payment-status status-<?php echo $payment['status']; ?>">
-                                                    <?php echo ucfirst($payment['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php if ($payment['status'] === 'completed'): ?>
-                                                    <button class="btn btn-success btn-sm">
-                                                        <i class="fas fa-download"></i> Download Receipt
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button class="btn btn-info btn-sm">
-                                                        <i class="fas fa-eye"></i> View Details
-                                                    </button>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                        <?php foreach ($payments as $payment): ?>
+                            <div class="payment-card">
+                                <div class="payment-header">
+                                    <div>
+                                        <h4><?php echo htmlspecialchars($payment['course_name']); ?> - <?php echo htmlspecialchars($payment['sub_course_name']); ?></h4>
+                                        <p class="text-muted"><?php echo htmlspecialchars($payment['category_name']); ?></p>
+                                    </div>
+                                    <div class="payment-amount">
+                                        ₹<?php echo number_format($payment['amount'], 2); ?>
+                                        <div class="payment-status status-<?php echo $payment['status']; ?>">
+                                            <?php echo ucfirst($payment['status']); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>Payment Date: <?php echo date('M d, Y', strtotime($payment['payment_date'])); ?></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-credit-card"></i>
+                                        <span>Method: <?php echo htmlspecialchars($payment['payment_method'] ?? 'Not specified'); ?></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-tag"></i>
+                                        <span>Type: <?php echo ucfirst($payment['payment_type'] ?? 'full'); ?></span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Total Fee: ₹<?php echo number_format($payment['total_fee'], 2); ?></span>
+                                    </div>
+                                    <?php if ($payment['remaining_amount'] > 0): ?>
+                                        <div class="detail-item">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span>Remaining: ₹<?php echo number_format($payment['remaining_amount'], 2); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <?php if ($payment['notes']): ?>
+                                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
+                                        <strong>Note:</strong> <?php echo htmlspecialchars($payment['notes']); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Make New Payment -->
+            <div class="panel" style="margin-top: 2rem;">
+                <div class="panel-header">
+                    <span><i class="fas fa-plus-circle"></i> Make New Payment</span>
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($available_courses)): ?>
+                        <p class="text-muted">No courses available for payment.</p>
+                    <?php else: ?>
+                        <?php foreach ($available_courses as $course): ?>
+                            <div class="course-card">
+                                <div class="course-header">
+                                    <div>
+                                        <h4><?php echo htmlspecialchars($course['course_name']); ?> - <?php echo htmlspecialchars($course['sub_course_name']); ?></h4>
+                                        <p class="text-muted"><?php echo htmlspecialchars($course['category_name']); ?></p>
+                                    </div>
+                                    <div class="course-fee">
+                                        ₹<?php echo number_format($course['fee'], 2); ?>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Duration: <?php echo $course['duration']; ?> months</span>
+                                    </div>
+                                    <?php if ($course['description']): ?>
+                                        <div class="detail-item">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span><?php echo htmlspecialchars($course['description']); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="payment-form">
+                                    <form method="POST" onsubmit="return validatePaymentForm(this, <?php echo $course['fee']; ?>)">
+                                        <input type="hidden" name="action" value="make_payment">
+                                        <input type="hidden" name="sub_course_id" value="<?php echo $course['id']; ?>">
+                                        
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="amount_<?php echo $course['id']; ?>">Payment Amount (₹)</label>
+                                                <input type="number" name="amount" id="amount_<?php echo $course['id']; ?>" 
+                                                       min="100" max="<?php echo $course['fee']; ?>" step="100" 
+                                                       value="<?php echo $course['fee']; ?>" required>
+                                                <small class="text-muted">You can pay partial amount (min ₹100)</small>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label for="payment_method_<?php echo $course['id']; ?>">Payment Method</label>
+                                                <select name="payment_method" id="payment_method_<?php echo $course['id']; ?>" required>
+                                                    <option value="">Select Method</option>
+                                                    <option value="UPI">UPI</option>
+                                                    <option value="Online Banking">Online Banking</option>
+                                                    <option value="Credit Card">Credit Card</option>
+                                                    <option value="Debit Card">Debit Card</option>
+                                                    <option value="Cash">Cash</option>
+                                                    <option value="Cheque">Cheque</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label for="payment_type_<?php echo $course['id']; ?>">Payment Type</label>
+                                                <select name="payment_type" id="payment_type_<?php echo $course['id']; ?>" required>
+                                                    <option value="full">Full Payment</option>
+                                                    <option value="partial">Partial Payment</option>
+                                                    <option value="installment">Installment</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-credit-card"></i> Submit Payment
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -449,11 +494,48 @@ $total_courses = count(array_unique(array_column($payments, 'course_id')));
     </div>
 
     <script>
-        // Mobile sidebar toggle
         function toggleSidebar() {
             const sidebar = document.querySelector('.admin-sidebar');
             sidebar.classList.toggle('mobile-open');
         }
+        
+        function validatePaymentForm(form, totalFee) {
+            const amount = parseFloat(form.amount.value);
+            const paymentType = form.payment_type.value;
+            
+            if (amount <= 0) {
+                alert('Payment amount must be greater than 0.');
+                return false;
+            }
+            
+            if (amount > totalFee) {
+                alert('Payment amount cannot exceed the total course fee.');
+                return false;
+            }
+            
+            if (paymentType === 'full' && amount < totalFee) {
+                if (!confirm('You selected "Full Payment" but the amount is less than the total fee. Do you want to continue with partial payment?')) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // Update payment type based on amount
+        document.querySelectorAll('input[name="amount"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const amount = parseFloat(this.value);
+                const totalFee = parseFloat(this.max);
+                const paymentTypeSelect = this.closest('form').querySelector('select[name="payment_type"]');
+                
+                if (amount >= totalFee) {
+                    paymentTypeSelect.value = 'full';
+                } else if (amount > 0) {
+                    paymentTypeSelect.value = 'partial';
+                }
+            });
+        });
     </script>
 </body>
 </html>

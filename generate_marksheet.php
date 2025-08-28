@@ -26,7 +26,7 @@ class MarksheetGenerator {
     public function generateMarksheet($student_id, $course_id) {
         try {
             // Get student information
-            $student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$student_id]);
+            $student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$student_id]);
             if (!$student) {
                 throw new Exception("Student not found");
             }

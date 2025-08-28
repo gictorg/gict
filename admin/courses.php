@@ -14,23 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'add_course':
                 $name = trim($_POST['name']);
                 $description = trim($_POST['description']);
+                $category_id = intval($_POST['category_id']);
                 $duration = trim($_POST['duration']);
-                $fee = floatval($_POST['fee']);
-                $capacity = intval($_POST['capacity']);
                 $status = $_POST['status'];
                 
-                // Set default capacity if not provided
-                if ($capacity <= 0) {
-                    $capacity = 50;
-                }
-                
-                if (empty($name) || empty($description) || empty($duration) || $fee <= 0) {
+                if (empty($name) || empty($description) || empty($category_id) || empty($duration)) {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                $sql = "INSERT INTO courses (name, description, duration, fee, capacity, status, created_at) 
-                        VALUES (?, ?, ?, ?, ?, ?, NOW())";
-                $result = insertData($sql, [$name, $description, $duration, $fee, $capacity, $status]);
+                $sql = "INSERT INTO courses (category_id, name, description, duration, status, created_at) 
+                        VALUES (?, ?, ?, ?, ?, NOW())";
+                $result = insertData($sql, [$category_id, $name, $description, $duration, $status]);
                 
                 if ($result === false) {
                     throw new Exception("Failed to add course. Please try again.");
@@ -43,23 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $course_id = intval($_POST['course_id']);
                 $name = trim($_POST['name']);
                 $description = trim($_POST['description']);
+                $category_id = intval($_POST['category_id']);
                 $duration = trim($_POST['duration']);
-                $fee = floatval($_POST['fee']);
-                $capacity = intval($_POST['capacity']);
                 $status = $_POST['status'];
                 
-                // Set default capacity if not provided
-                if ($capacity <= 0) {
-                    $capacity = 50;
-                }
-                
-                if (empty($name) || empty($description) || empty($duration) || $fee <= 0) {
+                if (empty($name) || empty($description) || empty($category_id) || empty($duration)) {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                $sql = "UPDATE courses SET name = ?, description = ?, duration = ?, fee = ?, capacity = ?, status = ?, updated_at = NOW() 
+                $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, duration = ?, status = ?, updated_at = NOW() 
                         WHERE id = ?";
-                $result = updateData($sql, [$name, $description, $duration, $fee, $capacity, $status, $course_id]);
+                $result = updateData($sql, [$category_id, $name, $description, $duration, $status, $course_id]);
                 
                 if ($result === false) {
                     throw new Exception("Failed to update course. Please try again.");
@@ -71,13 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete_course':
                 $course_id = intval($_POST['course_id']);
                 
-                // Check if course has enrollments
-                $check_sql = "SELECT COUNT(*) as count FROM enrollments WHERE course_id = ?";
-                $enrollment_result = getRow($check_sql, [$course_id]);
-                $enrollment_count = $enrollment_result['count'] ?? 0;
+                // Check if course has sub-courses
+                $check_sql = "SELECT COUNT(*) as count FROM sub_courses WHERE course_id = ?";
+                $sub_course_result = getRow($check_sql, [$course_id]);
+                $sub_course_count = $sub_course_result['count'] ?? 0;
                 
-                if ($enrollment_count > 0) {
-                    throw new Exception("Cannot delete course. It has {$enrollment_count} active enrollments.");
+                if ($sub_course_count > 0) {
+                    throw new Exception("Cannot delete course. It has {$sub_course_count} sub-courses.");
                 }
                 
                 $sql = "DELETE FROM courses WHERE id = ?";
@@ -103,28 +91,153 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $success_message = "Course status updated successfully!";
                 break;
+                
+            case 'add_sub_course':
+                $course_id = intval($_POST['course_id']);
+                $name = trim($_POST['name']);
+                $description = trim($_POST['description']);
+                $fee = floatval($_POST['fee']);
+                $duration = trim($_POST['duration']);
+                $status = $_POST['status'];
+                
+                if (empty($name) || empty($description) || empty($duration) || $fee <= 0) {
+                    throw new Exception("Please fill all required fields correctly.");
+                }
+                
+                // Verify course exists
+                $course_check = getRow("SELECT id FROM courses WHERE id = ?", [$course_id]);
+                if (!$course_check) {
+                    throw new Exception("Invalid course selected.");
+                }
+                
+                $sql = "INSERT INTO sub_courses (course_id, name, description, fee, duration, status, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, NOW())";
+                $result = insertData($sql, [$course_id, $name, $description, $fee, $duration, $status]);
+                
+                if ($result === false) {
+                    throw new Exception("Failed to add sub-course. Please try again.");
+                }
+                
+                $success_message = "Sub-course added successfully!";
+                break;
+                
+            case 'update_sub_course':
+                $sub_course_id = intval($_POST['sub_course_id']);
+                $name = trim($_POST['name']);
+                $description = trim($_POST['description']);
+                $fee = floatval($_POST['fee']);
+                $duration = trim($_POST['duration']);
+                $status = $_POST['status'];
+                
+                if (empty($name) || empty($description) || empty($duration) || $fee <= 0) {
+                    throw new Exception("Please fill all required fields correctly.");
+                }
+                
+                // Verify sub-course exists
+                $sub_course_check = getRow("SELECT id FROM sub_courses WHERE id = ?", [$sub_course_id]);
+                if (!$sub_course_check) {
+                    throw new Exception("Invalid sub-course selected.");
+                }
+                
+                $sql = "UPDATE sub_courses SET name = ?, description = ?, fee = ?, duration = ?, status = ?, updated_at = NOW() 
+                        WHERE id = ?";
+                $result = updateData($sql, [$name, $description, $fee, $duration, $status, $sub_course_id]);
+                
+                if ($result === false) {
+                    throw new Exception("Failed to update sub-course. Please try again.");
+                }
+                
+                $success_message = "Sub-course updated successfully!";
+                break;
+                
+            case 'delete_sub_course':
+                $sub_course_id = intval($_POST['sub_course_id']);
+                
+                // Check if sub-course has enrollments
+                $check_sql = "SELECT COUNT(*) as count FROM student_enrollments WHERE sub_course_id = ?";
+                $enrollment_result = getRow($check_sql, [$sub_course_id]);
+                $enrollment_count = $enrollment_result['count'] ?? 0;
+                
+                if ($enrollment_count > 0) {
+                    throw new Exception("Cannot delete sub-course. It has {$enrollment_count} active enrollments.");
+                }
+                
+                // Verify sub-course belongs to this institute
+                $sub_course_check = getRow("
+                    SELECT sc.id FROM sub_courses sc 
+                    JOIN courses c ON sc.course_id = c.id 
+                    WHERE sc.id = ? AND c.institute_id = ?
+                ", [$sub_course_id, $user['institute_id']]);
+                if (!$sub_course_check) {
+                    throw new Exception("Invalid sub-course selected.");
+                }
+                
+                $sql = "DELETE FROM sub_courses WHERE id = ?";
+                $result = deleteData($sql, [$sub_course_id]);
+                
+                if ($result === false) {
+                    throw new Exception("Failed to delete sub-course. Please try again.");
+                }
+                
+                $success_message = "Sub-course deleted successfully!";
+                break;
+                
+            case 'toggle_sub_course_status':
+                $sub_course_id = intval($_POST['sub_course_id']);
+                $new_status = $_POST['new_status'];
+                
+                // Verify sub-course belongs to this institute
+                $sub_course_check = getRow("
+                    SELECT sc.id FROM sub_courses sc 
+                    JOIN courses c ON sc.course_id = c.id 
+                    WHERE sc.id = ? AND c.institute_id = ?
+                ", [$sub_course_id, $user['institute_id']]);
+                if (!$sub_course_check) {
+                    throw new Exception("Invalid sub-course selected.");
+                }
+                
+                $sql = "UPDATE sub_courses SET status = ?, updated_at = NOW() WHERE id = ?";
+                $result = updateData($sql, [$new_status, $sub_course_id]);
+                
+                if ($result === false) {
+                    throw new Exception("Failed to update sub-course status. Please try again.");
+                }
+                
+                $success_message = "Sub-course status updated successfully!";
+                break;
         }
     } catch (Exception $e) {
         $error_message = $e->getMessage();
     }
 }
 
-// Get all courses with enrollment statistics
-$courses = [];
-try {
-    $sql = "SELECT 
-                c.*,
-                COUNT(e.id) as total_enrollments,
-                COUNT(CASE WHEN e.status = 'enrolled' THEN 1 END) as active_enrollments,
-                COUNT(CASE WHEN e.status = 'completed' THEN 1 END) as completed_enrollments
-            FROM courses c 
-            LEFT JOIN enrollments e ON c.id = e.course_id 
-            GROUP BY c.id 
-            ORDER BY c.created_at DESC";
-    $courses = getRows($sql);
-} catch (Exception $e) {
-    $error_message = "Error loading courses: " . $e->getMessage();
-}
+// Get course categories
+$categories = getRows("SELECT * FROM course_categories WHERE status = 'active' ORDER BY name");
+
+// Get courses
+$courses = getRows("
+    SELECT c.*, cc.name as category_name,
+           COUNT(sc.id) as sub_courses_count,
+           COUNT(DISTINCT se.user_id) as enrolled_students
+    FROM courses c
+    JOIN course_categories cc ON c.category_id = cc.id
+    LEFT JOIN sub_courses sc ON c.id = sc.course_id AND sc.status = 'active'
+    LEFT JOIN student_enrollments se ON sc.id = se.sub_course_id
+    GROUP BY c.id, c.name, c.description, c.duration, c.status, c.created_at, c.updated_at, cc.name
+    ORDER BY c.created_at DESC
+");
+
+// Get sub-courses
+$sub_courses = getRows("
+    SELECT sc.*, c.name as course_name, cc.name as category_name,
+           COUNT(DISTINCT se.user_id) as enrolled_students
+    FROM sub_courses sc
+    JOIN courses c ON sc.course_id = c.id
+    JOIN course_categories cc ON c.category_id = cc.id
+    LEFT JOIN student_enrollments se ON sc.id = se.sub_course_id
+    GROUP BY sc.id, sc.name, sc.description, sc.fee, sc.duration, sc.status, sc.created_at, sc.updated_at, c.name, cc.name
+    ORDER BY c.name, sc.name
+");
 
 // Get course for editing
 $edit_course = null;
@@ -139,6 +252,24 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
         }
     } catch (Exception $e) {
         $error_message = "Error loading course: " . $e->getMessage();
+    }
+}
+
+// Get sub-course for editing
+$edit_sub_course = null;
+if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
+    $sub_course_id = intval($_GET['edit_sub']);
+    try {
+        $sql = "SELECT sc.* FROM sub_courses sc 
+                JOIN courses c ON sc.course_id = c.id 
+                WHERE sc.id = ? AND c.institute_id = ?";
+        $edit_sub_course = getRow($sql, [$sub_course_id, $user['institute_id']]);
+        
+        if (!$edit_sub_course) {
+            $error_message = "Sub-course not found.";
+        }
+    } catch (Exception $e) {
+        $error_message = "Error loading sub-course: " . $e->getMessage();
     }
 }
 ?>
@@ -772,14 +903,14 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                 <div class="stat-card">
                     <h3>Total Enrollments</h3>
                     <div class="value">
-                        <?php echo array_sum(array_column($courses, 'total_enrollments')); ?>
+                        <?php echo array_sum(array_column($courses, 'enrolled_students')); ?>
                     </div>
                     <div class="label">Student Registrations</div>
                 </div>
                 <div class="stat-card">
                     <h3>Active Students</h3>
                     <div class="value">
-                        <?php echo array_sum(array_column($courses, 'active_enrollments')); ?>
+                        <?php echo array_sum(array_column($sub_courses, 'enrolled_students')); ?>
                     </div>
                     <div class="label">Currently Enrolled</div>
                 </div>
@@ -787,9 +918,13 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
 
 
 
-            <!-- Courses Table -->
+            <!-- Main Courses Section -->
+            <div class="section-header">
+                <h2><i class="fas fa-book"></i> Main Courses</h2>
+                <p>Manage main course categories (no fees at this level)</p>
+            </div>
+
             <div class="courses-table">
-                
                 <?php if (empty($courses)): ?>
                     <div class="empty-state">
                         <i class="fas fa-graduation-cap"></i>
@@ -802,12 +937,11 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                             <thead>
                                 <tr>
                                     <th>Course Name</th>
+                                    <th>Category</th>
                                     <th>Description</th>
                                     <th>Duration</th>
-                                    <th>Fee (₹)</th>
-                                    <th>Capacity</th>
+                                    <th>Sub-Courses</th>
                                     <th>Status</th>
-                                    <th>Enrollments</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -815,26 +949,26 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                 <?php foreach ($courses as $course): ?>
                                     <tr>
                                         <td class="course-name"><?php echo htmlspecialchars($course['name']); ?></td>
+                                        <td><?php echo htmlspecialchars($course['category_name']); ?></td>
                                         <td class="course-description" title="<?php echo htmlspecialchars($course['description']); ?>">
                                             <?php echo htmlspecialchars($course['description']); ?>
                                         </td>
                                         <td><?php echo htmlspecialchars($course['duration']); ?></td>
-                                        <td>₹<?php echo number_format($course['fee']); ?></td>
-                                        <td><?php echo $course['capacity'] ?? 100; ?></td>
+                                        <td>
+                                            <span class="sub-course-count">
+                                                <?php echo $course['sub_courses_count']; ?> sub-courses
+                                            </span>
+                                        </td>
                                         <td>
                                             <span class="course-status <?php echo $course['status']; ?>">
                                                 <?php echo ucfirst($course['status']); ?>
                                             </span>
                                         </td>
-                                        <td class="enrollment-count">
-                                            <div><?php echo $course['total_enrollments']; ?> total</div>
-                                            <small><?php echo $course['active_enrollments']; ?> active</small>
-                                        </td>
                                         <td>
                                             <div class="action-buttons">
-                                                <a href="?edit=<?php echo $course['id']; ?>" class="btn-small btn-edit">
+                                                <button class="btn-small btn-edit" onclick="editCourse(<?php echo $course['id']; ?>)">
                                                     <i class="fas fa-edit"></i> Edit
-                                                </a>
+                                                </button>
                                                 <button class="btn-small btn-toggle" onclick="toggleCourseStatus(<?php echo $course['id']; ?>, '<?php echo $course['status'] === 'active' ? 'inactive' : 'active'; ?>')">
                                                     <i class="fas fa-toggle-on"></i> 
                                                     <?php echo $course['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>
@@ -851,24 +985,96 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                     </div>
                 <?php endif; ?>
             </div>
+
+            <!-- Sub-Courses Section -->
+            <div class="section-header" style="margin-top: 40px;">
+                <h2><i class="fas fa-list-alt"></i> Sub-Courses</h2>
+                <p>Manage individual sub-courses with specific fees and durations</p>
+                <button class="add-course-btn" onclick="openAddSubCourseModal()" style="margin-top: 10px;">
+                    <i class="fas fa-plus"></i> Add New Sub-Course
+                </button>
+            </div>
+
+            <div class="courses-table">
+                <?php if (empty($sub_courses)): ?>
+                    <div class="empty-state">
+                        <i class="fas fa-list-alt"></i>
+                        <h3>No Sub-Courses Found</h3>
+                        <p>Add sub-courses to your main courses to start enrolling students.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Sub-Course Name</th>
+                                    <th>Main Course</th>
+                                    <th>Description</th>
+                                    <th>Duration</th>
+                                    <th>Fee (₹)</th>
+                                    <th>Enrollments</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($sub_courses as $sub_course): ?>
+                                    <tr>
+                                        <td class="course-name"><?php echo htmlspecialchars($sub_course['name']); ?></td>
+                                        <td><?php echo htmlspecialchars($sub_course['course_name']); ?></td>
+                                        <td class="course-description" title="<?php echo htmlspecialchars($sub_course['description']); ?>">
+                                            <?php echo htmlspecialchars($sub_course['description']); ?>
+                                        </td>
+                                        <td><?php echo htmlspecialchars($sub_course['duration']); ?></td>
+                                        <td>₹<?php echo number_format($sub_course['fee']); ?></td>
+                                        <td class="enrollment-count">
+                                            <div><?php echo $sub_course['enrolled_students']; ?> students</div>
+                                        </td>
+                                        <td>
+                                            <span class="course-status <?php echo $sub_course['status']; ?>">
+                                                <?php echo ucfirst($sub_course['status']); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn-small btn-edit" onclick="editSubCourse(<?php echo $sub_course['id']; ?>)">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </button>
+                                                <button class="btn-small btn-toggle" onclick="toggleSubCourseStatus(<?php echo $sub_course['id']; ?>, '<?php echo $sub_course['status'] === 'active' ? 'inactive' : 'active'; ?>')">
+                                                    <i class="fas fa-toggle-on"></i> 
+                                                    <?php echo $sub_course['status'] === 'active' ? 'Deactivate' : 'Activate'; ?>
+                                                </button>
+                                                <button class="btn-small btn-delete" onclick="deleteSubCourse(<?php echo $sub_course['id']; ?>, '<?php echo htmlspecialchars($sub_course['name']); ?>')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+            </div>
         </main>
     </div>
 
-    <!-- Add/Edit Course Modal -->
+    <!-- Add/Edit Main Course Modal -->
     <div id="courseModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>
-                    <i class="fas fa-<?php echo $edit_course ? 'edit' : 'plus'; ?>"></i>
-                    <?php echo $edit_course ? 'Edit Course' : 'Add New Course'; ?>
+                    <i class="fas fa-<?php echo isset($edit_course) ? 'edit' : 'plus'; ?>"></i>
+                    <?php echo isset($edit_course) ? 'Edit Main Course' : 'Add New Main Course'; ?>
                 </h2>
                 <span class="close" onclick="closeCourseModal()">&times;</span>
             </div>
             
             <form method="POST" action="courses.php">
                 <div class="modal-body">
-                    <input type="hidden" name="action" value="<?php echo $edit_course ? 'update_course' : 'add_course'; ?>">
-                    <?php if ($edit_course): ?>
+                    <input type="hidden" name="action" value="<?php echo isset($edit_course) ? 'update_course' : 'add_course'; ?>">
+                    <?php if (isset($edit_course)): ?>
                         <input type="hidden" name="course_id" value="<?php echo $edit_course['id']; ?>">
                     <?php endif; ?>
                     
@@ -876,53 +1082,131 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                         <div class="form-group">
                             <label for="name">Course Name *</label>
                             <input type="text" id="name" name="name" required 
-                                   value="<?php echo $edit_course ? htmlspecialchars($edit_course['name']) : ''; ?>"
-                                   placeholder="e.g., Web Development, Data Science">
+                                   value="<?php echo isset($edit_course) ? htmlspecialchars($edit_course['name']) : ''; ?>"
+                                   placeholder="e.g., Computer Course, Digital Marketing">
                         </div>
                         <div class="form-group">
-                            <label for="duration">Duration *</label>
-                            <input type="text" id="duration" name="duration" required 
-                                   value="<?php echo $edit_course ? htmlspecialchars($edit_course['duration']) : ''; ?>"
-                                   placeholder="e.g., 6 months, 1 year">
+                            <label for="category_id">Category *</label>
+                            <select id="category_id" name="category_id" required>
+                                <option value="">Select Category</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?php echo $category['id']; ?>" 
+                                            <?php echo (isset($edit_course) && $edit_course['category_id'] == $category['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($category['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="fee">Course Fee (₹) *</label>
-                            <input type="number" id="fee" name="fee" required min="0" step="0.01"
-                                   value="<?php echo $edit_course ? $edit_course['fee'] : ''; ?>"
-                                   placeholder="e.g., 15000">
+                            <label for="duration">Duration *</label>
+                            <input type="text" id="duration" name="duration" required 
+                                   value="<?php echo isset($edit_course) ? htmlspecialchars($edit_course['duration']) : ''; ?>"
+                                   placeholder="e.g., 6-12 months, 3-6 months">
                         </div>
                         <div class="form-group">
-                            <label for="capacity">Maximum Capacity</label>
-                            <input type="number" id="capacity" name="capacity" min="1" max="1000"
-                                   value="<?php echo $edit_course ? ($edit_course['capacity'] ?? 50) : '50'; ?>"
-                                   placeholder="e.g., 50">
+                            <label for="status">Status</label>
+                            <select id="status" name="status">
+                                <option value="active" <?php echo (isset($edit_course) && $edit_course['status'] === 'active') ? 'selected' : ''; ?>>Active</option>
+                                <option value="inactive" <?php echo (isset($edit_course) && $edit_course['status'] === 'inactive') ? 'selected' : ''; ?>>Inactive</option>
+                            </select>
                         </div>
                     </div>
                     
                     <div class="form-group full-width">
                         <label for="description">Course Description *</label>
                         <textarea id="description" name="description" required rows="4"
-                                  placeholder="Describe the course content, objectives, and what students will learn..."><?php echo $edit_course ? htmlspecialchars($edit_course['description']) : ''; ?></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select id="status" name="status">
-                            <option value="active" <?php echo ($edit_course && $edit_course['status'] === 'active') ? 'selected' : ''; ?>>Active</option>
-                            <option value="inactive" <?php echo ($edit_course && $edit_course['status'] === 'inactive') ? 'selected' : ''; ?>>Inactive</option>
-                            <option value="draft" <?php echo ($edit_course && $edit_course['status'] === 'draft') ? 'selected' : ''; ?>>Draft</option>
-                        </select>
+                                  placeholder="Describe the main course category and what sub-courses it will contain..."><?php echo isset($edit_course) ? htmlspecialchars($edit_course['description']) : ''; ?></textarea>
                     </div>
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeCourseModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-<?php echo $edit_course ? 'save' : 'plus'; ?>"></i>
-                        <?php echo $edit_course ? 'Update Course' : 'Add Course'; ?>
+                        <i class="fas fa-<?php echo isset($edit_course) ? 'save' : 'plus'; ?>"></i>
+                        <?php echo isset($edit_course) ? 'Update Course' : 'Add Course'; ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Sub-Course Modal -->
+    <div id="subCourseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-<?php echo isset($edit_sub_course) ? 'edit' : 'plus'; ?>"></i>
+                    <?php echo isset($edit_sub_course) ? 'Edit Sub-Course' : 'Add New Sub-Course'; ?>
+                </h2>
+                <span class="close" onclick="closeSubCourseModal()">&times;</span>
+            </div>
+            
+            <form method="POST" action="courses.php">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="<?php echo isset($edit_sub_course) ? 'update_sub_course' : 'add_sub_course'; ?>">
+                    <?php if (isset($edit_sub_course)): ?>
+                        <input type="hidden" name="sub_course_id" value="<?php echo $edit_sub_course['id']; ?>">
+                    <?php endif; ?>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sub_course_name">Sub-Course Name *</label>
+                            <input type="text" id="sub_course_name" name="name" required 
+                                   value="<?php echo isset($edit_sub_course) ? htmlspecialchars($edit_sub_course['name']) : ''; ?>"
+                                   placeholder="e.g., CCC, ADCA, Pants Sewing">
+                        </div>
+                        <div class="form-group">
+                            <label for="course_id">Main Course *</label>
+                            <select id="course_id" name="course_id" required>
+                                <option value="">Select Main Course</option>
+                                <?php foreach ($courses as $course): ?>
+                                    <option value="<?php echo $course['id']; ?>" 
+                                            <?php echo (isset($edit_sub_course) && $edit_sub_course['course_id'] == $course['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($course['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sub_course_duration">Duration *</label>
+                            <input type="text" id="sub_course_duration" name="duration" required 
+                                   value="<?php echo isset($edit_sub_course) ? htmlspecialchars($edit_sub_course['duration']) : ''; ?>"
+                                   placeholder="e.g., 3 months, 6 months">
+                        </div>
+                        <div class="form-group">
+                            <label for="fee">Fee (₹) *</label>
+                            <input type="number" id="fee" name="fee" required min="0" step="0.01"
+                                   value="<?php echo isset($edit_sub_course) ? $edit_sub_course['fee'] : ''; ?>"
+                                   placeholder="e.g., 2500">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label for="sub_course_description">Description *</label>
+                        <textarea id="sub_course_description" name="description" required rows="4"
+                                  placeholder="Describe the sub-course content and what students will learn..."><?php echo isset($edit_sub_course) ? htmlspecialchars($edit_sub_course['description']) : ''; ?></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sub_course_status">Status</label>
+                        <select id="sub_course_status" name="status">
+                            <option value="active" <?php echo (isset($edit_sub_course) && $edit_sub_course['status'] === 'active') ? 'selected' : ''; ?>>Active</option>
+                            <option value="inactive" <?php echo (isset($edit_sub_course) && $edit_sub_course['status'] === 'inactive') ? 'selected' : ''; ?>>Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSubCourseModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-<?php echo isset($edit_sub_course) ? 'save' : 'plus'; ?>"></i>
+                        <?php echo isset($edit_sub_course) ? 'Update Sub-Course' : 'Add Sub-Course'; ?>
                     </button>
                 </div>
             </form>
@@ -934,16 +1218,18 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     
     <script>
         // Open modal if editing
-        <?php if ($edit_course): ?>
+        <?php if (isset($edit_course)): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Edit mode detected, opening modal...');
+            console.log('Edit mode detected, opening course modal...');
             openCourseModal();
         });
         <?php endif; ?>
         
-        // Debug: Log edit course data
-        <?php if ($edit_course): ?>
-        console.log('Edit course data:', <?php echo json_encode($edit_course); ?>);
+        <?php if (isset($edit_sub_course)): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Edit mode detected, opening sub-course modal...');
+            openSubCourseModal();
+        });
         <?php endif; ?>
         
         function toggleMobileMenu() {
@@ -951,11 +1237,12 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             sidebar.classList.toggle('open');
         }
         
+        // Main Course Modal Functions
         function openAddCourseModal() {
             console.log('Opening add course modal...');
             document.getElementById('courseModal').style.display = 'block';
             // Reset form if not editing
-            if (!<?php echo $edit_course ? 'true' : 'false'; ?>) {
+            if (!<?php echo isset($edit_course) ? 'true' : 'false'; ?>) {
                 document.querySelector('#courseModal form').reset();
             }
         }
@@ -971,6 +1258,10 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             if (window.location.search.includes('edit=')) {
                 window.location.href = 'courses.php';
             }
+        }
+        
+        function editCourse(courseId) {
+            window.location.href = `courses.php?edit=${courseId}`;
         }
         
         function toggleCourseStatus(courseId, newStatus) {
@@ -1026,11 +1317,96 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
             }
         }
         
-        // Close modal when clicking outside
+        // Sub-Course Modal Functions
+        function openAddSubCourseModal() {
+            console.log('Opening add sub-course modal...');
+            document.getElementById('subCourseModal').style.display = 'block';
+            // Reset form if not editing
+            if (!<?php echo isset($edit_sub_course) ? 'true' : 'false'; ?>) {
+                document.querySelector('#subCourseModal form').reset();
+            }
+        }
+        
+        function openSubCourseModal() {
+            console.log('Opening sub-course modal...');
+            document.getElementById('subCourseModal').style.display = 'block';
+        }
+        
+        function closeSubCourseModal() {
+            document.getElementById('subCourseModal').style.display = 'none';
+            // Redirect to clear edit mode
+            if (window.location.search.includes('edit_sub=')) {
+                window.location.href = 'courses.php';
+            }
+        }
+        
+        function editSubCourse(subCourseId) {
+            window.location.href = `courses.php?edit_sub=${subCourseId}`;
+        }
+        
+        function toggleSubCourseStatus(subCourseId, newStatus) {
+            const action = newStatus === 'active' ? 'activate' : 'deactivate';
+            if (confirm(`Are you sure you want to ${action} this sub-course?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'courses.php';
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'toggle_sub_course_status';
+                
+                const subCourseIdInput = document.createElement('input');
+                subCourseIdInput.type = 'hidden';
+                subCourseIdInput.name = 'sub_course_id';
+                subCourseIdInput.value = subCourseId;
+                
+                const statusInput = document.createElement('input');
+                statusInput.type = 'hidden';
+                statusInput.name = 'new_status';
+                statusInput.value = newStatus;
+                
+                form.appendChild(actionInput);
+                form.appendChild(subCourseIdInput);
+                form.appendChild(statusInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function deleteSubCourse(subCourseId, subCourseName) {
+            if (confirm(`Are you sure you want to delete sub-course "${subCourseName}"? This action cannot be undone.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'courses.php';
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete_sub_course';
+                
+                const subCourseIdInput = document.createElement('input');
+                subCourseIdInput.type = 'hidden';
+                subCourseIdInput.name = 'sub_course_id';
+                subCourseIdInput.value = subCourseId;
+                
+                form.appendChild(actionInput);
+                form.appendChild(subCourseIdInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // Close modals when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('courseModal');
-            if (event.target === modal) {
+            const courseModal = document.getElementById('courseModal');
+            const subCourseModal = document.getElementById('subCourseModal');
+            
+            if (event.target === courseModal) {
                 closeCourseModal();
+            }
+            if (event.target === subCourseModal) {
+                closeSubCourseModal();
             }
         }
         

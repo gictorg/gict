@@ -26,8 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (!testDBConnection()) {
                 $error_message = 'Database connection failed. Please check configuration.';
             } else {
-                // Get user from database
-                $sql = "SELECT id, username, password, user_type, full_name, email FROM users WHERE username = ? AND status = 'active'";
+                // Get user from database with user type
+                $sql = "SELECT u.id, u.username, u.password, u.full_name, u.email, ut.name as user_type 
+                        FROM users u 
+                        JOIN user_types ut ON u.user_type_id = ut.id 
+                        WHERE u.username = ? AND u.status = 'active'";
                 $user = getRow($sql, [$username]);
                 
                 if ($user) {
@@ -41,9 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['full_name'] = $user['full_name'];
                         $_SESSION['email'] = $user['email'];
                         
-                        // Log successful login
-                        $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";
-                        insertData($login_sql, [$user['id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
+                        // Log successful login (commented out as user_logins table doesn't exist in new schema)
+                        // $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";
+                        // insertData($login_sql, [$user['id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
                         
                         // Redirect to appropriate dashboard
                         $dashboard_url = getDashboardUrl();

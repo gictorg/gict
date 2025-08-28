@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($studentId) {
         // Fetch student information from database
-        $student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$studentId]);
+        $student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$studentId]);
         
         if ($student) {
             $studentName = $student['full_name'];

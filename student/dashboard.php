@@ -11,7 +11,7 @@ if (!isLoggedIn() || !isStudent()) {
 $user_id = $_SESSION['user_id'];
 
 // Get student information
-$student = getRow("SELECT * FROM users WHERE id = ? AND user_type = 'student'", [$user_id]);
+$student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
 if (!$student) {
     header('Location: ../login.php');
     exit;
@@ -19,9 +19,10 @@ if (!$student) {
 
 // Get student enrollment information
 $enrolled_courses = getRows("
-    SELECT c.name, se.status as enrollment_status, se.enrollment_date, se.final_marks
+    SELECT sc.name as sub_course_name, c.name as course_name, se.status as enrollment_status, se.enrollment_date, se.completion_date
     FROM student_enrollments se
-    JOIN courses c ON se.course_id = c.id
+    JOIN sub_courses sc ON se.sub_course_id = sc.id
+    JOIN courses c ON sc.course_id = c.id
     WHERE se.user_id = ?
     ORDER BY se.enrollment_date DESC
 ", [$user_id]);
@@ -443,20 +444,24 @@ $completed_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollm
                             <?php foreach ($enrolled_courses as $course): ?>
                                 <div class="course-card">
                                     <div class="course-header">
-                                        <h6 class="course-title"><?php echo htmlspecialchars($course['name']); ?></h6>
+                                        <h6 class="course-title"><?php echo htmlspecialchars($course['sub_course_name']); ?></h6>
                                         <span class="course-status status-<?php echo $course['enrollment_status']; ?>">
                                             <?php echo ucfirst($course['enrollment_status']); ?>
                                         </span>
                                     </div>
                                     <div class="course-details">
                                         <div class="course-detail">
+                                            <i class="fas fa-book"></i>
+                                            <span>Course: <?php echo htmlspecialchars($course['course_name']); ?></span>
+                                        </div>
+                                        <div class="course-detail">
                                             <i class="fas fa-calendar"></i>
                                             <span>Enrolled: <?php echo date('M d, Y', strtotime($course['enrollment_date'])); ?></span>
                                         </div>
-                                        <?php if ($course['final_marks']): ?>
+                                        <?php if ($course['completion_date']): ?>
                                             <div class="course-detail">
-                                                <i class="fas fa-star"></i>
-                                                <span>Final Marks: <?php echo $course['final_marks']; ?>%</span>
+                                                <i class="fas fa-trophy"></i>
+                                                <span>Completed: <?php echo date('M d, Y', strtotime($course['completion_date'])); ?></span>
                                             </div>
                                         <?php endif; ?>
                                     </div>

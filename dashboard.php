@@ -25,15 +25,20 @@ if ($userType === 'admin') {
         require_once 'config/database.php';
         
         // Get total students count
-        $studentsSql = "SELECT COUNT(*) as count FROM users WHERE user_type = 'student' AND status = 'active'";
+        $studentsSql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type = 'student' AND u.status = 'active'";
         $studentsResult = getRow($studentsSql);
         $totalStudents = $studentsResult['count'] ?? 0;
+        
+        // Get total faculty count
+        $facultySql = "SELECT COUNT(*) as count FROM users u WHERE u.user_type = 'faculty' AND u.status = 'active'";
+        $facultyResult = getRow($facultySql);
+        $totalFaculty = $facultyResult['count'] ?? 0;
         
         // Get active students count
         $activeStudents = $totalStudents;
         
         // Get total enrollments
-        $enrollmentsSql = "SELECT COUNT(*) as count FROM enrollments";
+        $enrollmentsSql = "SELECT COUNT(*) as count FROM student_enrollments WHERE status = 'enrolled'";
         $enrollmentsResult = getRow($enrollmentsSql);
         $totalEnrollments = $enrollmentsResult['count'] ?? 0;
         
@@ -74,7 +79,7 @@ if ($userType === 'admin') {
                 <div class="brand-title">GICT CONTROL</div>
             </div>
             <div class="profile-card-mini">
-                <img src="assets/images/brijendra.jpeg" alt="Profile" />
+                <img src="<?php echo $user['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='assets/images/default-avatar.png'" />
                 <div>
                     <div class="name"><?php echo htmlspecialchars(strtoupper($user['full_name'])); ?></div>
                     <div class="role"><?php echo htmlspecialchars(ucfirst($user['type'])); ?></div>
@@ -86,6 +91,7 @@ if ($userType === 'admin') {
                 <li><a href="admin/students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="admin/staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="admin/courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
+                <li><a href="admin/pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
                 <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -102,7 +108,7 @@ if ($userType === 'admin') {
                 </div>
             </div>
             <div class="topbar-right">
-                <div class="user-chip"><img src="assets/images/brijendra.jpeg" alt="" /> <?php echo htmlspecialchars($user['full_name']); ?></div>
+                <div class="user-chip"><img src="<?php echo $user['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="" onerror="this.src='assets/images/default-avatar.png'" /> <?php echo htmlspecialchars($user['full_name']); ?></div>
             </div>
         </header>
 
@@ -123,6 +129,12 @@ if ($userType === 'admin') {
                     <h3>Admissions</h3>
                     <div class="value"><?php echo $totalStudents; ?></div>
                     <div class="muted">Total Students</div>
+                </section>
+
+                <section class="stat faculty">
+                    <h3>Faculty</h3>
+                    <div class="value"><?php echo $totalFaculty; ?></div>
+                    <div class="muted">Total Staff</div>
                 </section>
 
                 <section class="stat enrollments">
@@ -146,7 +158,10 @@ if ($userType === 'admin') {
                         if ($userType === 'admin') {
                             try {
                                 // Get courses from database
-                                $coursesSql = "SELECT name, status, duration FROM courses ORDER BY name";
+                                $coursesSql = "SELECT c.name, c.status, c.duration, cc.name as category_name 
+                                              FROM courses c 
+                                              JOIN course_categories cc ON c.category_id = cc.id 
+                                              ORDER BY c.name";
                                 $courses = getRows($coursesSql);
                                 
                                 if (!empty($courses)) {

@@ -6,6 +6,9 @@ requireRole('admin');
 // Include ImgBB helper for image uploads
 require_once '../includes/imgbb_helper.php';
 
+// Include User ID Generator helper
+require_once '../includes/user_id_generator.php';
+
 $user = getCurrentUser();
 
 // Handle form submissions
@@ -13,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add_staff':
-                $username = $_POST['username'] ?? '';
                 $email = $_POST['email'] ?? '';
                 $full_name = $_POST['full_name'] ?? '';
                 $phone = $_POST['phone'] ?? '';
@@ -23,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $qualification = $_POST['qualification'] ?? '';
                 $experience_years = $_POST['experience_years'] ?? 0;
                 $joining_date = $_POST['joining_date'] ?? '';
+                $previous_institute = $_POST['previous_institute'] ?? '';
                 
                 // Handle profile image upload to ImgBB
                 $profile_image_url = '';
@@ -32,9 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $allowed_image_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
                     if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 100 * 1024) {
+                        // We'll upload with a temporary name first, then rename after user ID generation
+                        $temp_name = 'temp_faculty_' . time();
                         $imgbb_result = smartUpload(
                             $profile_file['tmp_name'], 
-                            $username . '_profile'
+                            $temp_name
                         );
                         
                         if ($imgbb_result && $imgbb_result['success']) {
@@ -48,27 +53,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
                 
                 if (empty($error_message)) {
-                    // Generate default password (username + 123)
-                    $default_password = $username . '123';
-                    $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
-                    
-                    try {
-                        $sql = "INSERT INTO users (username, password, email, full_name, user_type, phone, address, date_of_birth, gender, qualification, experience_years, joining_date, profile_image) VALUES (?, ?, ?, ?, 'faculty', ?, ?, ?, ?, ?, ?, ?, ?)";
-                        $result = insertData($sql, [$username, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $experience_years, $joining_date, $profile_image_url]);
+                    // Generate unique user ID for faculty
+                    $generated_user_id = generateUniqueUserId('faculty');
+                    if (!$generated_user_id) {
+                        $error_message = "Failed to generate unique user ID for faculty member.";
+                    } else {
+                        // Generate default password (generated_user_id + 123)
+                        $default_password = $generated_user_id . '123';
+                        $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
                         
-                        if ($result) {
-                            $success_message = "Staff member '$full_name' added successfully!<br>";
-                            $success_message .= "<strong>Username:</strong> $username<br>";
-                            $success_message .= "<strong>Default Password:</strong> $default_password";
+                        try {
+                            $sql = "INSERT INTO users (username, password, email, full_name, user_type, phone, address, date_of_birth, gender, qualification, experience_years, joining_date, profile_image) VALUES (?, ?, ?, ?, 'faculty', ?, ?, ?, ?, ?, ?, ?, ?)";
+                            $result = insertData($sql, [$generated_user_id, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $experience_years, $joining_date, $profile_image_url]);
                             
-                            if (!empty($profile_image_url)) {
-                                $success_message .= "<br><strong>Profile Image:</strong> <a href='$profile_image_url' target='_blank'>View Image</a>";
+                            if ($result) {
+                                $success_message = "Staff member '$full_name' added successfully!<br>";
+                                $success_message .= "<strong>User ID:</strong> $generated_user_id<br>";
+                                $success_message .= "<strong>Default Password:</strong> $default_password";
+                                
+                                if (!empty($profile_image_url)) {
+                                    $success_message .= "<br><strong>Profile Image:</strong> <a href='$profile_image_url' target='_blank'>View Image</a>";
+                                }
+                            } else {
+                                $error_message = "Failed to add staff member.";
                             }
-                        } else {
-                            $error_message = "Failed to add staff member.";
+                        } catch (Exception $e) {
+                            $error_message = "Error: " . $e->getMessage();
                         }
-                    } catch (Exception $e) {
-                        $error_message = "Error: " . $e->getMessage();
                     }
                 }
                 break;
@@ -135,13 +146,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Get all faculty/staff members
 $staff = [];
 try {
-    $sql = "SELECT 
+            $sql = "SELECT 
                 u.id, u.username, u.email, u.full_name, u.phone, u.address, 
                 u.date_of_birth, u.gender, u.qualification, u.experience_years, 
                 u.joining_date, u.status, u.created_at, u.profile_image
-            FROM users u 
-            WHERE u.user_type = 'faculty' 
-            ORDER BY u.created_at DESC";
+                          FROM users u 
+              WHERE u.user_type = 'faculty' 
+              ORDER BY u.created_at DESC";
     $staff = getRows($sql);
 } catch (Exception $e) {
     $error_message = "Error loading staff: " . $e->getMessage();
@@ -512,6 +523,107 @@ try {
         }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* Enhanced Modal Styles */
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-section h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-section h3 i {
+            color: #667eea;
+            font-size: 20px;
+        }
+        
+        .file-upload-wrapper {
+            position: relative;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .file-upload-wrapper:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-upload-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #6c757d;
+        }
+        
+        .file-upload-info i {
+            font-size: 24px;
+            color: #667eea;
+        }
+        
+        .file-upload-info span {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview .file-info {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .form-text {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .form-text i {
+            margin-right: 5px;
+            color: #667eea;
+        }
     </style>
 </head>
 <body class="admin-dashboard-body">
@@ -534,6 +646,7 @@ try {
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a class="active" href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
+                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
                 <li><a href="#"><i class="fas fa-file-alt"></i> Reports</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -618,7 +731,7 @@ try {
             <div class="search-section">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="staffSearch" placeholder="Search staff by name, username, email, or phone..." onkeyup="searchStaff()">
+                    <input type="text" id="staffSearch" placeholder="Search staff by name, user ID, email, or phone..." onkeyup="searchStaff()">
                     <button class="clear-search" onclick="clearStaffSearch()" id="clearStaffSearchBtn" style="display: none;">
                         <i class="fas fa-times"></i>
                     </button>
@@ -632,7 +745,7 @@ try {
                     <select id="sortBy" onchange="sortStaff()">
                         <option value="created_at">Sort by: Join Date</option>
                         <option value="full_name">Sort by: Name</option>
-                        <option value="username">Sort by: Username</option>
+                        <option value="username">Sort by: User ID</option>
                         <option value="experience_years">Sort by: Experience</option>
                     </select>
                 </div>
@@ -658,7 +771,7 @@ try {
                             </div>
                             <div class="staff-details">
                                 <div class="staff-name"><?php echo htmlspecialchars($member['full_name']); ?></div>
-                                <div class="staff-username">@<?php echo htmlspecialchars($member['username']); ?></div>
+                                <div class="staff-username"><?php echo htmlspecialchars($member['username']); ?></div>
                             </div>
                             <div class="staff-status <?php echo $member['status']; ?>">
                                 <?php echo htmlspecialchars(ucfirst($member['status'])); ?>
@@ -666,7 +779,7 @@ try {
                         </div>
                         
                         <div class="staff-info">
-                            <strong>Username:</strong> <?php echo htmlspecialchars($member['username']); ?><br>
+                            <strong>User ID:</strong> <?php echo htmlspecialchars($member['username']); ?><br>
                             <strong>Email:</strong> <?php echo htmlspecialchars($member['email']); ?><br>
                             <strong>Phone:</strong> <?php echo htmlspecialchars($member['phone']); ?><br>
                             <strong>Gender:</strong> <?php echo htmlspecialchars(ucfirst($member['gender'] ?? 'N/A')); ?><br>
@@ -714,74 +827,123 @@ try {
             <form method="POST" action="staff.php" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_staff">
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="username">Username *</label>
-                        <input type="text" id="username" name="username" required>
+                <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> A unique User ID will be automatically generated in the format: <code>f[YEAR][3-digit-number]</code> (e.g., f2025001)
+                </div>
+                
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> Personal Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="full_name">Full Name *</label>
+                            <input type="text" id="full_name" name="full_name" required placeholder="Enter staff member's full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required placeholder="staff@example.com">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="email">Email *</label>
-                        <input type="email" id="email" name="email" required>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+91-9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_of_birth">Date of Birth</label>
+                            <input type="date" id="date_of_birth" name="date_of_birth">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="full_name">Full Name *</label>
-                        <input type="text" id="full_name" name="full_name" required>
+                <!-- Professional Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-briefcase"></i> Professional Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="qualification">Qualification *</label>
+                            <select id="qualification" name="qualification" required>
+                                <option value="">Select Qualification</option>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="M.Tech">M.Tech</option>
+                                <option value="B.Sc">B.Sc</option>
+                                <option value="M.Sc">M.Sc</option>
+                                <option value="B.Com">B.Com</option>
+                                <option value="M.Com">M.Com</option>
+                                <option value="BBA">BBA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Ph.D">Ph.D</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="experience_years">Years of Experience *</label>
+                            <input type="number" id="experience_years" name="experience_years" min="0" max="50" required placeholder="0">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" name="phone">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="joining_date">Joining Date</label>
+                            <input type="date" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="previous_institute">Previous Institute (Optional)</label>
+                            <input type="text" id="previous_institute" name="previous_institute" placeholder="Name of previous institute">
+                        </div>
                     </div>
                 </div>
                 
-                <div class="form-row">
+                <!-- Profile Image Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-camera"></i> Profile Image</h3>
+                    
                     <div class="form-group">
-                        <label for="date_of_birth">Date of Birth</label>
-                        <input type="date" id="date_of_birth" name="date_of_birth">
-                    </div>
-                    <div class="form-group">
-                        <label for="gender">Gender</label>
-                        <select id="gender" name="gender">
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="qualification">Qualification *</label>
-                        <input type="text" id="qualification" name="qualification" required placeholder="e.g., M.Tech, Ph.D">
-                    </div>
-                    <div class="form-group">
-                        <label for="experience_years">Years of Experience *</label>
-                        <input type="number" id="experience_years" name="experience_years" min="0" max="50" required>
+                        <label for="profile_image">Profile Image (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="profile_image" name="profile_image" accept="image/*" onchange="previewImage(this, 'staff-profile-preview')">
+                            <div class="file-upload-info">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Click to upload or drag & drop</span>
+                            </div>
+                        </div>
+                        <div id="staff-profile-preview" class="image-preview"></div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Max size: 100KB. Formats: JPG, PNG, GIF
+                        </small>
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="joining_date">Joining Date</label>
-                    <input type="date" id="joining_date" name="joining_date">
-                </div>
-                
-                <div class="form-group">
-                    <label for="profile_image">Profile Image (Optional)</label>
-                    <input type="file" id="profile_image" name="profile_image" accept="image/*">
-                    <small class="form-text text-muted">Max size: 100KB. Formats: JPG, PNG, GIF</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" name="address" rows="3"></textarea>
-                </div>
-                
+                <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddStaffModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Staff Member</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddStaffModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Staff Member
+                    </button>
                 </div>
             </form>
         </div>
@@ -823,6 +985,95 @@ try {
     <script src="../assets/js/mobile-menu.js"></script>
     
     <script>
+        // Image preview functionality
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            
+            if (file) {
+                // Clear previous preview
+                preview.innerHTML = '';
+                
+                // Check file size (100KB limit for staff)
+                const fileSize = file.size / 1024; // Convert to KB
+                if (fileSize > 100) {
+                    alert('File size must be less than 100KB. Current size: ' + fileSize.toFixed(1) + 'KB');
+                    input.value = '';
+                    return;
+                }
+                
+                // Check file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Please select a valid file type: JPG, JPEG, PNG, or GIF');
+                    input.value = '';
+                    return;
+                }
+                
+                // Show image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = 'Preview';
+                    preview.appendChild(img);
+                    
+                    // Add file info
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-info';
+                    fileInfo.innerHTML = `
+                        <strong>${file.name}</strong><br>
+                        Size: ${fileSize.toFixed(1)}KB<br>
+                        Type: ${file.type}
+                    `;
+                    preview.appendChild(fileInfo);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Form validation
+        function validateStaffForm() {
+            const form = document.querySelector('form[action="staff.php"]');
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#dc3545';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#e1e5e9';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please fill in all required fields marked with *');
+            }
+            
+            return isValid;
+        }
+        
+        // Enhanced form submission
+        document.querySelector('form[action="staff.php"]').addEventListener('submit', function(e) {
+            if (!validateStaffForm()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Staff...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after a delay (in case of error)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 10000);
+        });
+        
         function openAddStaffModal() {
             document.getElementById('addStaffModal').style.display = 'block';
         }
@@ -943,7 +1194,7 @@ try {
                 
                 // Apply search filter
                 if (searchTerm && !(staff.name.includes(searchTerm) || 
-                                   staff.username.includes(searchTerm) || 
+                                   staff.userId.includes(searchTerm) || 
                                    staff.email.includes(searchTerm))) {
                     show = false;
                 }
@@ -967,7 +1218,7 @@ try {
                     case 'full_name':
                         return a.name.localeCompare(b.name);
                     case 'username':
-                        return a.username.localeCompare(b.username);
+                        return a.userId.localeCompare(b.userId);
                     case 'experience_years':
                         return b.experience - a.experience;
                     case 'created_at':
@@ -999,7 +1250,7 @@ try {
             allStaff = Array.from(staffCards).map(card => ({
                 element: card,
                 name: card.querySelector('.staff-name').textContent.toLowerCase(),
-                username: card.querySelector('.staff-username').textContent.toLowerCase(),
+                userId: card.querySelector('.staff-username').textContent.toLowerCase(),
                 email: card.querySelector('.staff-info').textContent.toLowerCase(),
                 status: card.querySelector('.staff-status').textContent.toLowerCase().trim(),
                 experience: parseInt(card.querySelector('.staff-info').textContent.match(/experience:\s*(\d+)/i)?.[1] || 0),
