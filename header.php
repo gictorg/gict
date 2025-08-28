@@ -53,26 +53,15 @@ require_once 'includes/session_manager.php';
                 </div>
             </div>
         </div>
-        <!-- Main Navigation -->
         <nav class="main-nav">
             <div class="container">
                 <div class="nav-left">
                     <a href="index.php" class="home-icon">
                         <i class="fas fa-home"></i>
                     </a>
-                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
                     <div class="nav-links" id="navLinks">
-                        <button class="mobile-menu-close" id="mobileMenuClose" style="display: none;">
-                            <i class="fas fa-times"></i>
-                        </button>
                         <div class="nav-dropdown">
-                            <a href="#" class="nav-btn">ABOUT US <i class="fas fa-caret-down"></i></a>
-                            <div class="nav-dropdown-content">
-                                <a href="#">Option 1</a>
-                                <a href="#">Option 2</a>
-                            </div>
+                            <a href="about-gict.php" class="nav-btn">ABOUT US</a>
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">STUDENT <i class="fas fa-caret-down"></i></a>
@@ -117,14 +106,13 @@ require_once 'includes/session_manager.php';
                             </div>
                         </div>
                         <?php if (isLoggedIn()): ?>
-                            <!-- Logged in user dropdown -->
-                            <div class="nav-dropdown user-dropdown">
+                            <div class="nav-dropdown">
                                 <a href="#" class="nav-btn user-btn">
                                     <i class="fas fa-user"></i> 
                                     <?php echo htmlspecialchars(getUserDisplayName()); ?> 
                                     <i class="fas fa-caret-down"></i>
                                 </a>
-                                <div class="user-dropdown-content">
+                                <div class="nav-dropdown-content">
                                     <a href="<?php echo getDashboardUrl(); ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                                     <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
                                     <a href="#"><i class="fas fa-cog"></i> Settings</a>
@@ -132,17 +120,28 @@ require_once 'includes/session_manager.php';
                                 </div>
                             </div>
                         <?php else: ?>
-                            <!-- Login button for non-logged in users -->
-                            <div class="nav-dropdown login-dropdown">
+                            <div class="nav-dropdown">
                                 <a href="login.php" class="nav-btn login-btn">
                                     <i class="fas fa-sign-in-alt"></i> Login
                                 </a>
                             </div>
                         <?php endif; ?>
                     </div>
+                    <!-- Mobile Menu Toggle Button - MOVED TO RIGHT SIDE LIKE UNIVERSITY OF LUCKNOW -->
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <!-- Mobile Menu Close Button - POSITIONED INSIDE NAVIGATION -->
+                    <button class="mobile-menu-close" id="mobileMenuClose" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         </nav>
     </div>
+    
     <script src="assets/js/nav-dropdown.js"></script>
     <script src="assets/js/homepage-mobile-menu.js"></script>
+</body>
+</html>

@@ -9,8 +9,22 @@
 body {
     margin: 0;
     padding: 0;
+    padding-top: 180px; /* Account for fixed header height */
     font-family: Arial, sans-serif;
     background: #fff;
+}
+
+/* Mobile responsive body padding */
+@media (max-width: 768px) {
+    body {
+        padding-top: 160px; /* Smaller padding for mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding-top: 140px; /* Even smaller padding for very small screens */
+    }
 }
 
 /* Main container layout */
@@ -162,14 +176,11 @@ body {
     .main-content .container {
         flex-direction: column;
         gap: 15px;
+        margin-top: 68px;
     }
     
     .director-section {
         width: 100%;
-    }
-
-    .profile-card {
-        max-width: 90%;
     }
 }
 
