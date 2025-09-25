@@ -63,13 +63,13 @@ require_once 'includes/session_manager.php';
                         <div class="nav-dropdown">
                             <a href="about-gict.php" class="nav-btn">ABOUT US</a>
                         </div>
-                        <div class="nav-dropdown">
+                        <!-- <div class="nav-dropdown">
                             <a href="#" class="nav-btn">STUDENT <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
                                 <a href="#">Option 1</a>
                                 <a href="#">Option 2</a>
                             </div>
-                        </div>
+                        </div> -->
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">COURSES <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
@@ -94,16 +94,16 @@ require_once 'includes/session_manager.php';
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">CONTACT <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
-                                <a href="#">Option 1</a>
-                                <a href="#">Option 2</a>
+                                <a href="index.php">Whatsapp</a>
+                                <a href="index.php">Email</a>
                             </div>
                         </div>
                         <div class="nav-dropdown">
-                            <a href="#" class="nav-btn">CERTIFICATE VERIFICATION <i class="fas fa-caret-down"></i></a>
-                            <div class="nav-dropdown-content">
+                            <a href="index.php" class="nav-btn">CERTIFICATE VERIFICATION <i class="fas fa-caret-down"></i></a>
+                            <!-- <div class="nav-dropdown-content">
                                 <a href="#">Option 1</a>
                                 <a href="#">Option 2</a>
-                            </div>
+                            </div> -->
                         </div>
                         <?php if (isLoggedIn()): ?>
                             <div class="nav-dropdown">
@@ -114,8 +114,8 @@ require_once 'includes/session_manager.php';
                                 </a>
                                 <div class="nav-dropdown-content">
                                     <a href="<?php echo getDashboardUrl(); ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-                                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
-                                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                                    <!-- <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                                    <a href="#"><i class="fas fa-cog"></i> Settings</a> -->
                                     <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
                                 </div>
                             </div>
@@ -126,6 +126,11 @@ require_once 'includes/session_manager.php';
                                 </a>
                             </div>
                         <?php endif; ?>
+                        <div class="nav-dropdown">
+                            <a href="#" class="nav-btn enquiry-btn" onclick="openEnquiryModal()">
+                                <i class="fas fa-question-circle"></i> Add Enquiry
+                            </a>
+                        </div>
                     </div>
                     <!-- Mobile Menu Toggle Button - MOVED TO RIGHT SIDE LIKE UNIVERSITY OF LUCKNOW -->
                     <button class="mobile-menu-toggle" id="mobileMenuToggle">

@@ -273,9 +273,9 @@ html, body {
         font-size: 12px;
     }
     
-    /* Ensure nav container doesn't overflow */
+    /* Ensure nav container doesn't overflow but allow dropdowns */
     .main-nav .container {
-        overflow: hidden;
+        overflow: visible;
     }
     
     /* Adjust nav links for medium screens */
@@ -793,7 +793,7 @@ html, body {
     
     /* Fix z-index for dropdown content */
     .nav-dropdown-content {
-        z-index: 10002 !important; /* Higher than overlay */
+        z-index: 10003 !important; /* Higher than overlay and other content */
         position: absolute;
         background: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -844,6 +844,13 @@ html, body {
         color: #fff !important;
     }
     
+    .nav-links.mobile-open .nav-dropdown .enquiry-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        margin-left: 0 !important;
+        margin-top: 10px;
+    }
+    
     .nav-links.mobile-open .nav-dropdown .user-btn {
         background: #007bff !important;
         color: #fff !important;
@@ -870,7 +877,8 @@ html, body {
   padding-top: 180px;
 }
 .nav-btn,
-.login-btn {
+.login-btn,
+.enquiry-btn {
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -881,9 +889,31 @@ html, body {
 }
 
 .nav-btn i,
-.login-btn i {
+.login-btn i,
+.enquiry-btn i {
   font-size: 14px;
   vertical-align: middle;
+}
+
+/* Enquiry Button Styles */
+.enquiry-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-radius: 5px;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.enquiry-btn:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    color: white !important;
+}
+
+.enquiry-btn i {
+    color: white !important;
 }
 
 /* Login Dropdown Styles - INTEGRATED INTO NAVIGATION GRID */
@@ -901,7 +931,7 @@ html, body {
     height: 100%;
     padding: 0 15px;
     position: relative;
-    z-index: 9999;
+    z-index: 10003;
     color: #fff;
     font-weight: bold;
     font-size: 15px;
@@ -925,7 +955,7 @@ html, body {
     background: #fff;
     min-width: 180px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    z-index: 9999;
+    z-index: 10003;
     border-radius: 0 0 8px 8px;
     border: .2px solid #c3c8e7;
     flex-direction: column;
@@ -982,17 +1012,18 @@ html, body {
     position: relative;
     display: flex;
     align-items: center;
+    z-index: 10002;
 }
 
 .nav-dropdown-content {
     display: none;
-    position: absolute;
-    left: 0;
-    top: 100%;
+    position: fixed;
+    left: auto;
+    top: auto;
     background: #fff;
     min-width: 180px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    z-index: 9999;
+    z-index: 10003;
     flex-direction: column;
     border: .2px solid #c3c8e7;
 }
@@ -1051,7 +1082,7 @@ html, body {
     height: 100%;
     padding: 0 15px;
     position: relative;
-    z-index: 9999;
+    z-index: 10003;
     color: #fff;
     font-weight: bold;
     font-size: 15px;
@@ -1075,7 +1106,7 @@ html, body {
     background: #fff;
     min-width: 180px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    z-index: 9999;
+    z-index: 10003;
     border-radius: 0 0 8px 8px;
     border: .2px solid #c3c8e7;
     flex-direction: column;

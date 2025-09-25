@@ -27,9 +27,22 @@ $enrolled_courses = getRows("
     ORDER BY se.enrollment_date DESC
 ", [$user_id]);
 
+// Get certificates for completed courses
+$certificates = getRows("
+    SELECT c.*, se.sub_course_id, sc.name as sub_course_name, co.name as course_name, cc.name as category_name
+    FROM certificates c
+    JOIN student_enrollments se ON c.enrollment_id = se.id
+    JOIN sub_courses sc ON se.sub_course_id = sc.id
+    JOIN courses co ON sc.course_id = co.id
+    JOIN course_categories cc ON co.category_id = cc.id
+    WHERE se.user_id = ?
+    ORDER BY c.generated_at DESC
+", [$user_id]);
+
 $total_enrolled = count($enrolled_courses);
-$active_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollment_status'] === 'active'));
+$active_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollment_status'] === 'enrolled'));
 $completed_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollment_status'] === 'completed'));
+$certificates_count = count($certificates);
 ?>
 
 <!DOCTYPE html>
@@ -476,29 +489,71 @@ $completed_courses = count(array_filter($enrolled_courses, fn($e) => $e['enrollm
                 </div>
             </div>
 
-            <!-- Digital ID & Certificates -->
+            <!-- My Certificates -->
             <div class="panel" style="margin-top: 1.5rem;">
                 <div class="panel-header">
-                    <span><i class="fas fa-id-card"></i> Digital ID & Certificates</span>
+                    <span><i class="fas fa-certificate"></i> My Certificates (<?php echo $certificates_count; ?>)</span>
                 </div>
                 <div class="panel-body">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                        <div class="feature-item">
-                            <i class="fas fa-certificate text-success"></i>
-                            <h6>Course Certificates</h6>
-                            <p>Download your course completion certificates</p>
-                            <a href="download-certificate.php" class="btn btn-success btn-sm" target="_blank">
-                                <i class="fas fa-download"></i> Download Certificate
-                            </a>
+                    <?php if (empty($certificates)): ?>
+                        <div class="text-center" style="padding: 2rem;">
+                            <i class="fas fa-certificate" style="font-size: 3rem; color: #ddd; margin-bottom: 1rem;"></i>
+                            <h5>No Certificates Yet</h5>
+                            <p class="text-muted">Complete your courses to earn certificates!</p>
                         </div>
-                        <div class="feature-item">
-                            <i class="fas fa-graduation-cap text-info"></i>
-                            <h6>Academic Records</h6>
-                            <p>Access your academic transcripts and records</p>
-                            <button class="btn btn-info btn-sm">
-                                <i class="fas fa-file-alt"></i> View Records
-                            </button>
+                    <?php else: ?>
+                        <div class="certificates-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                            <?php foreach ($certificates as $cert): ?>
+                                <div class="certificate-card" style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <div class="certificate-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                        <div>
+                                            <h6 style="margin: 0; color: #333; font-weight: 600;"><?php echo htmlspecialchars($cert['sub_course_name']); ?></h6>
+                                            <small class="text-muted"><?php echo htmlspecialchars($cert['course_name']); ?></small>
+                                        </div>
+                                        <span class="badge badge-success" style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px;">
+                                            <?php echo ucfirst($cert['status']); ?>
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="certificate-details" style="margin-bottom: 1rem;">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <small class="text-muted">Certificate No:</small>
+                                            <small style="font-weight: 600;"><?php echo htmlspecialchars($cert['certificate_number']); ?></small>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <small class="text-muted">Generated:</small>
+                                            <small><?php echo date('M d, Y', strtotime($cert['generated_at'])); ?></small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="certificate-actions" style="display: flex; gap: 0.5rem;">
+                                        <a href="../<?php echo $cert['certificate_url']; ?>" target="_blank" class="btn btn-success btn-sm" style="flex: 1; text-align: center; padding: 8px 12px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
+                                            <i class="fas fa-certificate"></i> Certificate
+                                        </a>
+                                        <a href="../<?php echo $cert['marksheet_url']; ?>" target="_blank" class="btn btn-info btn-sm" style="flex: 1; text-align: center; padding: 8px 12px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
+                                            <i class="fas fa-file-alt"></i> Marksheet
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Digital ID Card -->
+            <div class="panel" style="margin-top: 1.5rem;">
+                <div class="panel-header">
+                    <span><i class="fas fa-id-card"></i> Digital ID Card</span>
+                </div>
+                <div class="panel-body">
+                    <div class="feature-item" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-id-card text-primary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h6>Student ID Card</h6>
+                        <p>Generate and download your digital student ID card</p>
+                        <button onclick="generateIdCard()" class="btn btn-primary">
+                            <i class="fas fa-id-card"></i> Generate ID Card
+                        </button>
                     </div>
                 </div>
             </div>

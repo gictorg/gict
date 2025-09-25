@@ -442,6 +442,7 @@ $current_user = getRow("SELECT * FROM users WHERE id = ?", [$user['id']]);
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
                 <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
                 <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li><a href="inquiries.php"><i class="fas fa-question-circle"></i> Course Inquiries</a></li>
                 <li><a class="active" href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>

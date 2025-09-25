@@ -4,15 +4,19 @@
  * Handles session initialization, user authentication, and security
  */
 
-// Prevent multiple session starts
+// Initialize session only once
 if (session_status() === PHP_SESSION_NONE) {
-    // Set secure session parameters
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
-    ini_set('session.use_strict_mode', 1);
-    ini_set('session.cookie_samesite', 'Strict');
+    // Set secure session parameters only if headers haven't been sent
+    if (!headers_sent()) {
+        @ini_set('session.cookie_lifetime', 86400); // 24 hours
+        @ini_set('session.cookie_httponly', 1);
+        @ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
+        @ini_set('session.use_strict_mode', 1);
+        @ini_set('session.cookie_samesite', 'Strict');
+    }
     
-    session_start();
+    // Start session with error suppression
+    @session_start();
 }
 
 /**

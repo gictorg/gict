@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GICT Institute - PRD Visualization Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tab.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        .nav-tab:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .chart-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .requirements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .requirement-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .requirement-card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .requirement-card p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .user-persona {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .user-persona h3 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .user-persona ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .user-persona li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .user-persona li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .tech-item {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #3498db;
+        }
+        
+        .tech-item h4 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .tech-item p {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .timeline-item {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            margin-left: 40px;
+        }
+        
+        .timeline-item:before {
+            content: "";
+            position: absolute;
+            left: -30px;
+            top: 20px;
+            width: 15px;
+            height: 15px;
+            background: #3498db;
+            border-radius: 50%;
+        }
+        
+        .timeline-item:after {
+            content: "";
+            position: absolute;
+            left: -23px;
+            top: 35px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: #3498db;
+        }
+        
+        .timeline-item:last-child:after {
+            display: none;
+        }
+        
+        .timeline-item h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .timeline-item p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GICT Institute</h1>
+            <p>Product Requirements Document - Interactive Dashboard</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">Overview</button>
+            <button class="nav-tab" onclick="showTab('requirements')">Requirements</button>
+            <button class="nav-tab" onclick="showTab('architecture')">Architecture</button>
+            <button class="nav-tab" onclick="showTab('users')">User Personas</button>
+            <button class="nav-tab" onclick="showTab('timeline')">Timeline</button>
+        </div>
+        
+        <div id="overview" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>100</h3>
+                    <p>Functional Requirements</p>
+                </div>
+                <div class="stat-card">
+                    <h3>3</h3>
+                    <p>User Roles</p>
+                </div>
+                <div class="stat-card">
+                    <h3>5</h3>
+                    <p>Course Categories</p>
+                </div>
+                <div class="stat-card">
+                    <h3>15</h3>
+                    <p>Core Features</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Feature Distribution</h3>
+                <canvas id="featureChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">User Role Distribution</h3>
+                <canvas id="roleChart"></canvas>
+            </div>
+        </div>
+        
+        <div id="requirements" class="tab-content">
+            <h2>Key Requirements Categories</h2>
+            <div class="requirements-grid">
+                <div class="requirement-card">
+                    <h4>User Management</h4>
+                    <p>Secure authentication, role-based access control, user profile management, and session handling for all user types.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Course Management</h4>
+                    <p>Two-tier course structure, category management, course details, and status tracking for comprehensive course administration.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Enrollment System</h4>
+                    <p>Student enrollment workflow, payment processing, verification system, and status tracking for seamless course registration.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Certificate Generation</h4>
+                    <p>Automatic certificate creation, QR code integration, marksheet generation, and secure document management.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Payment Processing</h4>
+                    <p>Multiple payment methods, transaction tracking, admin verification, and secure payment handling.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Document Management</h4>
+                    <p>File upload system, image hosting integration, document categorization, and secure file storage.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="architecture" class="tab-content">
+            <h2>System Architecture</h2>
+            <div class="mermaid">
+                graph TB
+                    subgraph "Frontend Layer"
+                        A[Homepage] --> B[Login/Registration]
+                        B --> C[Student Dashboard]
+                        B --> D[Faculty Dashboard]
+                        B --> E[Admin Dashboard]
+                    end
+                    
+                    subgraph "Backend Layer"
+                        F[PHP Application] --> G[Session Manager]
+                        F --> H[Database Layer]
+                        F --> I[File Manager]
+                    end
+                    
+                    subgraph "Database Layer"
+                        J[(MySQL Database)]
+                        K[Users Table]
+                        L[Courses Table]
+                        M[Enrollments Table]
+                        N[Payments Table]
+                        O[Certificates Table]
+                    end
+                    
+                    A --> F
+                    C --> F
+                    D --> F
+                    E --> F
+                    F --> J
+            </div>
+            
+            <h3>Technology Stack</h3>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <h4>Frontend</h4>
+                    <p>HTML5, CSS3, JavaScript ES6, Bootstrap</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Backend</h4>
+                    <p>PHP 7.4+, PDO, Session Management</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Database</h4>
+                    <p>MySQL 5.7+, Database Schema, Indexes</p>
+                </div>
+                <div class="tech-item">
+                    <h4>APIs</h4>
+                    <p>ImgBB API, QR Code Generator</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="users" class="tab-content">
+            <h2>User Personas</h2>
+            
+            <div class="user-persona">
+                <h3>👨‍🎓 Student Persona</h3>
+                <ul>
+                    <li>Age: 18-45 years old</li>
+                    <li>Goals: Enroll in courses, track progress, obtain certificates</li>
+                    <li>Pain Points: Complex enrollment processes, unclear course information</li>
+                    <li>Needs: Easy enrollment, clear course details, accessible certificates</li>
+                </ul>
+            </div>
+            
+            <div class="user-persona">
+                <h3>👨‍🏫 Faculty Persona</h3>
+                <ul>
+                    <li>Age: 25-55 years old</li>
+                    <li>Goals: Manage assigned courses, track student progress</li>
+                    <li>Pain Points: Manual grade entry, limited course visibility</li>
+                    <li>Needs: Course management tools, student progress tracking</li>
+                </ul>
+            </div>
+            
+            <div class="user-persona">
+                <h3>👨‍💼 Administrator Persona</h3>
+                <ul>
+                    <li>Age: 30-60 years old</li>
+                    <li>Goals: Oversee operations, manage enrollments, generate reports</li>
+                    <li>Pain Points: Manual processes, scattered information</li>
+                    <li>Needs: Centralized management, automated workflows, comprehensive reporting</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="timeline" class="tab-content">
+            <h2>Development Timeline</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4>Phase 1: Core Foundation</h4>
+                    <p>User authentication, basic course management, student enrollment system, and payment processing workflow.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Phase 2: Certificate System</h4>
+                    <p>Certificate generation, marksheet creation, QR code integration, and document management system.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Phase 3: Admin Features</h4>
+                    <p>Comprehensive admin dashboard, enrollment approvals, marks management, and reporting system.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Phase 4: Enhancement</h4>
+                    <p>Mobile responsiveness, security improvements, performance optimization, and user experience enhancements.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Phase 5: Future Features</h4>
+                    <p>Mobile app, advanced analytics, video integration, and multi-language support.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ startOnLoad: true });
+        
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        // Initialize charts when overview tab is shown
+        function initCharts() {
+            // Feature Distribution Chart
+            const featureCtx = document.getElementById('featureChart').getContext('2d');
+            new Chart(featureCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['User Management', 'Course Management', 'Enrollment', 'Certificates', 'Payments', 'Documents'],
+                    datasets: [{
+                        data: [15, 20, 25, 20, 15, 5],
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // User Role Distribution Chart
+            const roleCtx = document.getElementById('roleChart').getContext('2d');
+            new Chart(roleCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Students', 'Faculty', 'Administrators'],
+                    datasets: [{
+                        label: 'User Count',
+                        data: [80, 15, 5],
+                        backgroundColor: [
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#FF6384'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', initCharts);
+    </script>
+</body>
+</html>

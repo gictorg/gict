@@ -38,15 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("You are already enrolled in this sub-course.");
                 }
                 
-                // Create enrollment with pending status
-                $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status) VALUES (?, ?, CURDATE(), 'pending')";
+                // Create enrollment with payment_pending status
+                $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status) VALUES (?, ?, CURDATE(), 'payment_pending')";
                 $enrollment_id = insertData($enrollment_sql, [$user['id'], $sub_course_id]);
                 
                 if (!$enrollment_id) {
                     throw new Exception("Failed to create enrollment. Please try again.");
                 }
                 
-                // Create payment record
+                // Create payment record with pending status
                 $payment_sql = "INSERT INTO payments (user_id, sub_course_id, amount, payment_date, payment_method, status) VALUES (?, ?, ?, CURDATE(), ?, 'pending')";
                 $payment_result = insertData($payment_sql, [$user['id'], $sub_course_id, $payment_amount, $payment_method]);
                 
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Failed to create payment record. Please try again.");
                 }
                 
-                $success_message = "Enrollment submitted successfully! Your enrollment is pending admin approval.";
+                $success_message = "Enrollment submitted successfully! Please complete your payment. Your enrollment will be approved once payment is verified by admin.";
                 break;
         }
     } catch (Exception $e) {
@@ -395,11 +395,31 @@ $my_enrollments = getRows("
                     
                     <div class="form-group">
                         <label for="payment_method">Payment Method *</label>
-                        <select id="payment_method" name="payment_method" required>
+                        <select id="payment_method" name="payment_method" required onchange="togglePaymentDetails()">
                             <option value="">Select Payment Method</option>
-                            <option value="online">Online Payment (UPI/Card)</option>
-                            <option value="offline">Offline Payment (Cash/Cheque)</option>
+                            <optgroup label="Online Payment">
+                                <option value="upi">UPI Payment</option>
+                                <option value="card">Credit/Debit Card</option>
+                                <option value="netbanking">Net Banking</option>
+                            </optgroup>
+                            <optgroup label="Offline Payment">
+                                <option value="cash">Cash Payment</option>
+                                <option value="cheque">Cheque Payment</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </optgroup>
                         </select>
+                    </div>
+                    
+                    <div id="payment_details" style="display: none;">
+                        <div class="form-group">
+                            <label for="transaction_id">Transaction ID / Reference Number</label>
+                            <input type="text" id="transaction_id" name="transaction_id" placeholder="Enter transaction ID or reference number">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="payment_notes">Payment Notes (Optional)</label>
+                            <textarea id="payment_notes" name="payment_notes" rows="3" placeholder="Add any additional payment details..."></textarea>
+                        </div>
                     </div>
                     
                     <div class="alert alert-info">
@@ -430,6 +450,17 @@ $my_enrollments = getRows("
         
         function closeEnrollmentModal() {
             document.getElementById('enrollmentModal').style.display = 'none';
+        }
+        
+        function togglePaymentDetails() {
+            const paymentMethod = document.getElementById('payment_method').value;
+            const paymentDetails = document.getElementById('payment_details');
+            
+            if (paymentMethod && paymentMethod !== '') {
+                paymentDetails.style.display = 'block';
+            } else {
+                paymentDetails.style.display = 'none';
+            }
         }
         
         // Close modal when clicking outside
