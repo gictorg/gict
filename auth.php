@@ -1,4 +1,11 @@
 <?php
+// Start output buffering to prevent header issues
+ob_start();
+
+// Suppress any potential output from errors/warnings
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
 // Include session manager
 require_once 'includes/session_manager.php';
 

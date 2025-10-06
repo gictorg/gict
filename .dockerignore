@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files (if any)
+.env
+.env.local
+
+# Node modules (if any)
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+
+# Test files
+test_*
+*_test.php
+
+# Backup files
+*.bak
+*.backup

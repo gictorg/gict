@@ -31,7 +31,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: gict-web
-        image: docker.io/zolovin2022/gict-web:v5
+        image: docker.io/zolovin2022/gict-web:v9
         ports:
         - containerPort: 80
         resources:
