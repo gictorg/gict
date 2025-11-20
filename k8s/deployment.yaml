@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gict-web
+  namespace: test
+  labels:
+    app: gict-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gict-web
+  template:
+    metadata:
+      labels:
+        app: gict-web
+    spec:
+      # nodeSelector:
+      #   cloud.google.com/gke-nodepool: default-pool-new
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - gict-web
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: gict-web
+        image: docker.io/zolovin2022/gict-web:v9
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5 

@@ -1,0 +1,54 @@
+/* Sidebar Styles (moved from profile.css) */
+.sidebar {
+    width: auto;
+    flex-shrink: 0;
+    height: auto;
+    background: #e8e8e8;
+}
+
+.sidebar .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 5px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 20px 25px;
+    margin-bottom: 5px;
+    background: hsl(0, 0%, 82%);
+    color: black;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    gap: 15px;
+    border-bottom: 2px solid #000080;
+}
+
+.menu-item i {
+    width: 24px;
+    font-size: 18px;
+    color: #000080;
+    text-align: center;
+}
+
+.menu-item:hover {
+    background: #f8dc65;
+    color: #000080;
+}
+
+.menu-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    /* border-bottom: 2px solid #000080; */
+}
+
+@media (max-width: 768px) {
+    .sidebar,
+    .content-area {
+        width: 100%;
+    }
+} 
