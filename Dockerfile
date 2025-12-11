@@ -40,5 +40,9 @@ COPY apache.conf /etc/apache2/sites-available/000-default.conf
 # Expose port 80
 EXPOSE 80
 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost/health-simple.php || exit 1
+
 # Start Apache
 CMD ["apache2-foreground"] 

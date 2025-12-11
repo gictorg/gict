@@ -7,7 +7,8 @@
  */
 
 // Database configuration
-define('DB_HOST', 'mysql.db.svc.cluster.local');
+// define('DB_HOST', 'mysql.db.svc.cluster.local');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'test_pass');

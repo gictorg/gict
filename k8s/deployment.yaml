@@ -43,13 +43,17 @@ spec:
             cpu: "200m"
         livenessProbe:
           httpGet:
-            path: /
+            path: /health-simple.php
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /
+            path: /health-simple.php
             port: 80
           initialDelaySeconds: 5
-          periodSeconds: 5 
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3 
