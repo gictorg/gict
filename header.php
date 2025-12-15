@@ -23,7 +23,7 @@ require_once 'includes/session_manager.php';
                     <a href="#"><i class="fas fa-link"></i> Quick Links</a>
                     <a href="#">₹ Fee Portal</a>
                     <a href="#"><i class="fas fa-question-circle"></i> FAQs</a>
-                    <a href="#"><i class="fas fa-user-graduate"></i> Admission 2024-2025</a>
+                    <a href="#"><i class="fas fa-user-graduate"></i> Admission 2025-2026</a>
                     <a href="#"><i class="fas fa-mobile-alt"></i> Download Android Mobile App</a>
                     <a href="#"><i class="fas fa-bullhorn"></i> Notices & Circulars</a>
                 </div>
@@ -49,7 +49,7 @@ require_once 'includes/session_manager.php';
                     <img src="assets/images/Add_a_heading.png" alt="GICT Logo">
                 </div>
                 <div class="logo-right">
-                    <img src="assets/images/digi.jpg" alt="Digital India">
+                    <img src="assets/images/digi.png" alt="Digital India">
                 </div>
             </div>
         </div>

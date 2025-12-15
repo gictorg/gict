@@ -243,7 +243,7 @@ require_once 'includes/session_manager.php';
                     <div class="profile-section">
                         <img src="assets/images/brijendra.jpeg" alt="Mr. Brijendra Patel" class="profile-img">
                         <h3>Mr. Brijendra Patel</h3>
-                        <p>Founder & Director</p>
+                        <p>Founder & Chairman</p>
                         <div class="button-group">
                             <button class="btn yellow-btn">PROFILE</button>
                             <button class="btn yellow-btn">MESSAGE</button>

@@ -52,13 +52,13 @@
     gap: 2px;
     position: absolute;
     right: 20px;
-    top: 20px;
+    top: 0px;
     height: 600px;
 }
 
 .profile-card {
     background: #fff;
-    padding: 30px;
+    padding: 10px;
     text-align: center;
     border-bottom: 2px solid #000080;
 }
@@ -70,7 +70,7 @@
     margin: 0 auto 20px;
     display: block;
     border: 3px solid #f8dc65;
-    object-fit: cover;
+    /* object-fit: cover; */
 }
 
 .profile-section h3 {
@@ -112,7 +112,7 @@
 .course-list {
     background: #fff;
     padding: 20px 30px;
-    margin-top: 2px;
+    margin-top: 0;
 }
 
 .course-list ul {
