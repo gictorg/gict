@@ -184,7 +184,7 @@ html, body {
 .nav-links {
     display: flex;
     align-items: flex-start;
-    height: 100%;
+    height: 70%;
     gap: 30px;
     flex-wrap: nowrap;
     min-width: 0;
