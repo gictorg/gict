@@ -672,8 +672,8 @@ try {
                 </button>
             </div>
 
-            <?php if (isset($success_message)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success"><?php echo $success_message; ?></div>
             <?php endif; ?>
 
             <?php if (isset($error_message)): ?>

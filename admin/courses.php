@@ -3,6 +3,16 @@ require_once '../auth.php';
 requireLogin();
 requireRole('admin');
 
+// Initialize session for flash messages
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Get flash messages from session and clear them
+$success_message = $_SESSION['success_message'] ?? null;
+$error_message = $_SESSION['error_message'] ?? null;
+unset($_SESSION['success_message'], $_SESSION['error_message']);
+
 $user = getCurrentUser();
 
 // Handle form submissions
@@ -266,6 +276,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $error_message = $e->getMessage();
     }
+    
+    // Store messages in session and redirect to prevent form resubmission
+    if (isset($success_message)) {
+        $_SESSION['success_message'] = $success_message;
+    }
+    if (isset($error_message)) {
+        $_SESSION['error_message'] = $error_message;
+    }
+    header('Location: courses.php');
+    exit;
 }
 
 // Get courses
@@ -902,13 +922,13 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                 <p>Manage all courses, add new courses, and track enrollment statistics</p>
             </div>
 
-            <?php if (isset($success_message)): ?>
+            <?php if (!empty($success_message)): ?>
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
 
-            <?php if (isset($error_message)): ?>
+            <?php if (!empty($error_message)): ?>
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
                 </div>

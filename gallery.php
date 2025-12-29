@@ -7,7 +7,10 @@
             <?php
             // Get active faculty members from database
             try {
-                require_once 'config/database.php';
+                // Ensure database config is loaded (only once)
+                if (!function_exists('getRows')) {
+                    require_once __DIR__ . '/config/database.php';
+                }
                 $faculty_sql = "SELECT u.full_name, u.qualification, u.experience_years, u.profile_image 
                 FROM users u 
                 WHERE u.user_type_id = 3 AND u.status = 'active' 

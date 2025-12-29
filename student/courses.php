@@ -17,17 +17,34 @@ if (!$student) {
     exit;
 }
 
-// Get enrolled courses
+// Get enrolled courses with fees and certificate info
 $enrolled_courses = getRows("
     SELECT c.name as course_name, cc.name as category_name, sc.name as sub_course_name, 
-           sc.fee, sc.duration, se.status as enrollment_status, se.enrollment_date, se.completion_date
+           sc.fee, sc.duration, se.id as enrollment_id, se.status as enrollment_status, 
+           se.enrollment_date, se.completion_date, se.paid_fees, se.remaining_fees, se.total_fee,
+           cert.id as certificate_id, cert.certificate_url, cert.marksheet_url, cert.certificate_number
     FROM student_enrollments se
     JOIN sub_courses sc ON se.sub_course_id = sc.id
     JOIN courses c ON sc.course_id = c.id
     JOIN course_categories cc ON c.category_id = cc.id
+    LEFT JOIN certificates cert ON cert.enrollment_id = se.id
     WHERE se.user_id = ?
     ORDER BY se.enrollment_date DESC
 ", [$user_id]);
+
+// Get marks for completed courses
+$marks_data = [];
+foreach ($enrolled_courses as $course) {
+    if ($course['enrollment_status'] === 'completed' && !empty($course['enrollment_id'])) {
+        $marks = getRows("
+            SELECT subject_name, marks_obtained, max_marks, grade, remarks
+            FROM student_marks
+            WHERE enrollment_id = ?
+            ORDER BY subject_name
+        ", [$course['enrollment_id']]);
+        $marks_data[$course['enrollment_id']] = $marks;
+    }
+}
 
 // Get available sub-courses for enrollment
 $available_courses = getRows("
@@ -356,13 +373,34 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
                                         <?php endif; ?>
                                     </div>
                                     <div class="course-actions">
-                                        <button class="btn btn-info btn-sm">
-                                            <i class="fas fa-play"></i> Continue Learning
-                                        </button>
-                                        <?php if ($course['enrollment_status'] === 'completed'): ?>
-                                            <button class="btn btn-success btn-sm">
-                                                <i class="fas fa-certificate"></i> View Certificate
+                                        <?php if ($course['enrollment_status'] !== 'completed'): ?>
+                                            <button class="btn btn-info btn-sm">
+                                                <i class="fas fa-play"></i> Continue Learning
                                             </button>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($course['enrollment_status'] === 'completed'): ?>
+                                            <?php if (!empty($course['certificate_url'])): ?>
+                                                <a href="<?php echo htmlspecialchars($course['certificate_url']); ?>" target="_blank" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-certificate"></i> View Certificate
+                                                </a>
+                                            <?php else: ?>
+                                                <button class="btn btn-secondary btn-sm" disabled title="Certificate pending">
+                                                    <i class="fas fa-certificate"></i> Certificate Pending
+                                                </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (!empty($course['marksheet_url'])): ?>
+                                                <a href="<?php echo htmlspecialchars($course['marksheet_url']); ?>" target="_blank" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-file-alt"></i> View Marksheet
+                                                </a>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (!empty($marks_data[$course['enrollment_id']])): ?>
+                                                <button class="btn btn-info btn-sm" onclick="showMarks(<?php echo $course['enrollment_id']; ?>)">
+                                                    <i class="fas fa-chart-line"></i> View Marks
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -460,6 +498,66 @@ $active_courses = count(array_filter($enrolled_courses, fn($c) => $c['enrollment
                 });
             }
         }
+        // Marks Modal
+        const marksData = <?php echo json_encode($marks_data); ?>;
+        
+        function showMarks(enrollmentId) {
+            const marks = marksData[enrollmentId] || [];
+            if (marks.length === 0) {
+                alert('No marks available for this course.');
+                return;
+            }
+            
+            let marksHtml = '<div class="marks-modal-content" style="background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 50px auto;">';
+            marksHtml += '<h3 style="margin-bottom: 20px;"><i class="fas fa-chart-line"></i> Course Marks</h3>';
+            marksHtml += '<table style="width: 100%; border-collapse: collapse;">';
+            marksHtml += '<thead><tr style="background: #f8f9fa;"><th style="padding: 10px; text-align: left;">Subject</th><th style="padding: 10px; text-align: center;">Marks</th><th style="padding: 10px; text-align: center;">Grade</th></tr></thead>';
+            marksHtml += '<tbody>';
+            
+            let totalObtained = 0;
+            let totalMax = 0;
+            
+            marks.forEach(mark => {
+                const percentage = (mark.marks_obtained / mark.max_marks) * 100;
+                marksHtml += `<tr>
+                    <td style="padding: 10px;">${mark.subject_name}</td>
+                    <td style="padding: 10px; text-align: center;">${mark.marks_obtained} / ${mark.max_marks}</td>
+                    <td style="padding: 10px; text-align: center;"><strong>${mark.grade || 'N/A'}</strong></td>
+                </tr>`;
+                totalObtained += parseFloat(mark.marks_obtained);
+                totalMax += parseFloat(mark.max_marks);
+            });
+            
+            const overallPercentage = (totalObtained / totalMax) * 100;
+            marksHtml += `<tr style="background: #f8f9fa; font-weight: bold;">
+                <td style="padding: 10px;">Total</td>
+                <td style="padding: 10px; text-align: center;">${totalObtained.toFixed(2)} / ${totalMax.toFixed(2)}</td>
+                <td style="padding: 10px; text-align: center;">${overallPercentage.toFixed(2)}%</td>
+            </tr>`;
+            marksHtml += '</tbody></table>';
+            marksHtml += '<button onclick="closeMarksModal()" style="margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>';
+            marksHtml += '</div>';
+            
+            const modal = document.createElement('div');
+            modal.id = 'marksModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            modal.innerHTML = marksHtml;
+            document.body.appendChild(modal);
+        }
+        
+        function closeMarksModal() {
+            const modal = document.getElementById('marksModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'marksModal') {
+                closeMarksModal();
+            }
+        });
     </script>
 </body>
 </html>

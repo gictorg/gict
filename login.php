@@ -12,6 +12,10 @@ if (isLoggedIn()) {
     exit();
 }
 
+// Get error message from session (flash message)
+$error_message = $_SESSION['login_error'] ?? null;
+unset($_SESSION['login_error']);
+
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'] ?? '';
@@ -19,12 +23,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Validate input
     if (empty($username) || empty($password)) {
-        $error_message = 'Please enter both username and password';
+        $_SESSION['login_error'] = 'Please enter both username and password';
+        header('Location: login.php');
+        exit();
     } else {
         try {
             // Test database connection first
             if (!testDBConnection()) {
-                $error_message = 'Database connection failed. Please check configuration.';
+                $_SESSION['login_error'] = 'Database connection failed. Please check configuration.';
+                header('Location: login.php');
+                exit();
             } else {
                 // Get user from database with user type
                 $sql = "SELECT u.id, u.username, u.password, u.full_name, u.email, u.user_type_id 
@@ -73,14 +81,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         header('Location: ' . $dashboard_url);
                         exit();
                     } else {
-                        $error_message = 'Invalid password';
+                        $_SESSION['login_error'] = 'Invalid password';
+                        header('Location: login.php');
+                        exit();
                     }
                 } else {
-                    $error_message = 'User not found or inactive';
+                    $_SESSION['login_error'] = 'User not found or inactive';
+                    header('Location: login.php');
+                    exit();
                 }
             }
         } catch (Exception $e) {
-            $error_message = 'Login failed. Please try again.';
+            $_SESSION['login_error'] = 'Login failed. Please try again.';
+            header('Location: login.php');
+            exit();
         }
     }
 }
@@ -198,13 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <h1 class="login-title">Welcome to GICT</h1>
         <p style="color: #666; margin-bottom: 30px;">Please login to continue</p>
         
-        <?php if ($_SERVER['REQUEST_METHOD'] == 'POST'): ?>
-            <div style="background: #e3f2fd; color: #1976d2; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 14px;">
-                <strong>Debug:</strong> Form submitted. Processing login...
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($error_message)): ?>
+        <?php if (!empty($error_message)): ?>
             <div class="error-message">
                 <?php echo htmlspecialchars($error_message); ?>
             </div>

@@ -9,9 +9,49 @@ require_once '../includes/imgbb_helper.php';
 // Include User ID Generator helper
 require_once '../includes/user_id_generator.php';
 
+// Initialize session for flash messages
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Get flash messages from session and clear them
+$success_message = $_SESSION['success_message'] ?? null;
+$error_message = $_SESSION['error_message'] ?? null;
+unset($_SESSION['success_message'], $_SESSION['error_message']);
+
 
 
 $user = getCurrentUser();
+
+// Handle AJAX requests for sub-courses
+if (isset($_GET['action']) && $_GET['action'] === 'get_sub_courses') {
+    header('Content-Type: application/json');
+    
+    $course_id = intval($_GET['course_id'] ?? 0);
+    if ($course_id <= 0) {
+        echo json_encode(['error' => 'Invalid course ID']);
+        exit;
+    }
+    
+    try {
+        $sub_courses_sql = "SELECT sc.id, sc.name, sc.fee, sc.duration
+            FROM sub_courses sc
+            WHERE sc.course_id = ? AND sc.status = 'active'
+            ORDER BY sc.name";
+        
+        $sub_courses = getRows($sub_courses_sql, [$course_id]);
+        
+        echo json_encode([
+            'success' => true,
+            'sub_courses' => $sub_courses
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'error' => 'Failed to fetch sub-courses: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
 
 // Handle AJAX requests for enrollment data
 if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
@@ -92,7 +132,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Generate unique user ID for student
                 $generated_user_id = generateUniqueUserId('student');
                 if (!$generated_user_id) {
-                    $error_message = "Failed to generate unique user ID for student.";
+                    $_SESSION['error_message'] = "Failed to generate unique user ID for student.";
+                    header('Location: students.php');
+                    exit;
                 } else {
                     // Handle file uploads to ImgBB
                     $profile_image_url = '';
@@ -215,7 +257,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 
                                 $success_message = "Student '$full_name' added successfully!<br>";
                                 $success_message .= "<strong>User ID:</strong> $generated_user_id<br>";
-                                $success_message .= "<strong>Default Password:</strong> $default_password";
+                                $success_message .= "<strong>Default Password:</strong> $default_password<br>";
+                                $success_message .= "<br><strong>Note:</strong> You can enroll this student in a course using the 'Enroll to Course' action.";
                                 
                                 if (!empty($uploaded_files)) {
                                     $success_message .= "<br><br><strong>ImgBB URLs (Stored in Database):</strong><br>";
@@ -231,6 +274,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     }
                 }
+                
+                // Store message in session and redirect (always execute, even if error occurred)
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
                 break;
                 
             case 'delete_student':
@@ -263,6 +316,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } else {
                     $error_message = "Invalid student ID provided.";
                 }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
                 break;
                 
             case 'toggle_status':
@@ -281,6 +344,229 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
+                break;
+                
+            case 'enroll_student':
+                $student_id = intval($_POST['student_id'] ?? 0);
+                $sub_course_id = intval($_POST['sub_course_id'] ?? 0);
+                $enrollment_date = $_POST['enrollment_date'] ?? date('Y-m-d');
+                
+                if ($student_id <= 0 || $sub_course_id <= 0) {
+                    $error_message = "Invalid student or course selection.";
+                } else {
+                    try {
+                        // Verify student exists and is a student
+                        $student = getRow("SELECT id, full_name FROM users WHERE id = ? AND user_type_id = 2", [$student_id]);
+                        if (!$student) {
+                            throw new Exception("Student not found.");
+                        }
+                        
+                        // Check if student already has an enrollment
+                        $existing_enrollment = getRow("
+                            SELECT se.id, sc.name as sub_course_name, c.name as course_name
+                            FROM student_enrollments se
+                            JOIN sub_courses sc ON se.sub_course_id = sc.id
+                            JOIN courses c ON sc.course_id = c.id
+                            WHERE se.user_id = ? AND se.status IN ('enrolled', 'payment_pending')
+                        ", [$student_id]);
+                        
+                        if ($existing_enrollment) {
+                            throw new Exception("Student is already enrolled in: {$existing_enrollment['course_name']} - {$existing_enrollment['sub_course_name']}");
+                        }
+                        
+                        // Verify sub-course exists and is active
+                        $sub_course = getRow("
+                            SELECT sc.id, sc.name, sc.fee, c.name as course_name
+                            FROM sub_courses sc
+                            JOIN courses c ON sc.course_id = c.id
+                            WHERE sc.id = ? AND sc.status = 'active'
+                        ", [$sub_course_id]);
+                        
+                        if (!$sub_course) {
+                            throw new Exception("Invalid or inactive sub-course selected.");
+                        }
+                        
+                        // Create enrollment with fee tracking
+                        $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status, total_fee, paid_fees, remaining_fees) VALUES (?, ?, ?, 'payment_pending', ?, 0.00, ?)";
+                        $enrollment_result = insertData($enrollment_sql, [$student_id, $sub_course_id, $enrollment_date, $sub_course['fee'], $sub_course['fee']]);
+                        
+                        if ($enrollment_result) {
+                            $success_message = "Student '{$student['full_name']}' enrolled successfully in:<br>";
+                            $success_message .= "<strong>Course:</strong> {$sub_course['course_name']} - {$sub_course['name']}<br>";
+                            $success_message .= "<strong>Fee:</strong> ₹" . number_format($sub_course['fee'], 2) . "<br>";
+                            $success_message .= "<strong>Status:</strong> Payment Pending";
+                        } else {
+                            throw new Exception("Failed to create enrollment.");
+                        }
+                    } catch (Exception $e) {
+                        $error_message = "Error: " . $e->getMessage();
+                    }
+                }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
+                break;
+                
+            case 'update_enrollment_fees':
+                $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
+                $paid_fees = floatval($_POST['paid_fees'] ?? 0);
+                
+                if ($enrollment_id <= 0) {
+                    $error_message = "Invalid enrollment ID.";
+                } else {
+                    try {
+                        // Get enrollment details
+                        $enrollment = getRow("
+                            SELECT se.*, sc.fee as course_fee
+                            FROM student_enrollments se
+                            JOIN sub_courses sc ON se.sub_course_id = sc.id
+                            WHERE se.id = ?
+                        ", [$enrollment_id]);
+                        
+                        if (!$enrollment) {
+                            throw new Exception("Enrollment not found.");
+                        }
+                        
+                        $total_fee = floatval($enrollment['total_fee'] ?? $enrollment['course_fee']);
+                        if ($paid_fees < 0 || $paid_fees > $total_fee) {
+                            throw new Exception("Paid fees must be between 0 and total fee (₹{$total_fee}).");
+                        }
+                        
+                        $remaining_fees = $total_fee - $paid_fees;
+                        $new_status = ($remaining_fees <= 0) ? 'enrolled' : $enrollment['status'];
+                        
+                        // Update enrollment
+                        $update_sql = "UPDATE student_enrollments 
+                                      SET paid_fees = ?, remaining_fees = ?, total_fee = ?, status = ?, updated_at = NOW() 
+                                      WHERE id = ?";
+                        $result = updateData($update_sql, [$paid_fees, $remaining_fees, $total_fee, $new_status, $enrollment_id]);
+                        
+                        if ($result) {
+                            $status_msg = ($remaining_fees <= 0) ? " and enrollment status updated to 'enrolled'" : "";
+                            $success_message = "Fees updated successfully! Paid: ₹" . number_format($paid_fees, 2) . ", Remaining: ₹" . number_format($remaining_fees, 2) . $status_msg;
+                        } else {
+                            throw new Exception("Failed to update fees.");
+                        }
+                    } catch (Exception $e) {
+                        $error_message = "Error: " . $e->getMessage();
+                    }
+                }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
+                break;
+                
+            case 'update_enrollment_status':
+                $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
+                $new_status = $_POST['new_status'] ?? '';
+                
+                if ($enrollment_id <= 0 || empty($new_status)) {
+                    $error_message = "Invalid enrollment ID or status.";
+                } else {
+                    try {
+                        $valid_statuses = ['payment_pending', 'pending', 'enrolled', 'completed', 'dropped', 'rejected'];
+                        if (!in_array($new_status, $valid_statuses)) {
+                            throw new Exception("Invalid status.");
+                        }
+                        
+                        $update_sql = "UPDATE student_enrollments SET status = ?, updated_at = NOW() WHERE id = ?";
+                        if ($new_status === 'completed') {
+                            $update_sql = "UPDATE student_enrollments SET status = ?, completion_date = CURDATE(), updated_at = NOW() WHERE id = ?";
+                        }
+                        
+                        $result = updateData($update_sql, [$new_status, $enrollment_id]);
+                        
+                        if ($result) {
+                            $success_message = "Enrollment status updated to '" . ucfirst(str_replace('_', ' ', $new_status)) . "' successfully!";
+                        } else {
+                            throw new Exception("Failed to update enrollment status.");
+                        }
+                    } catch (Exception $e) {
+                        $error_message = "Error: " . $e->getMessage();
+                    }
+                }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
+                break;
+                
+            case 'mark_completed':
+                $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
+                
+                if ($enrollment_id <= 0) {
+                    $error_message = "Invalid enrollment ID.";
+                } else {
+                    try {
+                        // Check if fees are fully paid
+                        $enrollment = getRow("
+                            SELECT se.*, u.full_name as student_name, sc.name as sub_course_name
+                            FROM student_enrollments se
+                            JOIN users u ON se.user_id = u.id
+                            JOIN sub_courses sc ON se.sub_course_id = sc.id
+                            WHERE se.id = ?
+                        ", [$enrollment_id]);
+                        
+                        if (!$enrollment) {
+                            throw new Exception("Enrollment not found.");
+                        }
+                        
+                        if ($enrollment['remaining_fees'] > 0) {
+                            throw new Exception("Cannot mark as completed. Remaining fees: ₹" . number_format($enrollment['remaining_fees'], 2));
+                        }
+                        
+                        $update_sql = "UPDATE student_enrollments SET status = 'completed', completion_date = CURDATE(), updated_at = NOW() WHERE id = ?";
+                        $result = updateData($update_sql, [$enrollment_id]);
+                        
+                        if ($result) {
+                            $success_message = "Course marked as completed for {$enrollment['student_name']} - {$enrollment['sub_course_name']}!";
+                        } else {
+                            throw new Exception("Failed to mark course as completed.");
+                        }
+                    } catch (Exception $e) {
+                        $error_message = "Error: " . $e->getMessage();
+                    }
+                }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
                 break;
                 
             case 'update_password':
@@ -311,24 +597,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } else {
                     $error_message = "Please provide a new password.";
                 }
+                
+                // Store message in session and redirect
+                if (isset($success_message)) {
+                    $_SESSION['success_message'] = $success_message;
+                }
+                if (isset($error_message)) {
+                    $_SESSION['error_message'] = $error_message;
+                }
+                header('Location: students.php');
+                exit;
                 break;
         }
     }
 }
 
-// Get all students with their enrollment information
+// Get all students with their course information (one course per student)
 $students = [];
 try {
     $sql = "SELECT 
                 u.id, u.username, u.email, u.full_name, u.phone, u.address, 
                 u.date_of_birth, u.gender, u.joining_date, u.status, u.created_at, u.profile_image,
-                COUNT(se.id) as total_enrollments,
-                COUNT(CASE WHEN se.status = 'completed' THEN 1 END) as completed_courses,
-                COUNT(CASE WHEN se.status = 'enrolled' THEN 1 END) as active_enrollments
+                c.name as course_name,
+                sc.name as sub_course_name,
+                sc.fee as course_fee,
+                cc.name as category_name,
+                se.id as enrollment_id,
+                se.status as enrollment_status,
+                se.enrollment_date,
+                se.completion_date,
+                COALESCE(se.paid_fees, 0.00) as paid_fees,
+                COALESCE(se.remaining_fees, sc.fee) as remaining_fees,
+                COALESCE(se.total_fee, sc.fee) as total_fee
             FROM users u 
-            LEFT JOIN student_enrollments se ON u.id = se.user_id 
+            LEFT JOIN student_enrollments se ON u.id = se.user_id AND se.status IN ('enrolled', 'payment_pending', 'completed')
+            LEFT JOIN sub_courses sc ON se.sub_course_id = sc.id
+            LEFT JOIN courses c ON sc.course_id = c.id
+            LEFT JOIN course_categories cc ON c.category_id = cc.id
             WHERE u.user_type_id = 2 
-            GROUP BY u.id 
             ORDER BY u.created_at DESC";
     $students = getRows($sql);
 } catch (Exception $e) {
@@ -542,6 +848,29 @@ try {
         
         .btn-delete:hover {
             background: #c82333;
+        }
+        
+        .btn-enroll {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-enroll:hover {
+            background: #218838;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        
+        .fees-info {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
         }
         
         .btn-toggle {
@@ -1387,11 +1716,11 @@ try {
                 </button>
             </div>
 
-            <?php if (isset($success_message)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success"><?php echo $success_message; ?></div>
             <?php endif; ?>
 
-            <?php if (isset($error_message)): ?>
+            <?php if (!empty($error_message)): ?>
                 <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
             <?php endif; ?>
 
@@ -1408,14 +1737,14 @@ try {
                     <div class="label">Currently Active</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Total Enrollments</h3>
-                    <div class="value"><?php echo array_sum(array_column($students, 'total_enrollments')); ?></div>
-                    <div class="label">Course Enrollments</div>
+                    <h3>Enrolled Students</h3>
+                    <div class="value"><?php echo count(array_filter($students, function($s) { return !empty($s['course_name']); })); ?></div>
+                    <div class="label">With Course Assigned</div>
                 </div>
                 <div class="stat-card">
-                    <h3>Completed Courses</h3>
-                    <div class="value"><?php echo array_sum(array_column($students, 'completed_courses')); ?></div>
-                    <div class="label">Successfully Completed</div>
+                    <h3>Pending Enrollment</h3>
+                    <div class="value"><?php echo count(array_filter($students, function($s) { return $s['enrollment_status'] === 'payment_pending'; })); ?></div>
+                    <div class="label">Awaiting Payment</div>
                 </div>
             </div>
 
@@ -1438,7 +1767,7 @@ try {
                         <option value="created_at">Sort by: Join Date</option>
                         <option value="full_name">Sort by: Name</option>
                         <option value="username">Sort by: Username</option>
-                        <option value="total_enrollments">Sort by: Enrollments</option>
+                        <option value="course_name">Sort by: Course</option>
                     </select>
                 </div>
             </div>
@@ -1456,7 +1785,7 @@ try {
                             <th>Student</th>
                             <th>Contact Info</th>
                             <th>Status</th>
-                            <th>Enrollments</th>
+                            <th>Course</th>
                             <th>Joined Date</th>
                             <th>Actions</th>
                         </tr>
@@ -1489,24 +1818,65 @@ try {
                                         <?php echo htmlspecialchars(ucfirst($student['status'])); ?>
                                     </span>
                                 </td>
-                                <td class="enrollment-cell">
-                                    <div class="enrollment-summary">
-                                        <div class="enrollment-stat">
-                                            <span class="stat-label">Total:</span>
-                                            <span class="stat-value"><?php echo $student['total_enrollments']; ?></span>
+                                <td class="course-cell">
+                                    <?php if (!empty($student['course_name'])): ?>
+                                        <div class="course-info">
+                                            <div class="course-name-display">
+                                                <strong><?php echo htmlspecialchars($student['course_name']); ?></strong>
+                                            </div>
+                                            <?php if (!empty($student['sub_course_name'])): ?>
+                                                <div class="sub-course-name">
+                                                    <i class="fas fa-book"></i> <?php echo htmlspecialchars($student['sub_course_name']); ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($student['category_name'])): ?>
+                                                <div class="course-category">
+                                                    <i class="fas fa-tag"></i> <?php echo htmlspecialchars($student['category_name']); ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <!-- Fees Information -->
+                                            <?php if (!empty($student['enrollment_id'])): ?>
+                                                <div class="fees-info" style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                                        <span><strong>Total Fee:</strong></span>
+                                                        <span>₹<?php echo number_format($student['total_fee'], 2); ?></span>
+                                                    </div>
+                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #28a745;">
+                                                        <span><strong>Paid:</strong></span>
+                                                        <span>₹<?php echo number_format($student['paid_fees'], 2); ?></span>
+                                                    </div>
+                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: <?php echo $student['remaining_fees'] > 0 ? '#dc3545' : '#28a745'; ?>;">
+                                                        <span><strong>Remaining:</strong></span>
+                                                        <span>₹<?php echo number_format($student['remaining_fees'], 2); ?></span>
+                                                    </div>
+                                                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                                        <button class="btn btn-sm btn-primary" onclick="openEditFeesModal(<?php echo $student['enrollment_id']; ?>, <?php echo $student['total_fee']; ?>, <?php echo $student['paid_fees']; ?>)" title="Edit Fees" style="padding: 4px 8px; font-size: 11px;">
+                                                            <i class="fas fa-edit"></i> Edit Fees
+                                                        </button>
+                                                        <button class="btn btn-sm btn-info" onclick="openEditStatusModal(<?php echo $student['enrollment_id']; ?>, '<?php echo $student['enrollment_status']; ?>')" title="Change Status" style="padding: 4px 8px; font-size: 11px;">
+                                                            <i class="fas fa-exchange-alt"></i> Status
+                                                        </button>
+                                                        <?php if ($student['enrollment_status'] !== 'completed' && $student['remaining_fees'] <= 0): ?>
+                                                            <button class="btn btn-sm btn-success" onclick="markCompleted(<?php echo $student['enrollment_id']; ?>)" title="Mark as Completed" style="padding: 4px 8px; font-size: 11px;">
+                                                                <i class="fas fa-check-circle"></i> Complete
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <?php if (!empty($student['enrollment_status'])): ?>
+                                                <div class="enrollment-status-badge" style="margin-top: 8px;">
+                                                    <span class="status-badge status-<?php echo $student['enrollment_status']; ?>">
+                                                        <?php echo ucfirst(str_replace('_', ' ', $student['enrollment_status'])); ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                        <div class="enrollment-stat">
-                                            <span class="stat-label">Active:</span>
-                                            <span class="stat-value"><?php echo $student['active_enrollments']; ?></span>
-                                        </div>
-                                        <div class="enrollment-stat">
-                                            <span class="stat-label">Completed:</span>
-                                            <span class="stat-value"><?php echo $student['completed_courses']; ?></span>
-                                        </div>
-                                    </div>
-                                    <?php if ($student['total_enrollments'] > 0): ?>
-                                        <button class="btn btn-expand" onclick="toggleEnrollments(<?php echo $student['id']; ?>)" data-expanded="false">
-                                            <i class="fas fa-chevron-down"></i> View Details
+                                    <?php else: ?>
+                                        <button class="btn btn-enroll" onclick="openEnrollModal(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')" title="Enroll to Course">
+                                            <i class="fas fa-plus-circle"></i> Enroll to Course
                                         </button>
                                     <?php endif; ?>
                                 </td>
@@ -1530,17 +1900,6 @@ try {
                                         <button class="btn btn-delete" onclick="deleteStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')" title="Delete Student">
                                             <i class="fas fa-trash"></i>
                                         </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Expandable Enrollment Details Row -->
-                            <tr class="enrollment-details-row" id="enrollment-<?php echo $student['id']; ?>" style="display: none;">
-                                <td colspan="6">
-                                    <div class="enrollment-details">
-                                        <h4><i class="fas fa-graduation-cap"></i> Enrollment Details for <?php echo htmlspecialchars($student['full_name']); ?></h4>
-                                        <div class="enrollment-loading">
-                                            <i class="fas fa-spinner fa-spin"></i> Loading enrollment details...
-                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -1750,6 +2109,160 @@ try {
         </div>
     </div>
 
+    <!-- Enroll Student Modal -->
+    <div id="enrollStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-graduation-cap"></i> Enroll Student to Course</h2>
+                <span class="close" onclick="closeEnrollModal()">&times;</span>
+            </div>
+            
+            <form method="POST" action="students.php" id="enrollStudentForm">
+                <input type="hidden" name="action" value="enroll_student">
+                <input type="hidden" id="enroll_student_id" name="student_id">
+                
+                <div class="modal-body">
+                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-bottom: 20px;">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Each student can only be enrolled in one course. The enrollment will be created with "Payment Pending" status.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" id="enroll_student_name" readonly style="background: #f8f9fa;">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="enroll_course_id">Main Course *</label>
+                            <select id="enroll_course_id" name="course_id" required onchange="loadEnrollSubCourses(this.value)">
+                                <option value="">Select Main Course</option>
+                                <?php
+                                $courses = getRows("
+                                    SELECT c.id, c.name, cc.name as category_name
+                                    FROM courses c
+                                    JOIN course_categories cc ON c.category_id = cc.id
+                                    WHERE c.status = 'active'
+                                    ORDER BY c.name
+                                ");
+                                foreach ($courses as $course) {
+                                    echo '<option value="' . $course['id'] . '">' . htmlspecialchars($course['name']) . ' (' . htmlspecialchars($course['category_name']) . ')</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="enroll_sub_course_id">Sub-Course *</label>
+                            <select id="enroll_sub_course_id" name="sub_course_id" required>
+                                <option value="">Select Main Course First</option>
+                            </select>
+                            <small class="form-text text-muted">Sub-courses will appear after selecting a main course</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="enroll_enrollment_date">Enrollment Date *</label>
+                        <input type="date" id="enroll_enrollment_date" name="enrollment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEnrollModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-graduation-cap"></i> Enroll Student
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Fees Modal -->
+    <div id="editFeesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Edit Enrollment Fees</h2>
+                <span class="close" onclick="closeEditFeesModal()">&times;</span>
+            </div>
+            
+            <form method="POST" action="students.php" id="editFeesForm">
+                <input type="hidden" name="action" value="update_enrollment_fees">
+                <input type="hidden" id="edit_fees_enrollment_id" name="enrollment_id">
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Total Course Fee</label>
+                        <input type="text" id="edit_fees_total" readonly style="background: #f8f9fa; font-weight: bold;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_fees_paid">Paid Fees (₹) *</label>
+                        <input type="number" id="edit_fees_paid" name="paid_fees" step="0.01" min="0" required>
+                        <small class="form-text text-muted">Enter the amount paid by the student</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Remaining Fees (Auto-calculated)</label>
+                        <input type="text" id="edit_fees_remaining" readonly style="background: #f8f9fa;">
+                    </div>
+                    
+                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> When fees are fully paid, enrollment status will automatically change to 'enrolled'.
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditFeesModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Fees
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Status Modal -->
+    <div id="editStatusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exchange-alt"></i> Change Enrollment Status</h2>
+                <span class="close" onclick="closeEditStatusModal()">&times;</span>
+            </div>
+            
+            <form method="POST" action="students.php" id="editStatusForm">
+                <input type="hidden" name="action" value="update_enrollment_status">
+                <input type="hidden" id="edit_status_enrollment_id" name="enrollment_id">
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_status_new">New Status *</label>
+                        <select id="edit_status_new" name="new_status" required>
+                            <option value="payment_pending">Payment Pending</option>
+                            <option value="pending">Pending</option>
+                            <option value="enrolled">Enrolled</option>
+                            <option value="completed">Completed</option>
+                            <option value="dropped">Dropped</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <small class="form-text text-muted">Select the new enrollment status</small>
+                    </div>
+                    
+                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Setting status to 'completed' will automatically set the completion date to today.
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditStatusModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Mobile Menu JavaScript -->
     <script src="../assets/js/mobile-menu.js"></script>
     
@@ -1894,6 +2407,64 @@ try {
             document.getElementById('passwordModal').style.display = 'none';
             document.getElementById('new_password').value = '';
             document.getElementById('confirm_password').value = '';
+        }
+        
+        // Enroll Student Modal Functions
+        function openEnrollModal(studentId, studentName) {
+            document.getElementById('enroll_student_id').value = studentId;
+            document.getElementById('enroll_student_name').value = studentName;
+            document.getElementById('enrollStudentModal').style.display = 'block';
+            // Reset form
+            document.getElementById('enroll_course_id').value = '';
+            document.getElementById('enroll_sub_course_id').innerHTML = '<option value="">Select Main Course First</option>';
+        }
+        
+        function closeEnrollModal() {
+            document.getElementById('enrollStudentModal').style.display = 'none';
+            document.getElementById('enrollStudentForm').reset();
+            document.getElementById('enroll_sub_course_id').innerHTML = '<option value="">Select Main Course First</option>';
+        }
+        
+        // Load sub-courses for enrollment modal
+        function loadEnrollSubCourses(courseId) {
+            const subCourseSelect = document.getElementById('enroll_sub_course_id');
+            
+            if (!courseId || courseId === '') {
+                if (subCourseSelect) {
+                    subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
+                }
+                return;
+            }
+            
+            if (!subCourseSelect) return;
+            
+            // Show loading state
+            subCourseSelect.innerHTML = '<option value="">Loading sub-courses...</option>';
+            subCourseSelect.disabled = true;
+            
+            // Fetch sub-courses from server
+            fetch(`students.php?action=get_sub_courses&course_id=${courseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    subCourseSelect.innerHTML = '<option value="">Select Sub-Course</option>';
+                    
+                    if (data.success && data.sub_courses && data.sub_courses.length > 0) {
+                        data.sub_courses.forEach(subCourse => {
+                            const option = document.createElement('option');
+                            option.value = subCourse.id;
+                            option.textContent = `${subCourse.name} (₹${parseFloat(subCourse.fee).toLocaleString()}) - ${subCourse.duration}`;
+                            subCourseSelect.appendChild(option);
+                        });
+                    } else {
+                        subCourseSelect.innerHTML = '<option value="">No sub-courses available</option>';
+                    }
+                    subCourseSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading sub-courses:', error);
+                    subCourseSelect.innerHTML = '<option value="">Error loading sub-courses</option>';
+                    subCourseSelect.disabled = false;
+                });
         }
         
         function toggleStatus(studentId, newStatus) {
@@ -2177,8 +2748,8 @@ try {
                         return a.name.localeCompare(b.name);
                     case 'username':
                         return a.username.localeCompare(b.username);
-                    case 'total_enrollments':
-                        return b.enrollments - a.enrollments;
+                    case 'course_name':
+                        return (a.course_name || '').localeCompare(b.course_name || '');
                     case 'created_at':
                     default:
                         return b.created_at - a.created_at;
@@ -2210,12 +2781,131 @@ try {
         // Add Student Modal Functions
         function openAddStudentModal() {
             document.getElementById('addStudentModal').style.display = 'block';
+            // Reset sub-course dropdown
+            const subCourseSelect = document.getElementById('sub_course_id');
+            if (subCourseSelect) {
+                subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
+            }
         }
         
         function closeAddStudentModal() {
             document.getElementById('addStudentModal').style.display = 'none';
             // Reset form
             document.getElementById('addStudentForm').reset();
+            // Reset sub-course dropdown
+            const subCourseSelect = document.getElementById('sub_course_id');
+            if (subCourseSelect) {
+                subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
+            }
+        }
+        
+        // Load sub-courses when course is selected
+        function loadSubCourses(courseId) {
+            const subCourseSelect = document.getElementById('sub_course_id');
+            
+            if (!courseId || courseId === '') {
+                if (subCourseSelect) {
+                    subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
+                }
+                return;
+            }
+            
+            if (!subCourseSelect) return;
+            
+            // Show loading state
+            subCourseSelect.innerHTML = '<option value="">Loading sub-courses...</option>';
+            subCourseSelect.disabled = true;
+            
+            // Fetch sub-courses from server
+            fetch(`students.php?action=get_sub_courses&course_id=${courseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    subCourseSelect.innerHTML = '<option value="">Select Sub-Course</option>';
+                    
+                    if (data.success && data.sub_courses && data.sub_courses.length > 0) {
+                        data.sub_courses.forEach(subCourse => {
+                            const option = document.createElement('option');
+                            option.value = subCourse.id;
+                            option.textContent = `${subCourse.name} (₹${parseFloat(subCourse.fee).toLocaleString()}) - ${subCourse.duration}`;
+                            subCourseSelect.appendChild(option);
+                        });
+                    } else {
+                        subCourseSelect.innerHTML = '<option value="">No sub-courses available</option>';
+                    }
+                    subCourseSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading sub-courses:', error);
+                    subCourseSelect.innerHTML = '<option value="">Error loading sub-courses</option>';
+                    subCourseSelect.disabled = false;
+                });
+        }
+        
+        // Edit Fees Modal Functions
+        function openEditFeesModal(enrollmentId, totalFee, paidFees) {
+            document.getElementById('edit_fees_enrollment_id').value = enrollmentId;
+            document.getElementById('edit_fees_total').value = '₹' + parseFloat(totalFee).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('edit_fees_paid').value = paidFees;
+            document.getElementById('edit_fees_paid').max = totalFee;
+            updateRemainingFees();
+            document.getElementById('editFeesModal').style.display = 'block';
+        }
+        
+        function closeEditFeesModal() {
+            document.getElementById('editFeesModal').style.display = 'none';
+            document.getElementById('editFeesForm').reset();
+        }
+        
+        function updateRemainingFees() {
+            const totalFee = parseFloat(document.getElementById('edit_fees_paid').max);
+            const paidFees = parseFloat(document.getElementById('edit_fees_paid').value) || 0;
+            const remaining = totalFee - paidFees;
+            document.getElementById('edit_fees_remaining').value = '₹' + remaining.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('edit_fees_remaining').style.color = remaining > 0 ? '#dc3545' : '#28a745';
+        }
+        
+        // Add event listener for paid fees input
+        document.addEventListener('DOMContentLoaded', function() {
+            const paidFeesInput = document.getElementById('edit_fees_paid');
+            if (paidFeesInput) {
+                paidFeesInput.addEventListener('input', updateRemainingFees);
+            }
+        });
+        
+        // Edit Status Modal Functions
+        function openEditStatusModal(enrollmentId, currentStatus) {
+            document.getElementById('edit_status_enrollment_id').value = enrollmentId;
+            document.getElementById('edit_status_new').value = currentStatus;
+            document.getElementById('editStatusModal').style.display = 'block';
+        }
+        
+        function closeEditStatusModal() {
+            document.getElementById('editStatusModal').style.display = 'none';
+            document.getElementById('editStatusForm').reset();
+        }
+        
+        // Mark as Completed Function
+        function markCompleted(enrollmentId) {
+            if (confirm('Are you sure you want to mark this course as completed? This action cannot be undone.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'students.php';
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'mark_completed';
+                
+                const enrollmentInput = document.createElement('input');
+                enrollmentInput.type = 'hidden';
+                enrollmentInput.name = 'enrollment_id';
+                enrollmentInput.value = enrollmentId;
+                
+                form.appendChild(actionInput);
+                form.appendChild(enrollmentInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
         
         // Close modal when clicking outside

@@ -11,19 +11,39 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
-define('DB_PASS', 'test_pass');
+define('DB_PASS', 'root_pass');
 define('DB_CHARSET', 'utf8mb4');
+
+// Connection variables to reuse connections (file-level scope)
+$GLOBALS['_db_connection'] = null;
+$GLOBALS['_db_connection_failed'] = false;
 
 // Create database connection
 function getDBConnection() {
+    // If connection already failed, don't retry
+    if (!empty($GLOBALS['_db_connection_failed'])) {
+        return false;
+    }
+    
+    // Return existing connection if available
+    if ($GLOBALS['_db_connection'] !== null) {
+        return $GLOBALS['_db_connection'];
+    }
+    
     try {
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        error_log("DSN: " . $dsn);
         $pdo = new PDO($dsn, DB_USER, DB_PASS);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $GLOBALS['_db_connection'] = $pdo;
         return $pdo;
     } catch (PDOException $e) {
-        error_log("Database connection failed: " . $e->getMessage());
+        // Only log once to prevent infinite error logs
+        if (empty($GLOBALS['_db_connection_failed'])) {
+            error_log("Database connection failed: " . $e->getMessage());
+            $GLOBALS['_db_connection_failed'] = true;
+        }
         return false;
     }
 }
@@ -78,6 +98,7 @@ function getRows($sql, $params = []) {
     if ($stmt) {
         return $stmt->fetchAll();
     }
+    // Return empty array on failure to prevent errors
     return [];
 }
 
@@ -92,7 +113,8 @@ function insertData($sql, $params = []) {
         return $pdo->lastInsertId();
     } catch (PDOException $e) {
         error_log("Insert failed: " . $e->getMessage());
-        return false;
+        // Re-throw exception so transaction can catch it
+        throw $e;
     }
 }
 
@@ -112,5 +134,32 @@ function deleteData($sql, $params = []) {
         return $stmt->rowCount();
     }
     return 0;
+}
+
+// Begin a database transaction
+function beginTransaction() {
+    $pdo = getDBConnection();
+    if ($pdo) {
+        return $pdo->beginTransaction();
+    }
+    return false;
+}
+
+// Commit a database transaction
+function commitTransaction() {
+    $pdo = getDBConnection();
+    if ($pdo) {
+        return $pdo->commit();
+    }
+    return false;
+}
+
+// Rollback a database transaction
+function rollbackTransaction() {
+    $pdo = getDBConnection();
+    if ($pdo) {
+        return $pdo->rollBack();
+    }
+    return false;
 }
 ?>
