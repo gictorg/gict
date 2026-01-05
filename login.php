@@ -68,10 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['full_name'] = $user['full_name'];
                         $_SESSION['email'] = $user['email'];
                         
-                        // Debug: Log what's being set in session
-                        error_log("Login Debug - User data: " . print_r($user, true));
-                        error_log("Login Debug - Session after login: " . print_r($_SESSION, true));
-                        
                         // Log successful login (commented out as user_logins table doesn't exist in new schema)
                         // $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";
                         // insertData($login_sql, [$user['id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
@@ -106,6 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GICT</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -130,16 +128,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         .login-logo {
-            width: 120px;
-            height: 120px;
+            width: 150px;
+            height: 150px;
             margin: 0 auto 30px;
-            background: #f8f9fa;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
-            color: #667eea;
+            border-radius: 50%;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .login-title {
@@ -147,10 +151,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin-bottom: 30px;
             font-size: 28px;
             font-weight: bold;
+            text-align: center;
         }
         
         .form-group {
             margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        form {
+            text-align: center;
+        }
+        
+        form .form-group {
             text-align: left;
         }
         
@@ -187,6 +200,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
         }
         
         .login-btn:hover {
@@ -200,20 +216,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-radius: 5px;
             margin-bottom: 20px;
             font-size: 14px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-logo">
-            <i class="fas fa-graduation-cap"></i>
+            <img src="logo.png" alt="GICT Logo">
         </div>
         
         <h1 class="login-title">Welcome to GICT</h1>
         <p style="color: #666; margin-bottom: 30px;">Please login to continue</p>
         
         <?php if (!empty($error_message)): ?>
-            <div class="error-message">
+            <div class="error-message" id="errorAlert">
                 <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php endif; ?>
@@ -234,5 +262,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
 
     </div>
+    
+    <script>
+        // Auto-dismiss error message after 5 seconds
+        const errorAlert = document.getElementById('errorAlert');
+        if (errorAlert) {
+            setTimeout(function() {
+                errorAlert.style.transition = 'opacity 0.5s ease-out';
+                errorAlert.style.opacity = '0';
+                setTimeout(function() {
+                    errorAlert.remove();
+                }, 500);
+            }, 5000);
+        }
+    </script>
 </body>
 </html> 

@@ -3,8 +3,8 @@ require_once '../auth.php';
 requireLogin();
 requireRole('admin');
 
-// Include ImgBB helper for image uploads
-require_once '../includes/imgbb_helper.php';
+// Include Cloudinary helper for image uploads
+require_once '../includes/cloudinary_helper.php';
 
 // Include User ID Generator helper
 require_once '../includes/user_id_generator.php';
@@ -124,10 +124,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $phone = $_POST['phone'] ?? '';
                 $address = $_POST['address'] ?? '';
                 $date_of_birth = $_POST['date_of_birth'] ?? '';
-                $gender = $_POST['gender'] ?? '';
+                $gender = trim($_POST['gender'] ?? '');
                 $qualification = $_POST['qualification'] ?? '';
                 $joining_date = $_POST['joining_date'] ?? '';
                 $previous_institute = $_POST['previous_institute'] ?? '';
+                
+                // Validate gender - required field, must be one of the allowed ENUM values
+                $allowed_genders = ['male', 'female', 'other'];
+                if (empty($gender)) {
+                    $_SESSION['error_message'] = "Please select a gender.";
+                    header('Location: students.php');
+                    exit;
+                } elseif (!in_array($gender, $allowed_genders)) {
+                    $_SESSION['error_message'] = "Invalid gender value selected.";
+                    header('Location: students.php');
+                    exit;
+                }
+                
+                // Validate date of birth - cannot be in the future
+                if (!empty($date_of_birth) && $date_of_birth > date('Y-m-d')) {
+                    $_SESSION['error_message'] = "Date of birth cannot be in the future.";
+                    header('Location: students.php');
+                    exit;
+                }
                 
                 // Generate unique user ID for student
                 $generated_user_id = generateUniqueUserId('student');
@@ -136,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     header('Location: students.php');
                     exit;
                 } else {
-                    // Handle file uploads to ImgBB
+                    // Handle file uploads to Cloudinary
                     $profile_image_url = '';
                     $marksheet_url = '';
                     $aadhaar_card_url = '';
@@ -148,26 +167,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
                         
-                        if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 200 * 1024) {
-                            $imgbb_result = smartUpload(
+                        if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
+                            $upload_result = smartUpload(
                                 $profile_file['tmp_name'], 
                                 $generated_user_id . '_profile'
                             );
                             
-                            if ($imgbb_result && $imgbb_result['success']) {
-                                $profile_image_url = $imgbb_result['url'];
+                            if ($upload_result && $upload_result['success']) {
+                                $profile_image_url = $upload_result['url'];
                                 $uploaded_files[] = [
                                     'type' => 'profile_image',
-                                    'url' => $imgbb_result['url'],
-                                    'display_url' => $imgbb_result['display_url'],
-                                    'imgbb_id' => $imgbb_result['id'],
+                                    'url' => $upload_result['url'],
+                                    'display_url' => $upload_result['display_url'] ?? $upload_result['url'],
+                                    'public_id' => $upload_result['public_id'] ?? '',
                                     'size' => $profile_file['size']
                                 ];
                             } else {
-                                $error_message = "Failed to upload profile image to ImgBB.";
+                                $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
+                                $error_message = "Failed to upload profile image to Cloudinary. " . $error_detail;
+                                error_log("Student profile image upload failed: " . $error_detail);
                             }
                         } else {
-                            $error_message = "Profile image must be JPG, JPEG, or PNG and under 200KB.";
+                            $error_message = "Profile image must be JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
                     
@@ -177,26 +198,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $marksheet_ext = strtolower(pathinfo($marksheet_file['name'], PATHINFO_EXTENSION));
                         $allowed_doc_exts = ['pdf', 'jpg', 'jpeg', 'png'];
                         
-                        if (in_array($marksheet_ext, $allowed_doc_exts) && $marksheet_file['size'] <= 200 * 1024) {
-                            $imgbb_result = smartUpload(
+                        if (in_array($marksheet_ext, $allowed_doc_exts) && $marksheet_file['size'] <= 400 * 1024) {
+                            $upload_result = smartUpload(
                                 $marksheet_file['tmp_name'], 
                                 $generated_user_id . '_marksheet'
                             );
                             
-                            if ($imgbb_result && $imgbb_result['success']) {
-                                $marksheet_url = $imgbb_result['url'];
+                            if ($upload_result && $upload_result['success']) {
+                                $marksheet_url = $upload_result['url'];
                                 $uploaded_files[] = [
                                     'type' => 'marksheet',
-                                    'url' => $imgbb_result['url'],
-                                    'display_url' => $imgbb_result['display_url'],
-                                    'imgbb_id' => $imgbb_result['id'],
+                                    'url' => $upload_result['url'],
+                                    'display_url' => $upload_result['display_url'] ?? $upload_result['url'],
+                                    'public_id' => $upload_result['public_id'] ?? '',
                                     'size' => $marksheet_file['size']
                                 ];
                             } else {
-                                $error_message = "Failed to upload marksheet to ImgBB.";
+                                $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
+                                $error_message = "Failed to upload marksheet to Cloudinary. " . $error_detail;
+                                error_log("Student marksheet upload failed: " . $error_detail);
                             }
                         } else {
-                            $error_message = "Marksheet must be PDF, JPG, JPEG, or PNG and under 200KB.";
+                            $error_message = "Marksheet must be PDF, JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
                     
@@ -206,26 +229,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $aadhaar_ext = strtolower(pathinfo($aadhaar_file['name'], PATHINFO_EXTENSION));
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
                         
-                        if (in_array($aadhaar_ext, $allowed_image_exts) && $aadhaar_file['size'] <= 200 * 1024) {
-                            $imgbb_result = smartUpload(
+                        if (in_array($aadhaar_ext, $allowed_image_exts) && $aadhaar_file['size'] <= 400 * 1024) {
+                            $upload_result = smartUpload(
                                 $aadhaar_file['tmp_name'], 
                                 $generated_user_id . '_aadhaar'
                             );
                             
-                            if ($imgbb_result && $imgbb_result['success']) {
-                                $aadhaar_card_url = $imgbb_result['url'];
+                            if ($upload_result && $upload_result['success']) {
+                                $aadhaar_card_url = $upload_result['url'];
                                 $uploaded_files[] = [
                                     'type' => 'aadhaar_card',
-                                    'url' => $imgbb_result['url'],
-                                    'display_url' => $imgbb_result['display_url'],
-                                    'imgbb_id' => $imgbb_result['id'],
+                                    'url' => $upload_result['url'],
+                                    'display_url' => $upload_result['display_url'] ?? $upload_result['url'],
+                                    'public_id' => $upload_result['public_id'] ?? '',
                                     'size' => $aadhaar_file['size']
                                 ];
                             } else {
-                                $error_message = "Failed to upload Aadhaar card to ImgBB.";
-                                }
+                                $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
+                                $error_message = "Failed to upload Aadhaar card to Cloudinary. " . $error_detail;
+                                error_log("Student Aadhaar card upload failed: " . $error_detail);
+                            }
                         } else {
-                            $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 200KB.";
+                            $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
                     
@@ -241,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             if ($result) {
                                 $user_id = getDBConnection()->lastInsertId();
                                 
-                                // Insert document records with ImgBB URLs
+                                // Insert document records with Cloudinary URLs
                                 if (!empty($uploaded_files)) {
                                     foreach ($uploaded_files as $file) {
                                         $docSql = "INSERT INTO student_documents (user_id, document_type, file_url, file_name, file_size, uploaded_at) VALUES (?, ?, ?, ?, ?, NOW())";
@@ -261,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $success_message .= "<br><strong>Note:</strong> You can enroll this student in a course using the 'Enroll to Course' action.";
                                 
                                 if (!empty($uploaded_files)) {
-                                    $success_message .= "<br><br><strong>ImgBB URLs (Stored in Database):</strong><br>";
+                                    $success_message .= "<br><br><strong>Cloudinary URLs (Stored in Database):</strong><br>";
                                     foreach ($uploaded_files as $file) {
                                         $success_message .= "- {$file['type']}: <a href='{$file['url']}' target='_blank'>{$file['url']}</a>";
                                     }
@@ -648,6 +673,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Management - GICT Admin</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="shortcut icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -1717,11 +1744,11 @@ try {
             </div>
 
             <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success"><?php echo $success_message; ?></div>
+                <div class="alert alert-success" id="successAlert"><?php echo $success_message; ?></div>
             <?php endif; ?>
 
             <?php if (!empty($error_message)): ?>
-                <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+                <div class="alert alert-danger" id="errorAlert"><?php echo htmlspecialchars($error_message); ?></div>
             <?php endif; ?>
 
             <!-- Statistics Cards -->
@@ -1949,14 +1976,14 @@ try {
                         </div>
                         <div class="form-group">
                             <label for="date_of_birth">Date of Birth</label>
-                            <input type="date" id="date_of_birth" name="date_of_birth">
+                            <input type="date" id="date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="gender">Gender</label>
-                            <select id="gender" name="gender">
+                            <label for="gender">Gender *</label>
+                            <select id="gender" name="gender" required>
                                 <option value="">Select Gender</option>
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
@@ -2022,7 +2049,7 @@ try {
                             <div id="profile-preview" class="image-preview"></div>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle"></i> 
-                                Max size: 200KB. Formats: JPG, JPEG, PNG
+                                Max size: 400KB. Formats: JPG, JPEG, PNG
                             </small>
                         </div>
                     </div>
@@ -2040,7 +2067,7 @@ try {
                             <div id="marksheet-preview" class="image-preview"></div>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle"></i> 
-                                Max size: 200KB. Formats: PDF, JPG, JPEG, PNG
+                                Max size: 400KB. Formats: PDF, JPG, JPEG, PNG
                             </small>
                         </div>
                         <div class="form-group">
@@ -2055,7 +2082,7 @@ try {
                             <div id="aadhaar-preview" class="image-preview"></div>
                             <small class="form-text text-muted">
                                 <i class="fas fa-info-circle"></i> 
-                                Max size: 200KB. Formats: JPG, JPEG, PNG
+                                Max size: 400KB. Formats: JPG, JPEG, PNG
                             </small>
                         </div>
                     </div>
@@ -2276,10 +2303,10 @@ try {
                 // Clear previous preview
                 preview.innerHTML = '';
                 
-                // Check file size (200KB limit)
+                // Check file size (400KB limit)
                 const fileSize = file.size / 1024; // Convert to KB
-                if (fileSize > 200) {
-                    alert('File size must be less than 200KB. Current size: ' + fileSize.toFixed(1) + 'KB');
+                if (fileSize > 400) {
+                    alert('File size must be less than 400KB. Current size: ' + fileSize.toFixed(1) + 'KB');
                     input.value = '';
                     return;
                 }
@@ -3059,6 +3086,30 @@ try {
                 console.error('Error loading ID card:', error);
                 document.getElementById('idCardContainer').innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
             });
+        }
+        
+        // Auto-dismiss alerts after 5 seconds
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        if (successAlert) {
+            setTimeout(function() {
+                successAlert.style.transition = 'opacity 0.5s ease-out';
+                successAlert.style.opacity = '0';
+                setTimeout(function() {
+                    successAlert.remove();
+                }, 500);
+            }, 5000);
+        }
+        
+        if (errorAlert) {
+            setTimeout(function() {
+                errorAlert.style.transition = 'opacity 0.5s ease-out';
+                errorAlert.style.opacity = '0';
+                setTimeout(function() {
+                    errorAlert.remove();
+                }, 500);
+            }, 5000);
         }
     </script>
 </body>

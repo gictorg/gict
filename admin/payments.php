@@ -161,6 +161,8 @@ $total_completed_count = count($completed_payments);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Management - GICT Admin</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="shortcut icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -418,11 +420,11 @@ $total_completed_count = count($completed_payments);
             </div>
 
             <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+                <div class="alert alert-success" id="successAlert"><?php echo htmlspecialchars($success_message); ?></div>
             <?php endif; ?>
 
             <?php if (!empty($error_message)): ?>
-                <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+                <div class="alert alert-danger" id="errorAlert"><?php echo htmlspecialchars($error_message); ?></div>
             <?php endif; ?>
 
             <!-- Payment Statistics -->
@@ -622,6 +624,30 @@ $total_completed_count = count($completed_payments);
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('show');
             }
+        }
+        
+        // Auto-dismiss alerts after 5 seconds
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        if (successAlert) {
+            setTimeout(function() {
+                successAlert.style.transition = 'opacity 0.5s ease-out';
+                successAlert.style.opacity = '0';
+                setTimeout(function() {
+                    successAlert.remove();
+                }, 500);
+            }, 5000);
+        }
+        
+        if (errorAlert) {
+            setTimeout(function() {
+                errorAlert.style.transition = 'opacity 0.5s ease-out';
+                errorAlert.style.opacity = '0';
+                setTimeout(function() {
+                    errorAlert.remove();
+                }, 500);
+            }, 5000);
         }
     </script>
 </body>

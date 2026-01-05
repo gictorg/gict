@@ -1,0 +1,39 @@
+# Google Drive Service Account (NEVER COMMIT THIS!)
+config/google-service-account.json
+*.json
+!composer.json
+!package.json
+
+# Composer
+/vendor/
+composer.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Sensitive files
+*.key
+*.pem
+*.p12
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+

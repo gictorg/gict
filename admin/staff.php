@@ -3,8 +3,8 @@ require_once '../auth.php';
 requireLogin();
 requireRole('admin');
 
-// Include ImgBB helper for image uploads
-require_once '../includes/imgbb_helper.php';
+// Include Cloudinary helper for image uploads
+require_once '../includes/cloudinary_helper.php';
 
 // Include User ID Generator helper
 require_once '../includes/user_id_generator.php';
@@ -21,34 +21,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $phone = $_POST['phone'] ?? '';
                 $address = $_POST['address'] ?? '';
                 $date_of_birth = $_POST['date_of_birth'] ?? '';
-                $gender = $_POST['gender'] ?? '';
+                $gender = trim($_POST['gender'] ?? '');
                 $qualification = $_POST['qualification'] ?? '';
                 $experience_years = $_POST['experience_years'] ?? 0;
                 $joining_date = $_POST['joining_date'] ?? '';
                 $previous_institute = $_POST['previous_institute'] ?? '';
                 
-                // Handle profile image upload to ImgBB
+                // Validate gender - required field, must be one of the allowed ENUM values
+                $allowed_genders = ['male', 'female', 'other'];
+                if (empty($gender)) {
+                    $_SESSION['error_message'] = "Please select a gender.";
+                    header('Location: staff.php');
+                    exit;
+                } elseif (!in_array($gender, $allowed_genders)) {
+                    $_SESSION['error_message'] = "Invalid gender value selected.";
+                    header('Location: staff.php');
+                    exit;
+                }
+                
+                // Validate date of birth - cannot be in the future
+                if (!empty($date_of_birth) && $date_of_birth > date('Y-m-d')) {
+                    $_SESSION['error_message'] = "Date of birth cannot be in the future.";
+                    header('Location: staff.php');
+                    exit;
+                }
+                
+                // Handle profile image upload to Cloudinary
                 $profile_image_url = '';
                 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
                     $profile_file = $_FILES['profile_image'];
                     $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
                     $allowed_image_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
-                    if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 100 * 1024) {
+                    if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
                         // We'll upload with a temporary name first, then rename after user ID generation
                         $temp_name = 'temp_faculty_' . time();
-                        $imgbb_result = smartUpload(
+                        $upload_result = smartUpload(
                             $profile_file['tmp_name'], 
                             $temp_name
                         );
                         
-                        if ($imgbb_result && $imgbb_result['success']) {
-                            $profile_image_url = $imgbb_result['url'];
+                        if ($upload_result && $upload_result['success']) {
+                            $profile_image_url = $upload_result['url'];
                         } else {
-                            $error_message = "Failed to upload profile image to ImgBB.";
+                            $error_message = "Failed to upload profile image to Cloudinary.";
                         }
                     } else {
-                        $error_message = "Profile image must be JPG, PNG, or GIF and under 100KB.";
+                        $error_message = "Profile image must be JPG, PNG, or GIF and under 400KB.";
                     }
                 }
                 
@@ -165,6 +184,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Management - GICT Admin</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="shortcut icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -673,11 +694,11 @@ try {
             </div>
 
             <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success"><?php echo $success_message; ?></div>
+                <div class="alert alert-success" id="successAlert"><?php echo $success_message; ?></div>
             <?php endif; ?>
 
             <?php if (isset($error_message)): ?>
-                <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+                <div class="alert alert-danger" id="errorAlert"><?php echo htmlspecialchars($error_message); ?></div>
             <?php endif; ?>
 
             <!-- Statistics Cards -->
@@ -849,14 +870,14 @@ try {
                         </div>
                         <div class="form-group">
                             <label for="date_of_birth">Date of Birth</label>
-                            <input type="date" id="date_of_birth" name="date_of_birth">
+                            <input type="date" id="date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="gender">Gender</label>
-                            <select id="gender" name="gender">
+                            <label for="gender">Gender *</label>
+                            <select id="gender" name="gender" required>
                                 <option value="">Select Gender</option>
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
@@ -926,7 +947,7 @@ try {
                         <div id="staff-profile-preview" class="image-preview"></div>
                         <small class="form-text text-muted">
                             <i class="fas fa-info-circle"></i> 
-                            Max size: 100KB. Formats: JPG, PNG, GIF
+                            Max size: 400KB. Formats: JPG, PNG, GIF
                         </small>
                     </div>
                 </div>
@@ -989,10 +1010,10 @@ try {
                 // Clear previous preview
                 preview.innerHTML = '';
                 
-                // Check file size (100KB limit for staff)
+                // Check file size (400KB limit for staff)
                 const fileSize = file.size / 1024; // Convert to KB
-                if (fileSize > 100) {
-                    alert('File size must be less than 100KB. Current size: ' + fileSize.toFixed(1) + 'KB');
+                if (fileSize > 400) {
+                    alert('File size must be less than 400KB. Current size: ' + fileSize.toFixed(1) + 'KB');
                     input.value = '';
                     return;
                 }
@@ -1258,6 +1279,30 @@ try {
             // Apply default filter to show only active staff
             filterStaff();
         });
+        
+        // Auto-dismiss alerts after 5 seconds
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        if (successAlert) {
+            setTimeout(function() {
+                successAlert.style.transition = 'opacity 0.5s ease-out';
+                successAlert.style.opacity = '0';
+                setTimeout(function() {
+                    successAlert.remove();
+                }, 500);
+            }, 5000);
+        }
+        
+        if (errorAlert) {
+            setTimeout(function() {
+                errorAlert.style.transition = 'opacity 0.5s ease-out';
+                errorAlert.style.opacity = '0';
+                setTimeout(function() {
+                    errorAlert.remove();
+                }, 500);
+            }, 5000);
+        }
     </script>
 </body>
 </html>

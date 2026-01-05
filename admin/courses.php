@@ -32,25 +32,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                // Handle course image upload to ImgBB
+                // Handle course image upload to Cloudinary
                 $course_image_url = '';
                 $course_image_alt = $name;
                 
                 if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
-                    require_once '../includes/imgbb_helper.php';
+                    require_once '../includes/cloudinary_helper.php';
                     
                     $image_file = $_FILES['course_image'];
                     $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
                     $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
                     if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1024) {
-                        $imgbb_name = strtolower(str_replace(' ', '_', $name)) . '_course';
-                        $imgbb_result = smartUpload($image_file['tmp_name'], $imgbb_name);
+                        $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course';
+                        $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
                         
-                        if ($imgbb_result && $imgbb_result['success']) {
-                            $course_image_url = $imgbb_result['url'];
+                        if ($cloudinary_result && $cloudinary_result['success']) {
+                            $course_image_url = $cloudinary_result['url'];
                         } else {
-                            throw new Exception("Failed to upload course image to ImgBB.");
+                            $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
+                            throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
                         }
                     } else {
                         throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
@@ -80,25 +81,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                // Handle course image upload to ImgBB (if new image provided)
+                // Handle course image upload to Cloudinary (if new image provided)
                 $course_image_url = '';
                 $course_image_alt = $name;
                 
                 if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
-                    require_once '../includes/imgbb_helper.php';
+                    require_once '../includes/cloudinary_helper.php';
                     
                     $image_file = $_FILES['course_image'];
                     $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
                     $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
                     if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1000) {
-                        $imgbb_name = strtolower(str_replace(' ', '_', $name)) . '_course';
-                        $imgbb_result = smartUpload($image_file['tmp_name'], $imgbb_name);
+                        $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course';
+                        $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
                         
-                        if ($imgbb_result && $imgbb_result['success']) {
-                            $course_image_url = $imgbb_result['url'];
+                        if ($cloudinary_result && $cloudinary_result['success']) {
+                            $course_image_url = $cloudinary_result['url'];
                         } else {
-                            throw new Exception("Failed to upload course image to ImgBB.");
+                            $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
+                            throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
                         }
                     } else {
                         throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
@@ -354,6 +356,8 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Management - GICT Admin</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="shortcut icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -925,13 +929,13 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
             </div>
 
             <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success">
+                <div class="alert alert-success" id="successAlert">
                     <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
                 </div>
             <?php endif; ?>
 
             <?php if (!empty($error_message)): ?>
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" id="errorAlert">
                     <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
@@ -1062,7 +1066,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                     <th>Description</th>
                                     <th>Duration</th>
                                     <th>Fee (₹)</th>
-                                    <th>Enrollments</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -1077,9 +1080,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                         </td>
                                         <td><?php echo htmlspecialchars($sub_course['duration']); ?></td>
                                         <td>₹<?php echo number_format($sub_course['fee']); ?></td>
-                                        <td class="enrollment-count">
-                                            <div><?php echo $sub_course['enrolled_students']; ?> students</div>
-                                        </td>
                                         <td>
                                             <span class="course-status <?php echo $sub_course['status']; ?>">
                                                 <?php echo ucfirst($sub_course['status']); ?>
@@ -1168,7 +1168,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                     <div class="form-group full-width">
                         <label for="course_image">Course Image</label>
                         <input type="file" id="course_image" name="course_image" accept="image/*">
-                        <small class="form-text">Upload JPG, PNG, or GIF image (max 500KB). Image will be uploaded to ImgBB.</small>
+                        <small class="form-text">Upload JPG, PNG, or GIF image (max 500KB). Image will be uploaded to Cloudinary.</small>
                         <?php if (isset($edit_course) && !empty($edit_course['course_image'])): ?>
                             <div class="current-image">
                                 <p><strong>Current Image:</strong></p>
@@ -1478,6 +1478,30 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                 sidebar.classList.remove('open');
             }
         });
+        
+        // Auto-dismiss alerts after 5 seconds
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        if (successAlert) {
+            setTimeout(function() {
+                successAlert.style.transition = 'opacity 0.5s ease-out';
+                successAlert.style.opacity = '0';
+                setTimeout(function() {
+                    successAlert.remove();
+                }, 500);
+            }, 5000);
+        }
+        
+        if (errorAlert) {
+            setTimeout(function() {
+                errorAlert.style.transition = 'opacity 0.5s ease-out';
+                errorAlert.style.opacity = '0';
+                setTimeout(function() {
+                    errorAlert.remove();
+                }, 500);
+            }, 5000);
+        }
     </script>
 </body>
 </html>

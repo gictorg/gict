@@ -1,7 +1,7 @@
 <?php
 require_once '../includes/session_manager.php';
 require_once '../config/database.php';
-require_once '../includes/imgbb_helper.php';
+require_once '../includes/cloudinary_helper.php';
 
 // Check if user is logged in and is a student
 if (!isLoggedIn() || !isStudent()) {
@@ -24,19 +24,26 @@ $message_type = '';
 // Handle document upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'upload_document') {
-        $document_type = $_POST['document_type'];
-        $file = $_FILES['document_file'];
+        $document_type = trim($_POST['document_type'] ?? '');
+        $file = $_FILES['document_file'] ?? null;
         
-        if ($file['error'] === 0) {
-            // Check file size (200KB limit)
-            if ($file['size'] > 204800) {
-                $message = 'File size must be less than 200KB';
+        // Validate document_type
+        if (empty($document_type) || !isset($document_types[$document_type])) {
+            $message = 'Invalid document type selected';
+            $message_type = 'error';
+        } elseif (!$file || $file['error'] !== 0) {
+            $message = 'File upload error. Please try again.';
+            $message_type = 'error';
+        } else {
+            // Check file size (400KB limit)
+            if ($file['size'] > 409600) {
+                $message = 'File size must be less than 400KB';
                 $message_type = 'error';
             } else {
-                // Upload to ImgBB with proper naming convention
-                $imgbb_result = smartUpload($file['tmp_name'], $user_id . '_' . $document_type);
+                // Upload to Cloudinary with proper naming convention
+                $upload_result = smartUpload($file['tmp_name'], $user_id . '_' . $document_type);
                 
-                if ($imgbb_result && isset($imgbb_result['url'])) {
+                if ($upload_result && isset($upload_result['url'])) {
                     // Get file extension
                     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
                     
@@ -47,9 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         // Update existing document
                         $result = updateData("
                             UPDATE student_documents 
-                            SET document_name = ?, imgbb_url = ?, file_extension = ?, upload_date = CURRENT_TIMESTAMP, status = 'pending'
+                            SET file_name = ?, file_url = ?, file_size = ?, uploaded_at = CURRENT_TIMESTAMP
                             WHERE user_id = ? AND document_type = ?
-                        ", [$file['name'], $imgbb_result['url'], $extension, $user_id, $document_type]);
+                        ", [$file['name'], $upload_result['url'], $file['size'], $user_id, $document_type]);
                         
                         if ($result !== false) {
                             $message = 'Document updated successfully!';
@@ -61,9 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     } else {
                         // Insert new document
                         $result = insertData("
-                            INSERT INTO student_documents (user_id, document_type, document_name, imgbb_url, file_extension, status)
-                            VALUES (?, ?, ?, ?, ?, 'pending')
-                        ", [$user_id, $document_type, $file['name'], $imgbb_result['url'], $extension]);
+                            INSERT INTO student_documents (user_id, document_type, file_url, file_name, file_size)
+                            VALUES (?, ?, ?, ?, ?)
+                        ", [$user_id, $document_type, $upload_result['url'], $file['name'], $file['size']]);
                         
                         if ($result !== false) {
                             $message = 'Document uploaded successfully!';
@@ -74,13 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         }
                     }
                 } else {
-                    $message = 'Failed to upload document to ImgBB';
+                    $message = 'Failed to upload document to Cloudinary';
                     $message_type = 'error';
                 }
             }
-        } else {
-            $message = 'Error uploading file';
-            $message_type = 'error';
         }
     }
 }
@@ -113,6 +117,8 @@ $document_types = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Management - Student Dashboard</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+    <link rel="shortcut icon" type="image/png" href="../logo.png">
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -361,7 +367,7 @@ $document_types = [
                         <div class="form-group">
                             <label for="document_file">Document File</label>
                             <input type="file" name="document_file" id="document_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf" required>
-                            <small class="text-muted">Maximum file size: 200KB. Supported formats: JPG, JPEG, PNG, PDF</small>
+                            <small class="text-muted">Maximum file size: 400KB. Supported formats: JPG, JPEG, PNG, PDF</small>
                         </div>
                         
                         <button type="submit" class="btn btn-primary">
@@ -386,7 +392,6 @@ $document_types = [
                                         <th>Document Type</th>
                                         <th>File Name</th>
                                         <th>Upload Date</th>
-                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -396,15 +401,10 @@ $document_types = [
                                             <td>
                                                 <strong><?php echo htmlspecialchars($document_types[$doc['document_type']] ?? ucfirst($doc['document_type'])); ?></strong>
                                             </td>
-                                            <td><?php echo htmlspecialchars($doc['document_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($doc['file_name'] ?? 'N/A'); ?></td>
                                             <td><?php echo date('M d, Y', strtotime($doc['uploaded_at'])); ?></td>
                                             <td>
-                                                <span class="status-badge status-<?php echo $doc['status']; ?>">
-                                                    <?php echo ucfirst($doc['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="<?php echo htmlspecialchars($doc['imgbb_url']); ?>" target="_blank" class="btn btn-success btn-sm">
+                                                <a href="<?php echo htmlspecialchars($doc['file_url']); ?>" target="_blank" class="btn btn-success btn-sm">
                                                     <i class="fas fa-eye"></i> View
                                                 </a>
                                             </td>
