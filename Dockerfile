@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
+    libonig-dev \
+    libcurl4-openssl-dev \
     zip \
     unzip \
     git \
@@ -54,8 +56,8 @@ RUN echo "Header always set X-Content-Type-Options nosniff" >> /etc/apache2/conf
 EXPOSE 80
 
 # Add health check
-# HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-#     CMD curl -f http://localhost/ || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
 
 # Start Apache
 CMD ["apache2-foreground"]
