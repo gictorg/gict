@@ -2530,13 +2530,21 @@ try {
 
         
         function searchStudents() {
-            const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+            const searchInput = document.getElementById('studentSearch');
+            if (!searchInput) {
+                console.error('Search input not found');
+                return;
+            }
+            
+            const searchTerm = searchInput.value.toLowerCase();
             const clearBtn = document.getElementById('clearSearchBtn');
             
-            if (searchTerm.length > 0) {
-                clearBtn.style.display = 'block';
-            } else {
-                clearBtn.style.display = 'none';
+            if (clearBtn) {
+                if (searchTerm.length > 0) {
+                    clearBtn.style.display = 'block';
+                } else {
+                    clearBtn.style.display = 'none';
+                }
             }
             
             // Close all enrollments when searching to ensure clean state
@@ -2555,10 +2563,24 @@ try {
         }
         
         function filterStudents() {
-            const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-            const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+            if (!allStudents || allStudents.length === 0) {
+                console.warn('No students data loaded yet');
+                return;
+            }
+            
+            const statusFilterEl = document.getElementById('statusFilter');
+            const searchInput = document.getElementById('studentSearch');
+            
+            const statusFilter = statusFilterEl ? statusFilterEl.value.toLowerCase() : '';
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            
+            let visibleCount = 0;
             
             allStudents.forEach(student => {
+                if (!student || !student.element) {
+                    return;
+                }
+                
                 let show = true;
                 
                 // Apply status filter
@@ -2567,44 +2589,70 @@ try {
                 }
                 
                 // Apply search filter
-                if (searchTerm && !(student.name.includes(searchTerm) || 
-                                   student.username.includes(searchTerm) || 
-                                   student.email.includes(searchTerm))) {
-                    show = false;
+                if (searchTerm && show) {
+                    const matchesName = student.name && student.name.includes(searchTerm);
+                    const matchesUsername = student.username && student.username.includes(searchTerm);
+                    const matchesEmail = student.email && student.email.includes(searchTerm);
+                    const matchesPhone = student.phone && student.phone.includes(searchTerm);
+                    
+                    if (!(matchesName || matchesUsername || matchesEmail || matchesPhone)) {
+                        show = false;
+                    }
                 }
                 
-                student.element.style.display = show ? 'table-row' : 'none';
-                
-                // Also hide/show the corresponding enrollment row
-                const enrollmentRow = document.getElementById(`enrollment-${student.element.dataset.studentId}`);
-                if (enrollmentRow) {
-                    enrollmentRow.style.display = 'none'; // Always hide enrollment rows when filtering
+                if (student.element) {
+                    student.element.style.display = show ? 'table-row' : 'none';
+                    if (show) visibleCount++;
                 }
             });
             
-                        // Close all enrollment rows when filtering to ensure clean state
+            // Close all enrollment rows when filtering to ensure clean state
             closeAllEnrollments();
             
             updateStudentCount();
         }
         
-        // Apply default filter on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Store all students data for search/filter operations
+        // Initialize students data for search/filter
+        function initializeStudentsData() {
             const studentRows = document.querySelectorAll('.student-row');
-            allStudents = Array.from(studentRows).map(row => ({
-                element: row,
-                name: row.querySelector('.student-name').textContent.toLowerCase(),
-                username: row.querySelector('.student-username').textContent.toLowerCase(),
-                email: row.querySelector('.contact-info').textContent.toLowerCase(),
-                status: row.querySelector('.status-badge').textContent.toLowerCase().trim(),
-                enrollments: parseInt(row.querySelector('.enrollment-summary .stat-value').textContent) || 0,
-                created_at: new Date(row.querySelector('.date-cell').textContent.trim())
-            }));
+            if (studentRows.length === 0) {
+                console.warn('No student rows found');
+                return;
+            }
             
-            // Apply default filter to show only active students
+            allStudents = Array.from(studentRows).map(row => {
+                const nameEl = row.querySelector('.student-name');
+                const usernameEl = row.querySelector('.student-username');
+                const contactEl = row.querySelector('.contact-info');
+                const statusEl = row.querySelector('.status-badge');
+                const dateEl = row.querySelector('.date-cell');
+                
+                return {
+                    element: row,
+                    name: nameEl ? nameEl.textContent.toLowerCase() : '',
+                    username: usernameEl ? usernameEl.textContent.toLowerCase().replace('@', '') : '',
+                    email: contactEl ? contactEl.textContent.toLowerCase() : '',
+                    phone: contactEl ? contactEl.textContent.toLowerCase() : '',
+                    status: statusEl ? statusEl.textContent.toLowerCase().trim() : '',
+                    created_at: dateEl ? new Date(dateEl.textContent.trim()) : new Date()
+                };
+            });
+            
+            console.log('Initialized', allStudents.length, 'students for search');
+        }
+        
+        // Apply default filter on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeStudentsData();
+                // Apply default filter to show only active students
+                filterStudents();
+            });
+        } else {
+            // DOM already loaded
+            initializeStudentsData();
             filterStudents();
-        });
+        }
         
         function updateStudentCount() {
             const visibleCount = allStudents.filter(student => 

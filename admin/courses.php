@@ -291,12 +291,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get courses
 $courses = getRows("
     SELECT c.*,
+           cc.name as category_name,
            COUNT(sc.id) as sub_courses_count,
            COUNT(DISTINCT se.user_id) as enrolled_students
     FROM courses c
+    LEFT JOIN course_categories cc ON c.category_id = cc.id
     LEFT JOIN sub_courses sc ON c.id = sc.course_id AND sc.status = 'active'
     LEFT JOIN student_enrollments se ON sc.id = se.sub_course_id
-    GROUP BY c.id, c.name, c.description, c.duration, c.status, c.created_at, c.updated_at, c.category_id, c.course_image, c.course_image_alt
+    GROUP BY c.id, c.name, c.description, c.duration, c.status, c.created_at, c.updated_at, c.category_id, cc.name
     ORDER BY c.created_at DESC
 ");
 
@@ -985,7 +987,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                             <thead>
                                 <tr>
                                     <th>Course Name</th>
-                                    <th>Image</th>
                                     <th>Category</th>
                                     <th>Description</th>
                                     <th>Duration</th>
@@ -998,18 +999,7 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                 <?php foreach ($courses as $course): ?>
                                     <tr>
                                         <td class="course-name"><?php echo htmlspecialchars($course['name']); ?></td>
-                                        <td class="course-image">
-                                            <?php if (!empty($course['course_image'])): ?>
-                                                <img src="<?php echo htmlspecialchars($course['course_image']); ?>" 
-                                                     alt="<?php echo htmlspecialchars($course['course_image_alt'] ?? $course['name']); ?>"
-                                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
-                                            <?php else: ?>
-                                                <div style="width: 50px; height: 50px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">
-                                                    No Image
-                                                </div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($course['category_id']); ?></td>
+                                        <td><?php echo htmlspecialchars($course['category_name'] ?? 'N/A'); ?></td>
                                         <td class="course-description" title="<?php echo htmlspecialchars($course['description']); ?>">
                                             <?php echo htmlspecialchars($course['description']); ?>
                                         </td>
@@ -1069,7 +1059,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                 <tr>
                                     <th>Sub-Course Name</th>
                                     <th>Main Course</th>
-                                    <th>Category</th>
                                     <th>Description</th>
                                     <th>Duration</th>
                                     <th>Fee (₹)</th>
@@ -1083,7 +1072,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                     <tr>
                                         <td class="course-name"><?php echo htmlspecialchars($sub_course['name']); ?></td>
                                         <td><?php echo htmlspecialchars($sub_course['course_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($sub_course['category_id']); ?></td>
                                         <td class="course-description" title="<?php echo htmlspecialchars($sub_course['description']); ?>">
                                             <?php echo htmlspecialchars($sub_course['description']); ?>
                                         </td>
