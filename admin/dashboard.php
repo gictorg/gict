@@ -14,6 +14,7 @@ $stats = getRow("
         (SELECT COUNT(*) FROM student_enrollments WHERE status = 'completed') as completed_courses,
         (SELECT COUNT(*) FROM certificates) as certificates_generated,
         (SELECT COUNT(*) FROM payments WHERE status = 'completed') as total_payments,
+        (SELECT COALESCE(SUM(paid_fees), 0) FROM student_enrollments WHERE paid_fees > 0) as total_collections,
         (SELECT COUNT(*) FROM inquiries WHERE status = 'new') as new_inquiries,
         (SELECT COUNT(*) FROM inquiries) as total_inquiries
 ");
@@ -102,6 +103,10 @@ $recent_payments = getRows("
                     <i class="fas fa-question-circle"></i>
                     <span>Course Inquiries</span>
                 </a>
+                <a href="../PRD_Visualization_Dashboard.html" target="_blank" class="nav-item">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>System Overview</span>
+                </a>
                 <a href="profile.php" class="nav-item">
                     <i class="fas fa-user"></i>
                     <span>Profile</span>
@@ -118,6 +123,13 @@ $recent_payments = getRows("
             <div class="page-header">
                 <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
                 <p>Welcome back, <?php echo htmlspecialchars($user['full_name']); ?>! Here's an overview of your institute.</p>
+                <div style="margin-top: 15px;">
+                    <a href="../PRD_Visualization_Dashboard.html" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>View System Architecture & Requirements</span>
+                        <i class="fas fa-external-link-alt" style="font-size: 0.85em; opacity: 0.8;"></i>
+                    </a>
+                </div>
             </div>
 
             <!-- Statistics Grid -->
@@ -177,8 +189,8 @@ $recent_payments = getRows("
                         <i class="fas fa-credit-card"></i>
                     </div>
                     <div class="stat-content">
-                        <h3><?php echo $stats['total_payments']; ?></h3>
-                        <p>Total Payments</p>
+                        <h3>₹<?php echo number_format($stats['total_collections'] ?? 0, 0); ?></h3>
+                        <p>Total Collections</p>
                     </div>
                 </div>
                 
@@ -229,6 +241,11 @@ $recent_payments = getRows("
                     <i class="fas fa-question-circle"></i>
                     <h3>Course Inquiries</h3>
                     <p>View and manage student course inquiries</p>
+                </div>
+                <div class="action-card" onclick="window.open('../PRD_Visualization_Dashboard.html', '_blank')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                    <i class="fas fa-project-diagram"></i>
+                    <h3 style="color: white;">System Overview</h3>
+                    <p style="color: rgba(255,255,255,0.9);">Explore comprehensive system architecture, requirements, and feature documentation</p>
                 </div>
             </div>
 

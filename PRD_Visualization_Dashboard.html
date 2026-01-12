@@ -280,7 +280,7 @@
         <div id="overview" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>100</h3>
+                    <h3>120+</h3>
                     <p>Functional Requirements</p>
                 </div>
                 <div class="stat-card">
@@ -288,11 +288,11 @@
                     <p>User Roles</p>
                 </div>
                 <div class="stat-card">
-                    <h3>5</h3>
+                    <h3>5+</h3>
                     <p>Course Categories</p>
                 </div>
                 <div class="stat-card">
-                    <h3>15</h3>
+                    <h3>20+</h3>
                     <p>Core Features</p>
                 </div>
             </div>
@@ -333,7 +333,15 @@
                 </div>
                 <div class="requirement-card">
                     <h4>Document Management</h4>
-                    <p>File upload system, image hosting integration, document categorization, and secure file storage.</p>
+                    <p>Cloudinary integration for file uploads, document categorization (Aadhaar, PAN, etc.), secure file storage, and profile image management separate from documents.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Student Detail Management</h4>
+                    <p>Comprehensive student profile pages with enrollment history, certificates, marksheets, payment records, and document management with upload capabilities.</p>
+                </div>
+                <div class="requirement-card">
+                    <h4>Profile Management</h4>
+                    <p>Profile image updates, student information editing, document upload/replace functionality, and real-time profile synchronization across the system.</p>
                 </div>
             </div>
         </div>
@@ -386,8 +394,8 @@
                     <p>MySQL 5.7+, Database Schema, Indexes</p>
                 </div>
                 <div class="tech-item">
-                    <h4>APIs</h4>
-                    <p>ImgBB API, QR Code Generator</p>
+                    <h4>APIs & Services</h4>
+                    <p>Cloudinary (Image/File Hosting), QR Code Generator</p>
                 </div>
             </div>
         </div>
@@ -442,12 +450,16 @@
                     <p>Comprehensive admin dashboard, enrollment approvals, marks management, and reporting system.</p>
                 </div>
                 <div class="timeline-item">
-                    <h4>Phase 4: Enhancement</h4>
-                    <p>Mobile responsiveness, security improvements, performance optimization, and user experience enhancements.</p>
+                    <h4>Phase 4: Student Management Enhancement</h4>
+                    <p>Comprehensive student detail pages, profile image management, document upload system with Cloudinary integration, edit student functionality, and enhanced enrollment tracking with fee management.</p>
                 </div>
                 <div class="timeline-item">
-                    <h4>Phase 5: Future Features</h4>
-                    <p>Mobile app, advanced analytics, video integration, and multi-language support.</p>
+                    <h4>Phase 5: Enhancement & Optimization</h4>
+                    <p>Mobile responsiveness, security improvements, performance optimization, user experience enhancements, and advanced reporting features.</p>
+                </div>
+                <div class="timeline-item">
+                    <h4>Phase 6: Future Features</h4>
+                    <p>Mobile app, advanced analytics dashboard, video integration, multi-language support, and AI-powered course recommendations.</p>
                 </div>
             </div>
         </div>
@@ -481,16 +493,18 @@
             new Chart(featureCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['User Management', 'Course Management', 'Enrollment', 'Certificates', 'Payments', 'Documents'],
+                    labels: ['User Management', 'Course Management', 'Enrollment', 'Certificates', 'Payments', 'Documents', 'Student Details', 'Profile Management'],
                     datasets: [{
-                        data: [15, 20, 25, 20, 15, 5],
+                        data: [18, 22, 25, 20, 15, 8, 12, 10],
                         backgroundColor: [
                             '#FF6384',
                             '#36A2EB',
                             '#FFCE56',
                             '#4BC0C0',
                             '#9966FF',
-                            '#FF9F40'
+                            '#FF9F40',
+                            '#9B59B6',
+                            '#E74C3C'
                         ]
                     }]
                 },

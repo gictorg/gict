@@ -31,7 +31,6 @@ function generateUniqueUserId($user_type) {
         ];
         
         if (!isset($type_mapping[$user_type])) {
-            error_log("Invalid user type: " . $user_type);
             return false;
         }
         
@@ -69,7 +68,6 @@ function generateUniqueUserId($user_type) {
         return $user_id;
         
     } catch (Exception $e) {
-        error_log("Error generating user ID: " . $e->getMessage());
         return false;
     }
 }
@@ -107,7 +105,6 @@ function getNextUserIdNumber($user_type) {
         return ($result['max_id'] ?? 0) + 1;
         
     } catch (Exception $e) {
-        error_log("Error getting next user ID number: " . $e->getMessage());
         return false;
     }
 }

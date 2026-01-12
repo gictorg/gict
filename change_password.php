@@ -76,7 +76,6 @@ try {
     
     if ($result !== false) {
         // Log password change (optional)
-        error_log("Password changed successfully for user ID: $user_id");
         
         echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
     } else {
@@ -84,7 +83,6 @@ try {
     }
     
 } catch (Exception $e) {
-    error_log("Password change error: " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'An error occurred while changing password']);
 }
 ?>

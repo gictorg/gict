@@ -45,9 +45,9 @@ try {
     $pendingResult = getRow($pendingSql);
     $stats['pending_enrollments'] = $pendingResult['count'] ?? 0;
     
-} catch (Exception $e) {
-    error_log("Faculty dashboard stats error: " . $e->getMessage());
-}
+    } catch (Exception $e) {
+        // Error loading stats
+    }
 
 // Get recent enrollments
 $recent_enrollments = [];
@@ -64,9 +64,9 @@ try {
                     ORDER BY se.enrollment_date DESC
                     LIMIT 10";
     $recent_enrollments = getRows($enrollmentsSql);
-} catch (Exception $e) {
-    error_log("Faculty dashboard enrollments error: " . $e->getMessage());
-}
+    } catch (Exception $e) {
+        // Error loading enrollments
+    }
 
 // Get active courses
 $active_courses = [];
@@ -82,9 +82,9 @@ try {
                 WHERE c.status = 'active'
                 ORDER BY c.name";
     $active_courses = getRows($coursesSql);
-} catch (Exception $e) {
-    error_log("Faculty dashboard courses error: " . $e->getMessage());
-}
+    } catch (Exception $e) {
+        // Error loading courses
+    }
 ?>
 
 <!DOCTYPE html>

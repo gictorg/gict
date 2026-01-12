@@ -5,14 +5,12 @@ requireLogin();
 
 $user = getCurrentUser();
 if (!$user) {
-    error_log("Dashboard: getCurrentUser() returned null, destroying session");
     session_destroy();
     header('Location: login.php');
     exit();
 }
 
 $userType = $user['type'];
-error_log("Dashboard: User loaded successfully - Type: $userType, Name: " . ($user['full_name'] ?? 'Unknown'));
 
 // Fetch real statistics for admin dashboard
 $totalStudents = 0;
@@ -53,7 +51,6 @@ if ($userType === 'admin') {
         }
         
     } catch (Exception $e) {
-        error_log("Dashboard stats error: " . $e->getMessage());
         // Fallback to default values if database query fails
     }
 }
@@ -190,7 +187,6 @@ if ($userType === 'admin') {
                                     }
                                 }
                             } catch (Exception $e) {
-                                error_log("Courses fetch error: " . $e->getMessage());
                                 // Fallback to default courses
                                 $defaultCourses = [
                                     'FINANCE & BANKING',

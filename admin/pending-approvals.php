@@ -134,9 +134,9 @@ try {
     $enrollment_stats = getRow($sql);
     $stats['pending_enrollments'] = $enrollment_stats['count'] ?? 0;
     
-} catch (Exception $e) {
-    error_log("Error loading statistics: " . $e->getMessage());
-}
+    } catch (Exception $e) {
+        // Error loading statistics
+    }
 ?>
 
 <!DOCTYPE html>

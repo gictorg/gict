@@ -52,7 +52,6 @@ try {
     
 } catch (Exception $e) {
     // Log error and redirect
-    error_log("Marksheet generation error: " . $e->getMessage());
     header('Location: dashboard.php?error=marksheet_generation_failed');
     exit;
 }

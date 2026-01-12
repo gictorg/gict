@@ -36,25 +36,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $course_image_url = '';
                 $course_image_alt = $name;
                 
-                if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
+                if (isset($_FILES['course_image']) && 
+                    $_FILES['course_image']['error'] == UPLOAD_ERR_OK && 
+                    !empty($_FILES['course_image']['tmp_name']) &&
+                    is_uploaded_file($_FILES['course_image']['tmp_name'])) {
+                    
                     require_once '../includes/cloudinary_helper.php';
                     
                     $image_file = $_FILES['course_image'];
                     $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
                     $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
-                    if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1024) {
-                        $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course';
-                        $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
-                        
-                        if ($cloudinary_result && $cloudinary_result['success']) {
-                            $course_image_url = $cloudinary_result['url'];
-                        } else {
-                            $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
-                            throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
-                        }
+                    if (!in_array($image_ext, $allowed_exts)) {
+                        throw new Exception("Course image must be JPG, PNG, or GIF format.");
+                    }
+                    
+                    if ($image_file['size'] > 500 * 1024) {
+                        throw new Exception("Course image must be under 500KB. Your file is " . round($image_file['size'] / 1024, 2) . "KB.");
+                    }
+                    
+                    $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course_' . time();
+                    $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
+                    
+                    if ($cloudinary_result && $cloudinary_result['success']) {
+                        $course_image_url = $cloudinary_result['url'];
                     } else {
-                        throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
+                        $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
+                        throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
                     }
                 }
                 
@@ -81,42 +89,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Please fill all required fields correctly.");
                 }
                 
-                // Handle course image upload to Cloudinary (if new image provided)
-                $course_image_url = '';
-                $course_image_alt = $name;
+                // Get existing course data to preserve image if not updating
+                $existing_course = getRow("SELECT course_image, course_image_alt FROM courses WHERE id = ?", [$course_id]);
+                if (!$existing_course) {
+                    throw new Exception("Course not found.");
+                }
                 
-                if (isset($_FILES['course_image']) && $_FILES['course_image']['error'] == 0) {
+                // Handle course image upload to Cloudinary (if new image provided)
+                $course_image_url = $existing_course['course_image'] ?? ''; // Preserve existing by default
+                $course_image_alt = $existing_course['course_image_alt'] ?? $name;
+                
+                // Check if a new file was actually uploaded (not just empty file field)
+                if (isset($_FILES['course_image']) && 
+                    $_FILES['course_image']['error'] == UPLOAD_ERR_OK && 
+                    !empty($_FILES['course_image']['tmp_name']) &&
+                    is_uploaded_file($_FILES['course_image']['tmp_name'])) {
+                    
                     require_once '../includes/cloudinary_helper.php';
                     
                     $image_file = $_FILES['course_image'];
                     $image_ext = strtolower(pathinfo($image_file['name'], PATHINFO_EXTENSION));
                     $allowed_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
-                    if (in_array($image_ext, $allowed_exts) && $image_file['size'] <= 500 * 1000) {
-                        $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course';
-                        $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
-                        
-                        if ($cloudinary_result && $cloudinary_result['success']) {
-                            $course_image_url = $cloudinary_result['url'];
-                        } else {
-                            $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
-                            throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
-                        }
+                    if (!in_array($image_ext, $allowed_exts)) {
+                        throw new Exception("Course image must be JPG, PNG, or GIF format.");
+                    }
+                    
+                    if ($image_file['size'] > 500 * 1024) {
+                        throw new Exception("Course image must be under 500KB. Your file is " . round($image_file['size'] / 1024, 2) . "KB.");
+                    }
+                    
+                    $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course_' . time();
+                    $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
+                    
+                    if ($cloudinary_result && $cloudinary_result['success']) {
+                        $course_image_url = $cloudinary_result['url'];
+                        $course_image_alt = $name;
                     } else {
-                        throw new Exception("Course image must be JPG, PNG, or GIF and under 500KB.");
+                        $error_detail = isset($cloudinary_result['error']) ? $cloudinary_result['error'] : "Unknown error";
+                        throw new Exception("Failed to upload course image to Cloudinary. " . $error_detail);
                     }
                 }
                 
-                // If no new image, keep existing image
-                if (empty($course_image_url)) {
-                    $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, duration = ?, status = ?, updated_at = NOW() 
-                            WHERE id = ?";
-                    $result = updateData($sql, [$category_id, $name, $description, $duration, $status, $course_id]);
-                } else {
-                    $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, course_image = ?, course_image_alt = ?, duration = ?, status = ?, updated_at = NOW() 
-                            WHERE id = ?";
-                    $result = updateData($sql, [$category_id, $name, $description, $course_image_url, $course_image_alt, $duration, $status, $course_id]);
-                }
+                // Always update course_image and course_image_alt (either new or preserved existing)
+                $sql = "UPDATE courses SET category_id = ?, name = ?, description = ?, course_image = ?, course_image_alt = ?, duration = ?, status = ?, updated_at = NOW() 
+                        WHERE id = ?";
+                $result = updateData($sql, [$category_id, $name, $description, $course_image_url, $course_image_alt, $duration, $status, $course_id]);
                 
                 if ($result === false) {
                     throw new Exception("Failed to update course. Please try again.");
@@ -1276,14 +1294,12 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         // Open modal if editing
         <?php if (isset($edit_course)): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Edit mode detected, opening course modal...');
             openCourseModal();
         });
         <?php endif; ?>
         
         <?php if (isset($edit_sub_course)): ?>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Edit mode detected, opening sub-course modal...');
             openSubCourseModal();
         });
         <?php endif; ?>
@@ -1295,7 +1311,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         
         // Main Course Modal Functions
         function openAddCourseModal() {
-            console.log('Opening add course modal...');
             document.getElementById('courseModal').style.display = 'block';
             // Reset form if not editing
             if (!<?php echo isset($edit_course) ? 'true' : 'false'; ?>) {
@@ -1304,7 +1319,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         }
         
         function openCourseModal() {
-            console.log('Opening course modal...');
             document.getElementById('courseModal').style.display = 'block';
         }
         
@@ -1375,7 +1389,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         
         // Sub-Course Modal Functions
         function openAddSubCourseModal() {
-            console.log('Opening add sub-course modal...');
             document.getElementById('subCourseModal').style.display = 'block';
             // Reset form if not editing
             if (!<?php echo isset($edit_sub_course) ? 'true' : 'false'; ?>) {
@@ -1384,7 +1397,6 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         }
         
         function openSubCourseModal() {
-            console.log('Opening sub-course modal...');
             document.getElementById('subCourseModal').style.display = 'block';
         }
         

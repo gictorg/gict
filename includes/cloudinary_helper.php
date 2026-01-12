@@ -21,8 +21,6 @@ if (!class_exists('Cloudinary\Cloudinary')) {
     // Try to load via Composer
     if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
         require_once __DIR__ . '/../vendor/autoload.php';
-    } else {
-        error_log("Cloudinary Helper Warning: Cloudinary SDK not found. Install via: composer require cloudinary/cloudinary_php");
     }
 }
 
@@ -33,12 +31,10 @@ if (!class_exists('Cloudinary\Cloudinary')) {
 function getCloudinaryInstance() {
     try {
         if (!class_exists('Cloudinary\Cloudinary')) {
-            error_log("Cloudinary Helper Error: Cloudinary SDK not installed");
             return false;
         }
 
         if (empty(CLOUDINARY_CLOUD_NAME) || empty(CLOUDINARY_API_KEY) || empty(CLOUDINARY_API_SECRET)) {
-            error_log("Cloudinary Helper Error: Cloudinary credentials not configured");
             return false;
         }
 
@@ -55,7 +51,6 @@ function getCloudinaryInstance() {
 
         return $cloudinary;
     } catch (Exception $e) {
-        error_log("Cloudinary Helper Error: " . $e->getMessage());
         return false;
     }
 }
@@ -71,7 +66,6 @@ function uploadToCloudinary($file_path, $name = '', $options = []) {
     try {
         // Check if file exists
         if (!file_exists($file_path)) {
-            error_log("Cloudinary Upload Error: File does not exist: " . $file_path);
             return ['success' => false, 'error' => "File does not exist: " . $file_path];
         }
 
@@ -79,7 +73,6 @@ function uploadToCloudinary($file_path, $name = '', $options = []) {
         $cloudinary = getCloudinaryInstance();
         if (!$cloudinary) {
             $error = "Could not initialize Cloudinary. Check your credentials.";
-            error_log("Cloudinary Upload Error: " . $error);
             return ['success' => false, 'error' => $error];
         }
 
@@ -119,17 +112,14 @@ function uploadToCloudinary($file_path, $name = '', $options = []) {
             ];
         } else {
             $error = "Upload succeeded but no URL returned";
-            error_log("Cloudinary Upload Error: " . $error);
             return ['success' => false, 'error' => $error];
         }
 
     } catch (\Cloudinary\Api\Exception\ApiError $e) {
         $error = "Cloudinary API error: " . $e->getMessage();
-        error_log("Cloudinary Upload Error: " . $error);
         return ['success' => false, 'error' => $error];
     } catch (Exception $e) {
         $error = "Upload failed: " . $e->getMessage();
-        error_log("Cloudinary Upload Error: " . $error);
         return ['success' => false, 'error' => $error];
     }
 }
@@ -147,11 +137,8 @@ function smartUpload($file_path, $name = '') {
         return $result;
     }
     
-    // Log the failure for debugging
     $error_msg = isset($result['error']) ? $result['error'] : "Unknown error";
-    error_log("Smart Upload Failed: Could not upload to Cloudinary for file: " . $file_path . " - " . $error_msg);
     
-    // Return error details for better debugging
     return [
         'success' => false,
         'error' => $error_msg,
@@ -178,7 +165,6 @@ function deleteFromCloudinary($public_id) {
         $result = $cloudinary->uploadApi()->destroy($public_id);
         return isset($result['result']) && $result['result'] === 'ok';
     } catch (Exception $e) {
-        error_log("Cloudinary Delete Error: " . $e->getMessage());
         return false;
     }
 }

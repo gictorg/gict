@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/session_manager.php';
 require_once '../config/database.php';
+require_once '../includes/cloudinary_helper.php';
 
 // Check if user is logged in and is a student
 if (!isLoggedIn() || !isStudent()) {
@@ -19,6 +20,58 @@ if (!$student) {
 
 $message = '';
 $message_type = '';
+
+// Handle profile image upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_profile_image') {
+    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+        $file = $_FILES['profile_image'];
+        $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed_exts = ['jpg', 'jpeg', 'png'];
+        $max_size = 400 * 1024; // 400KB
+        
+        if (in_array($file_ext, $allowed_exts) && $file['size'] <= $max_size) {
+            // Upload to Cloudinary
+            $file_name_prefix = $student['username'] . '_profile';
+            $upload_result = smartUpload($file['tmp_name'], $file_name_prefix);
+            
+            if ($upload_result && $upload_result['success']) {
+                // Update users table
+                $update_sql = "UPDATE users SET profile_image = ? WHERE id = ?";
+                $result = updateData($update_sql, [$upload_result['url'], $user_id]);
+                
+                // Also update/insert in student_documents table
+                $existing_doc = getRow("SELECT id FROM student_documents WHERE user_id = ? AND document_type = 'profile'", [$user_id]);
+                if ($existing_doc) {
+                    $update_doc_sql = "UPDATE student_documents SET file_url = ?, file_name = ?, file_size = ?, uploaded_at = NOW() WHERE id = ?";
+                    updateData($update_doc_sql, [$upload_result['url'], $file['name'], $file['size'], $existing_doc['id']]);
+                } else {
+                    $insert_doc_sql = "INSERT INTO student_documents (user_id, document_type, file_url, file_name, file_size, uploaded_at) VALUES (?, 'profile', ?, ?, ?, NOW())";
+                    insertData($insert_doc_sql, [$user_id, $upload_result['url'], $file['name'], $file['size']]);
+                }
+                
+                if ($result !== false) {
+                    $message = 'Profile image updated successfully!';
+                    $message_type = 'success';
+                    // Refresh student data
+                    $student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
+                } else {
+                    $message = 'Failed to update profile image';
+                    $message_type = 'error';
+                }
+            } else {
+                $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
+                $message = 'Failed to upload image to Cloudinary. ' . $error_detail;
+                $message_type = 'error';
+            }
+        } else {
+            $message = 'Invalid file format or size. Allowed: JPG, JPEG, PNG (max 400KB)';
+            $message_type = 'error';
+        }
+    } else {
+        $message = 'No file uploaded or upload error occurred';
+        $message_type = 'error';
+    }
+}
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -487,14 +540,32 @@ $documents = getRows("
             
             <!-- Profile Header -->
             <div class="profile-header">
-                <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" 
-                     alt="Profile Photo" class="profile-avatar" 
-                     onerror="this.src='../assets/images/default-avatar.png'">
+                <div style="position: relative; display: inline-block;">
+                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" 
+                         alt="Profile Photo" 
+                         class="profile-avatar" 
+                         id="profile-image-preview"
+                         onerror="this.src='../assets/images/default-avatar.png'">
+                    <button onclick="document.getElementById('profile-image-upload').click()" 
+                            class="btn btn-primary" 
+                            style="position: absolute; bottom: 0; right: 0; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); background: #667eea; border: none; cursor: pointer;"
+                            title="Update Profile Image">
+                        <i class="fas fa-camera" style="color: white;"></i>
+                    </button>
+                    <form method="POST" enctype="multipart/form-data" id="profile-image-form" style="display: none;">
+                        <input type="hidden" name="action" value="upload_profile_image">
+                        <input type="file" 
+                               id="profile-image-upload" 
+                               name="profile_image" 
+                               accept="image/*" 
+                               onchange="uploadProfileImage(this)">
+                    </form>
+                </div>
                 <div class="profile-info">
                     <h2><?php echo htmlspecialchars($student['full_name']); ?></h2>
                     <p><?php echo htmlspecialchars($student['email']); ?></p>
                     <div class="student-id">
-                        <i class="fas fa-id-card"></i> Student ID: <?php echo $student['id']; ?>
+                        <i class="fas fa-id-card"></i> Student ID: <?php echo htmlspecialchars($student['username']); ?>
                     </div>
                 </div>
             </div>

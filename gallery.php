@@ -3,7 +3,7 @@
     <section class="gallery-section">
         <!-- Faculty Members Section -->
         <h2 class="section-title">Faculty Members</h2>
-        <div class="gallery-container faculty-gallery">
+        <div class="faculty-gallery">
             <?php
             // Get active faculty members from database
             try {
@@ -20,11 +20,6 @@
                 if (!empty($faculty_members)) {
                     foreach ($faculty_members as $faculty) {
                         $profile_img = !empty($faculty['profile_image']) ? $faculty['profile_image'] : 'assets/images/default-faculty.png';
-                        
-                        // Debug: Show what's being fetched
-                        if (empty($faculty['profile_image'])) {
-                            error_log("Faculty {$faculty['full_name']} has no profile image");
-                        }
                         
                         // Use qualification as specialty, fallback to experience years
                         $specialty = !empty($faculty['qualification']) ? $faculty['qualification'] : 
@@ -109,4 +104,5 @@
         </div>
     </section>
 </div>
-<script src="assets/js/student-gallery.js"></script> 
+<script src="assets/js/student-gallery.js"></script>
+<script src="assets/js/faculty-gallery.js"></script> 

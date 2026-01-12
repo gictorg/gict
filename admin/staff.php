@@ -843,10 +843,6 @@ try {
             <form method="POST" action="staff.php" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_staff">
                 
-                <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Note:</strong> A unique User ID will be automatically generated in the format: <code>f[YEAR][3-digit-number]</code> (e.g., f2025001)
-                </div>
                 
                 <!-- Personal Information Section -->
                 <div class="form-section">

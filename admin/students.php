@@ -112,7 +112,49 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
     exit;
 }
 
-
+// Handle GET request for student data (for editing)
+if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_student') {
+    header('Content-Type: application/json');
+    
+    $student_id = intval($_GET['student_id'] ?? 0);
+    if ($student_id <= 0) {
+        echo json_encode(['error' => 'Invalid student ID']);
+        exit;
+    }
+    
+    try {
+        $student = getRow("
+            SELECT id, username, email, full_name, phone, address, date_of_birth, gender, 
+                   qualification, joining_date, profile_image
+            FROM users 
+            WHERE id = ? AND user_type_id = 2
+        ", [$student_id]);
+        
+        if (!$student) {
+            // Try without user_type_id check to see if user exists at all
+            $user_check = getRow("SELECT id, username, full_name, user_type_id FROM users WHERE id = ?", [$student_id]);
+            if (!$user_check) {
+                echo json_encode(['error' => 'User not found with ID: ' . $student_id]);
+            } else {
+                echo json_encode(['error' => 'User found but is not a student. User type ID: ' . ($user_check['user_type_id'] ?? 'unknown')]);
+            }
+            exit;
+        }
+        
+        // Add previous_institute as null (column may not exist)
+        $student['previous_institute'] = null;
+        
+        echo json_encode([
+            'success' => true,
+            'student' => $student
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'error' => 'Failed to fetch student data: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -176,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             if ($upload_result && $upload_result['success']) {
                                 $profile_image_url = $upload_result['url'];
                                 $uploaded_files[] = [
-                                    'type' => 'profile_image',
+                                    'type' => 'profile',
                                     'url' => $upload_result['url'],
                                     'display_url' => $upload_result['display_url'] ?? $upload_result['url'],
                                     'public_id' => $upload_result['public_id'] ?? '',
@@ -185,7 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             } else {
                                 $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
                                 $error_message = "Failed to upload profile image to Cloudinary. " . $error_detail;
-                                error_log("Student profile image upload failed: " . $error_detail);
                             }
                         } else {
                             $error_message = "Profile image must be JPG, JPEG, or PNG and under 400KB.";
@@ -216,7 +257,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             } else {
                                 $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
                                 $error_message = "Failed to upload marksheet to Cloudinary. " . $error_detail;
-                                error_log("Student marksheet upload failed: " . $error_detail);
                             }
                         } else {
                             $error_message = "Marksheet must be PDF, JPG, JPEG, or PNG and under 400KB.";
@@ -238,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             if ($upload_result && $upload_result['success']) {
                                 $aadhaar_card_url = $upload_result['url'];
                                 $uploaded_files[] = [
-                                    'type' => 'aadhaar_card',
+                                    'type' => 'aadhaar',
                                     'url' => $upload_result['url'],
                                     'display_url' => $upload_result['display_url'] ?? $upload_result['url'],
                                     'public_id' => $upload_result['public_id'] ?? '',
@@ -247,7 +287,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             } else {
                                 $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
                                 $error_message = "Failed to upload Aadhaar card to Cloudinary. " . $error_detail;
-                                error_log("Student Aadhaar card upload failed: " . $error_detail);
                             }
                         } else {
                             $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 400KB.";
@@ -283,7 +322,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 $success_message = "Student '$full_name' added successfully!<br>";
                                 $success_message .= "<strong>User ID:</strong> $generated_user_id<br>";
                                 $success_message .= "<strong>Default Password:</strong> $default_password<br>";
-                                $success_message .= "<br><strong>Note:</strong> You can enroll this student in a course using the 'Enroll to Course' action.";
                                 
                                 if (!empty($uploaded_files)) {
                                     $success_message .= "<br><br><strong>Cloudinary URLs (Stored in Database):</strong><br>";
@@ -311,6 +349,97 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit;
                 break;
                 
+            case 'update_student':
+                $student_id = $_POST['student_id'] ?? 0;
+                $email = $_POST['email'] ?? '';
+                $full_name = $_POST['full_name'] ?? '';
+                $phone = $_POST['phone'] ?? '';
+                $address = $_POST['address'] ?? '';
+                $date_of_birth = $_POST['date_of_birth'] ?? '';
+                $gender = trim($_POST['gender'] ?? '');
+                $qualification = $_POST['qualification'] ?? '';
+                $joining_date = $_POST['joining_date'] ?? '';
+                $previous_institute = $_POST['previous_institute'] ?? '';
+                
+                if (!$student_id) {
+                    $_SESSION['error_message'] = "Invalid student ID.";
+                    header('Location: students.php');
+                    exit;
+                }
+                
+                // Validate gender if provided
+                if (!empty($gender)) {
+                    $allowed_genders = ['male', 'female', 'other'];
+                    if (!in_array($gender, $allowed_genders)) {
+                        $_SESSION['error_message'] = "Invalid gender value selected.";
+                        header('Location: students.php');
+                        exit;
+                    }
+                }
+                
+                // Validate date of birth - cannot be in the future
+                if (!empty($date_of_birth) && $date_of_birth > date('Y-m-d')) {
+                    $_SESSION['error_message'] = "Date of birth cannot be in the future.";
+                    header('Location: students.php');
+                    exit;
+                }
+                
+                try {
+                    // Get existing student data
+                    $existing_student = getRow("SELECT username, profile_image FROM users WHERE id = ? AND user_type_id = 2", [$student_id]);
+                    if (!$existing_student) {
+                        $_SESSION['error_message'] = "Student not found.";
+                        header('Location: students.php');
+                        exit;
+                    }
+                    
+                    $profile_image_url = $existing_student['profile_image'];
+                    
+                    // Handle profile image upload if provided
+                    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+                        $profile_file = $_FILES['profile_image'];
+                        $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
+                        $allowed_image_exts = ['jpg', 'jpeg', 'png'];
+                        
+                        if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
+                            $upload_result = smartUpload(
+                                $profile_file['tmp_name'], 
+                                $existing_student['username'] . '_profile_' . time()
+                            );
+                            
+                            if ($upload_result && $upload_result['success']) {
+                                $profile_image_url = $upload_result['url'];
+                                
+                                // Update or insert in student_documents
+                                $existing_doc = getRow("SELECT id FROM student_documents WHERE user_id = ? AND document_type = 'profile'", [$student_id]);
+                                if ($existing_doc) {
+                                    $update_doc_sql = "UPDATE student_documents SET file_url = ?, file_name = ?, file_size = ?, uploaded_at = NOW() WHERE id = ?";
+                                    updateData($update_doc_sql, [$upload_result['url'], $profile_file['name'], $profile_file['size'], $existing_doc['id']]);
+                                } else {
+                                    $insert_doc_sql = "INSERT INTO student_documents (user_id, document_type, file_url, file_name, file_size, uploaded_at) VALUES (?, 'profile', ?, ?, ?, NOW())";
+                                    insertData($insert_doc_sql, [$student_id, $upload_result['url'], $profile_file['name'], $profile_file['size']]);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Update student information
+                    $sql = "UPDATE users SET email = ?, full_name = ?, phone = ?, address = ?, date_of_birth = ?, gender = ?, qualification = ?, joining_date = ?, profile_image = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 2";
+                    $result = updateData($sql, [$email, $full_name, $phone, $address, $date_of_birth ?: null, $gender ?: null, $qualification, $joining_date ?: null, $profile_image_url, $student_id]);
+                    
+                    if ($result) {
+                        $_SESSION['success_message'] = "Student '$full_name' updated successfully!";
+                    } else {
+                        $_SESSION['error_message'] = "Failed to update student.";
+                    }
+                } catch (Exception $e) {
+                    $_SESSION['error_message'] = "Error: " . $e->getMessage();
+                }
+                
+                header('Location: students.php');
+                exit;
+                break;
+                
             case 'delete_student':
                 $student_id = $_POST['student_id'] ?? 0;
                 if ($student_id) {
@@ -328,14 +457,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             
                             if ($result) {
                                 $success_message = "Student '{$student['full_name']}' (ID: {$student['username']}) deleted successfully!";
-                                // Note: Related records in student_enrollments, payments, and student_documents 
-                                // will be automatically deleted due to CASCADE constraints
+                                // Related records will be automatically deleted due to CASCADE constraints
                             } else {
                                 $error_message = "Failed to delete student. Please check if there are any active enrollments or payments.";
                             }
                         }
                     } catch (Exception $e) {
-                        error_log("Student deletion error: " . $e->getMessage());
                         $error_message = "Error deleting student: " . $e->getMessage();
                     }
                 } else {
@@ -477,6 +604,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $remaining_fees = $total_fee - $paid_fees;
                         $new_status = ($remaining_fees <= 0) ? 'enrolled' : $enrollment['status'];
                         
+                        // Calculate the difference (new payment amount)
+                        $previous_paid = floatval($enrollment['paid_fees'] ?? 0);
+                        $payment_amount = $paid_fees - $previous_paid;
+                        
                         // Update enrollment
                         $update_sql = "UPDATE student_enrollments 
                                       SET paid_fees = ?, remaining_fees = ?, total_fee = ?, status = ?, updated_at = NOW() 
@@ -484,6 +615,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $result = updateData($update_sql, [$paid_fees, $remaining_fees, $total_fee, $new_status, $enrollment_id]);
                         
                         if ($result) {
+                            // Create or update payment record if there's a payment amount
+                            if ($payment_amount > 0) {
+                                // Check if a payment record already exists for this enrollment
+                                $existing_payment = getRow("
+                                    SELECT id, amount, status 
+                                    FROM payments 
+                                    WHERE user_id = ? AND sub_course_id = ? 
+                                    ORDER BY created_at DESC 
+                                    LIMIT 1
+                                ", [$enrollment['user_id'], $enrollment['sub_course_id']]);
+                                
+                                if ($existing_payment && $existing_payment['status'] === 'pending') {
+                                    // Update existing pending payment
+                                    $update_payment_sql = "UPDATE payments 
+                                                          SET amount = ?, total_fee = ?, remaining_amount = ?, 
+                                                              status = 'completed', payment_date = CURDATE(), updated_at = NOW() 
+                                                          WHERE id = ?";
+                                    updateData($update_payment_sql, [
+                                        $paid_fees, 
+                                        $total_fee, 
+                                        $remaining_fees, 
+                                        $existing_payment['id']
+                                    ]);
+                                } else {
+                                    // Create new payment record
+                                    $payment_sql = "INSERT INTO payments 
+                                                   (user_id, sub_course_id, amount, total_fee, remaining_amount, 
+                                                    payment_date, payment_method, payment_type, status, created_at) 
+                                                   VALUES (?, ?, ?, ?, ?, CURDATE(), 'manual', 'full', 'completed', NOW())";
+                                    insertData($payment_sql, [
+                                        $enrollment['user_id'],
+                                        $enrollment['sub_course_id'],
+                                        $paid_fees,
+                                        $total_fee,
+                                        $remaining_fees
+                                    ]);
+                                }
+                            }
+                            
                             $status_msg = ($remaining_fees <= 0) ? " and enrollment status updated to 'enrolled'" : "";
                             $success_message = "Fees updated successfully! Paid: ₹" . number_format($paid_fees, 2) . ", Remaining: ₹" . number_format($remaining_fees, 2) . $status_msg;
                         } else {
@@ -857,6 +1027,15 @@ try {
         
         .btn-password:hover {
             background: #5a32a3;
+        }
+        
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: #5568d3;
         }
         
         .btn-icard {
@@ -1862,37 +2041,6 @@ try {
                                                 </div>
                                             <?php endif; ?>
                                             
-                                            <!-- Fees Information -->
-                                            <?php if (!empty($student['enrollment_id'])): ?>
-                                                <div class="fees-info" style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                                        <span><strong>Total Fee:</strong></span>
-                                                        <span>₹<?php echo number_format($student['total_fee'], 2); ?></span>
-                                                    </div>
-                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #28a745;">
-                                                        <span><strong>Paid:</strong></span>
-                                                        <span>₹<?php echo number_format($student['paid_fees'], 2); ?></span>
-                                                    </div>
-                                                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: <?php echo $student['remaining_fees'] > 0 ? '#dc3545' : '#28a745'; ?>;">
-                                                        <span><strong>Remaining:</strong></span>
-                                                        <span>₹<?php echo number_format($student['remaining_fees'], 2); ?></span>
-                                                    </div>
-                                                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                                        <button class="btn btn-sm btn-primary" onclick="openEditFeesModal(<?php echo $student['enrollment_id']; ?>, <?php echo $student['total_fee']; ?>, <?php echo $student['paid_fees']; ?>)" title="Edit Fees" style="padding: 4px 8px; font-size: 11px;">
-                                                            <i class="fas fa-edit"></i> Edit Fees
-                                                        </button>
-                                                        <button class="btn btn-sm btn-info" onclick="openEditStatusModal(<?php echo $student['enrollment_id']; ?>, '<?php echo $student['enrollment_status']; ?>')" title="Change Status" style="padding: 4px 8px; font-size: 11px;">
-                                                            <i class="fas fa-exchange-alt"></i> Status
-                                                        </button>
-                                                        <?php if ($student['enrollment_status'] !== 'completed' && $student['remaining_fees'] <= 0): ?>
-                                                            <button class="btn btn-sm btn-success" onclick="markCompleted(<?php echo $student['enrollment_id']; ?>)" title="Mark as Completed" style="padding: 4px 8px; font-size: 11px;">
-                                                                <i class="fas fa-check-circle"></i> Complete
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            <?php endif; ?>
-                                            
                                             <?php if (!empty($student['enrollment_status'])): ?>
                                                 <div class="enrollment-status-badge" style="margin-top: 8px;">
                                                     <span class="status-badge status-<?php echo $student['enrollment_status']; ?>">
@@ -1912,6 +2060,9 @@ try {
                                 </td>
                                 <td class="actions-cell">
                                     <div class="action-buttons">
+                                        <button class="btn btn-view" onclick="viewStudentDetails(<?php echo $student['id']; ?>)" title="View Student Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                         <button class="btn btn-icard" onclick="showStudentICard(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>', '<?php echo htmlspecialchars($student['username']); ?>')" title="View Student ID Card">
                                             <i class="fas fa-id-card"></i>
                                         </button>
@@ -1949,10 +2100,6 @@ try {
                 <input type="hidden" name="action" value="add_student">
                 
                 <!-- Info Alert -->
-                <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Note:</strong> A unique User ID will be automatically generated in the format: <code>s[YEAR][3-digit-number]</code> (e.g., s2025001)
-                </div>
                 
                 <!-- Personal Information Section -->
                 <div class="form-section">
@@ -2136,6 +2283,129 @@ try {
         </div>
     </div>
 
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit"></i> Edit Student</h2>
+                <span class="close" onclick="closeEditStudentModal()">&times;</span>
+            </div>
+            
+            <form id="editStudentForm" method="POST" action="students.php" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="update_student">
+                <input type="hidden" id="edit_student_id" name="student_id">
+                
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-user"></i> Personal Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_full_name">Full Name *</label>
+                            <input type="text" id="edit_full_name" name="full_name" required placeholder="Enter student's full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_email">Email Address *</label>
+                            <input type="email" id="edit_email" name="email" required placeholder="student@example.com">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_phone">Phone Number</label>
+                            <input type="tel" id="edit_phone" name="phone" placeholder="+91-9876543210">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_date_of_birth">Date of Birth</label>
+                            <input type="date" id="edit_date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_gender">Gender</label>
+                            <select id="edit_gender" name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_qualification">Current Qualification</label>
+                            <select id="edit_qualification" name="qualification">
+                                <option value="">Select Qualification</option>
+                                <option value="10th">10th Standard</option>
+                                <option value="12th">12th Standard</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="M.Tech">M.Tech</option>
+                                <option value="B.Sc">B.Sc</option>
+                                <option value="M.Sc">M.Sc</option>
+                                <option value="B.Com">B.Com</option>
+                                <option value="M.Com">M.Com</option>
+                                <option value="BBA">BBA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_address">Address</label>
+                        <textarea id="edit_address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Academic Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_joining_date">Joining Date</label>
+                            <input type="date" id="edit_joining_date" name="joining_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_previous_institute">Previous Institute (Optional)</label>
+                            <input type="text" id="edit_previous_institute" name="previous_institute" placeholder="Name of previous institute">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile Image Upload Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-image"></i> Profile Image</h3>
+                    
+                    <div class="form-group">
+                        <label for="edit_profile_image">Update Profile Image (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="edit_profile_image" name="profile_image" accept="image/*" onchange="previewImage(this, 'edit-profile-preview')">
+                            <div class="file-upload-info">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Click to upload or drag & drop</span>
+                            </div>
+                        </div>
+                        <div id="edit-profile-preview" class="image-preview"></div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Max size: 400KB. Formats: JPG, JPEG, PNG. Leave empty to keep current image.
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditStudentModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Student
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Enroll Student Modal -->
     <div id="enrollStudentModal" class="modal">
         <div class="modal-content">
@@ -2149,10 +2419,6 @@ try {
                 <input type="hidden" id="enroll_student_id" name="student_id">
                 
                 <div class="modal-body">
-                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-bottom: 20px;">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Note:</strong> Each student can only be enrolled in one course. The enrollment will be created with "Payment Pending" status.
-                    </div>
                     
                     <div class="form-group">
                         <label>Student Name</label>
@@ -2232,10 +2498,6 @@ try {
                         <input type="text" id="edit_fees_remaining" readonly style="background: #f8f9fa;">
                     </div>
                     
-                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-top: 15px;">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Note:</strong> When fees are fully paid, enrollment status will automatically change to 'enrolled'.
-                    </div>
                 </div>
                 
                 <div class="form-actions">
@@ -2274,10 +2536,6 @@ try {
                         <small class="form-text text-muted">Select the new enrollment status</small>
                     </div>
                     
-                    <div class="alert alert-info" style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 12px; border-radius: 6px; margin-top: 15px;">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Note:</strong> Setting status to 'completed' will automatically set the completion date to today.
-                    </div>
                 </div>
                 
                 <div class="form-actions">
@@ -2396,9 +2654,82 @@ try {
             }, 10000);
         });
         
+        function viewStudentDetails(studentId) {
+            window.location.href = 'student-details.php?id=' + studentId;
+        }
+        
         function editStudent(studentId) {
-            // For now, redirect to a potential edit page or show a message
-            alert('Edit functionality will be implemented in the next update. Student ID: ' + studentId);
+            if (!studentId || studentId <= 0) {
+                alert('Invalid student ID');
+                return;
+            }
+            
+            // Fetch student data and populate edit form
+            fetch('students.php?action=get_student&student_id=' + studentId)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.status);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        console.error('Failed to parse JSON:', text);
+                        alert('Error: Invalid response from server. Check console for details.');
+                        return;
+                    }
+                    
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        console.error('Error fetching student:', data.error, 'Student ID:', studentId);
+                        return;
+                    }
+                    
+                    if (!data.success || !data.student) {
+                        alert('Error: Invalid response from server');
+                        console.error('Invalid response:', data);
+                        return;
+                    }
+                    
+                    const student = data.student;
+                    
+                    // Populate form fields
+                    document.getElementById('edit_student_id').value = student.id;
+                    document.getElementById('edit_full_name').value = student.full_name || '';
+                    document.getElementById('edit_email').value = student.email || '';
+                    document.getElementById('edit_phone').value = student.phone || '';
+                    document.getElementById('edit_date_of_birth').value = student.date_of_birth || '';
+                    document.getElementById('edit_gender').value = student.gender || '';
+                    document.getElementById('edit_qualification').value = student.qualification || '';
+                    document.getElementById('edit_address').value = student.address || '';
+                    document.getElementById('edit_joining_date').value = student.joining_date || '';
+                    document.getElementById('edit_previous_institute').value = student.previous_institute || '';
+                    
+                    // Show current profile image if exists
+                    const preview = document.getElementById('edit-profile-preview');
+                    if (student.profile_image) {
+                        preview.innerHTML = '<img src="' + student.profile_image + '" alt="Current Profile" style="max-width: 200px; border-radius: 8px; margin-top: 10px;">';
+                    } else {
+                        preview.innerHTML = '';
+                    }
+                    
+                    // Show modal
+                    document.getElementById('editStudentModal').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to load student data. Please try again.');
+                });
+        }
+        
+        function closeEditStudentModal() {
+            document.getElementById('editStudentModal').style.display = 'none';
+            // Reset form
+            document.getElementById('editStudentForm').reset();
+            document.getElementById('edit-profile-preview').innerHTML = '';
         }
         
         function deleteStudent(studentId, studentName) {
@@ -2665,7 +2996,6 @@ try {
                 };
             });
             
-            console.log('Initialized', allStudents.length, 'students for search');
         }
         
         // Apply default filter on page load
@@ -2944,6 +3274,28 @@ try {
             const paidFeesInput = document.getElementById('edit_fees_paid');
             if (paidFeesInput) {
                 paidFeesInput.addEventListener('input', updateRemainingFees);
+            }
+            
+            // Check for query parameters to open modals
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Open edit fees modal if parameters are present
+            const editFeesId = urlParams.get('edit_fees');
+            const totalFee = urlParams.get('total_fee');
+            const paidFees = urlParams.get('paid_fees');
+            if (editFeesId && totalFee !== null && paidFees !== null) {
+                openEditFeesModal(parseInt(editFeesId), parseFloat(totalFee), parseFloat(paidFees));
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Open edit status modal if parameters are present
+            const editStatusId = urlParams.get('edit_status');
+            const currentStatus = urlParams.get('current_status');
+            if (editStatusId && currentStatus) {
+                openEditStatusModal(parseInt(editStatusId), currentStatus);
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
         

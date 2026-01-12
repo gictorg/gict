@@ -8,10 +8,10 @@
 
 // Database configuration
 // define('DB_HOST', 'mysql.db.svc.cluster.local');
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
-define('DB_PASS', 'root_pass');
+define('DB_PASS', 'test_pass');
 define('DB_CHARSET', 'utf8mb4');
 
 // Connection variables to reuse connections (file-level scope)
@@ -32,16 +32,14 @@ function getDBConnection() {
     
     try {
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
-        error_log("DSN: " . $dsn);
         $pdo = new PDO($dsn, DB_USER, DB_PASS);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         $GLOBALS['_db_connection'] = $pdo;
         return $pdo;
     } catch (PDOException $e) {
-        // Only log once to prevent infinite error logs
+        // Mark connection as failed to prevent retries
         if (empty($GLOBALS['_db_connection_failed'])) {
-            error_log("Database connection failed: " . $e->getMessage());
             $GLOBALS['_db_connection_failed'] = true;
         }
         return false;
@@ -56,7 +54,6 @@ function testDBConnection() {
             $stmt = $pdo->query("SELECT 1");
             return true;
         } catch (PDOException $e) {
-            error_log("Database test failed: " . $e->getMessage());
             return false;
         }
     }
@@ -78,7 +75,6 @@ function executeQuery($sql, $params = []) {
         $stmt->execute($params);
         return $stmt;
     } catch (PDOException $e) {
-        error_log("Query execution failed: " . $e->getMessage());
         return false;
     }
 }
@@ -112,7 +108,6 @@ function insertData($sql, $params = []) {
         $stmt->execute($params);
         return $pdo->lastInsertId();
     } catch (PDOException $e) {
-        error_log("Insert failed: " . $e->getMessage());
         // Re-throw exception so transaction can catch it
         throw $e;
     }
