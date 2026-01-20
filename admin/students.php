@@ -210,9 +210,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
                         
                         if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
+                            // Use timestamp for unique filename (same approach as update)
                             $upload_result = smartUpload(
                                 $profile_file['tmp_name'], 
-                                $generated_user_id . '_profile'
+                                $generated_user_id . '_profile_' . time()
                             );
                             
                             if ($upload_result && $upload_result['success']) {

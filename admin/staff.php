@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $allowed_image_exts = ['jpg', 'jpeg', 'png', 'gif'];
                     
                     if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
-                        // We'll upload with a temporary name first, then rename after user ID generation
+                        // Upload with timestamp for unique filename (will be associated with generated user ID)
                         $temp_name = 'temp_faculty_' . time();
                         $upload_result = smartUpload(
                             $profile_file['tmp_name'], 

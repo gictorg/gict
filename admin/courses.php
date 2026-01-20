@@ -119,7 +119,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         throw new Exception("Course image must be under 500KB. Your file is " . round($image_file['size'] / 1024, 2) . "KB.");
                     }
                     
-                    $cloudinary_name = strtolower(str_replace(' ', '_', $name)) . '_course_' . time();
+                    // Use course ID with timestamp for updates (consistent with profile image approach)
+                    $cloudinary_name = 'course_' . $course_id . '_' . time();
                     $cloudinary_result = smartUpload($image_file['tmp_name'], $cloudinary_name);
                     
                     if ($cloudinary_result && $cloudinary_result['success']) {

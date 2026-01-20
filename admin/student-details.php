@@ -47,7 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (in_array($file_ext, $allowed_exts) && $file['size'] <= $max_size) {
             // Get student username for file naming
             $student = getRow("SELECT username FROM users WHERE id = ?", [$student_id]);
-            $file_name_prefix = $student ? $student['username'] . '_' . $document_type : $student_id . '_' . $document_type;
+            // Use timestamp for profile images to ensure unique uploads
+            if ($document_type === 'profile') {
+                $file_name_prefix = $student ? $student['username'] . '_profile_' . time() : $student_id . '_profile_' . time();
+            } else {
+                $file_name_prefix = $student ? $student['username'] . '_' . $document_type : $student_id . '_' . $document_type;
+            }
             
             // Upload to Cloudinary
             $upload_result = smartUpload($file['tmp_name'], $file_name_prefix);

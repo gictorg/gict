@@ -30,14 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $max_size = 400 * 1024; // 400KB
         
         if (in_array($file_ext, $allowed_exts) && $file['size'] <= $max_size) {
-            // Upload to Cloudinary
-            $file_name_prefix = $student['username'] . '_profile';
+            // Use consistent filename for profile images - same as admin implementation
+            // Add timestamp to ensure unique upload and force Cloudinary to update
+            $file_name_prefix = $student['username'] . '_profile_' . time();
+            
+            // Upload to Cloudinary (same approach as admin/student-details.php)
             $upload_result = smartUpload($file['tmp_name'], $file_name_prefix);
             
             if ($upload_result && $upload_result['success']) {
-                // Update users table
-                $update_sql = "UPDATE users SET profile_image = ? WHERE id = ?";
-                $result = updateData($update_sql, [$upload_result['url'], $user_id]);
+                $new_image_url = $upload_result['url'];
+                
+                // Log upload details for debugging (remove in production if needed)
+                // The URL should have a new version number if overwrite worked
+                // Update users table with new image URL and timestamp
+                $update_sql = "UPDATE users SET profile_image = ?, updated_at = NOW() WHERE id = ?";
+                $result = updateData($update_sql, [$new_image_url, $user_id]);
                 
                 // Also update/insert in student_documents table
                 $existing_doc = getRow("SELECT id FROM student_documents WHERE user_id = ? AND document_type = 'profile'", [$user_id]);
@@ -50,17 +57,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 
                 if ($result !== false) {
-                    $message = 'Profile image updated successfully!';
-                    $message_type = 'success';
-                    // Refresh student data
-                    $student = getRow("SELECT u.*, ut.name as user_type FROM users u JOIN user_types ut ON u.user_type_id = ut.id WHERE u.id = ? AND ut.name = 'student'", [$user_id]);
+                    // Verify the update was successful by checking the database
+                    $verify = getRow("SELECT profile_image, updated_at FROM users WHERE id = ?", [$user_id]);
+                    if ($verify && $verify['profile_image'] === $new_image_url) {
+                        // Force redirect with cache-busting to ensure new image loads
+                        header('Cache-Control: no-cache, no-store, must-revalidate');
+                        header('Pragma: no-cache');
+                        header('Expires: 0');
+                        header('Location: profile.php?img_updated=' . time() . '&nocache=' . microtime(true));
+                        exit();
+                    } else {
+                        $message = 'Image uploaded but database update verification failed. Please refresh the page.';
+                        $message_type = 'error';
+                    }
                 } else {
                     $message = 'Failed to update profile image';
                     $message_type = 'error';
                 }
             } else {
+                // More detailed error message
                 $error_detail = isset($upload_result['error']) ? $upload_result['error'] : "Unknown error";
-                $message = 'Failed to upload image to Cloudinary. ' . $error_detail;
+                $public_id_info = isset($upload_result['public_id']) ? " (Public ID: " . $upload_result['public_id'] . ")" : "";
+                $message = 'Failed to upload image to Cloudinary. ' . $error_detail . $public_id_info;
                 $message_type = 'error';
             }
         } else {
@@ -68,7 +86,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $message_type = 'error';
         }
     } else {
-        $message = 'No file uploaded or upload error occurred';
+        // More detailed error for debugging
+        $upload_error = isset($_FILES['profile_image']) ? $_FILES['profile_image']['error'] : 'FILE_NOT_SET';
+        $error_messages = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload'
+        ];
+        $error_msg = isset($error_messages[$upload_error]) ? $error_messages[$upload_error] : "Upload error code: $upload_error";
+        $message = 'No file uploaded or upload error occurred: ' . $error_msg;
         $message_type = 'error';
     }
 }
@@ -160,6 +190,9 @@ $documents = getRows("
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Student Dashboard</title>
@@ -496,7 +529,12 @@ $documents = getRows("
             
             <div class="profile-card-mini">
                 <div style="position: relative;">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
+                    <img src="<?php 
+                        $imgUrl = $student['profile_image'] ?? '../assets/images/default-avatar.png';
+                        // Add cache-busting parameter
+                        $separator = (strpos($imgUrl, '?') !== false) ? '&' : '?';
+                        echo $imgUrl . $separator . 'v=' . time() . '&t=' . ($student['updated_at'] ?? time());
+                    ?>" alt="Profile" onerror="this.src='../assets/images/default-avatar.png'" />
                     <div class="digital-id-badge" onclick="viewID()" title="View Digital ID">
                         <i class="fas fa-id-card"></i>
                     </div>
@@ -541,7 +579,12 @@ $documents = getRows("
             <!-- Profile Header -->
             <div class="profile-header">
                 <div style="position: relative; display: inline-block;">
-                    <img src="<?php echo $student['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" 
+                    <img src="<?php 
+                        $imgUrl = $student['profile_image'] ?? '../assets/images/default-avatar.png';
+                        // Add cache-busting parameter
+                        $separator = (strpos($imgUrl, '?') !== false) ? '&' : '?';
+                        echo $imgUrl . $separator . 'v=' . time() . '&t=' . ($student['updated_at'] ?? time());
+                    ?>" 
                          alt="Profile Photo" 
                          class="profile-avatar" 
                          id="profile-image-preview"
@@ -701,6 +744,120 @@ $documents = getRows("
         function toggleSidebar() {
             const sidebar = document.querySelector('.admin-sidebar');
             sidebar.classList.toggle('mobile-open');
+        }
+        
+        // Upload profile image function
+        function uploadProfileImage(input) {
+            if (!input.files || !input.files[0]) {
+                return;
+            }
+            
+            const file = input.files[0];
+            const fileSize = file.size / 1024; // KB
+            
+            // Validate file size
+            if (fileSize > 400) {
+                alert('File size must be less than 400KB. Current size: ' + fileSize.toFixed(1) + 'KB');
+                input.value = '';
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Invalid file type. Please upload JPG, JPEG, or PNG image.');
+                input.value = '';
+                return;
+            }
+            
+            // Show preview immediately
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('profile-image-preview');
+                if (previewImg) {
+                    previewImg.src = e.target.result;
+                }
+                // Also update sidebar image
+                const sidebarImg = document.querySelector('.profile-card-mini img');
+                if (sidebarImg) {
+                    sidebarImg.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+            
+            // Submit the form
+            const form = document.getElementById('profile-image-form');
+            if (form) {
+                // Ensure form is visible (temporarily) for submission
+                form.style.display = 'block';
+                form.style.position = 'absolute';
+                form.style.left = '-9999px';
+                
+                // Submit the form
+                form.submit();
+            } else {
+                console.error('Profile image form not found');
+                alert('Error: Form not found. Please refresh the page and try again.');
+            }
+        }
+        
+        // Force image refresh on page load if updated parameter is present
+        if (window.location.search.includes('img_updated=')) {
+            // Remove query parameters from URL to clean it up
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            
+            // Force reload all profile images with new cache-busting
+            const images = document.querySelectorAll('img[src*="profile_image"], img.profile-avatar, .profile-card-mini img, img[alt="Profile"]');
+            images.forEach(img => {
+                if (img.src && !img.src.includes('default-avatar')) {
+                    // Remove existing cache parameters and add new ones
+                    const url = new URL(img.src, window.location.origin);
+                    url.searchParams.delete('v');
+                    url.searchParams.delete('t');
+                    url.searchParams.set('v', Date.now());
+                    url.searchParams.set('t', Date.now());
+                    img.src = url.toString();
+                    // Force reload
+                    img.onload = function() {
+                        this.style.opacity = '1';
+                    };
+                }
+            });
+            
+            // Also try to reload the image by creating a new image element
+            setTimeout(function() {
+                const previewImg = document.getElementById('profile-image-preview');
+                const sidebarImg = document.querySelector('.profile-card-mini img');
+                
+                function reloadImage(img) {
+                    if (!img || !img.src || img.src.includes('default-avatar')) return;
+                    
+                    const url = new URL(img.src);
+                    url.searchParams.delete('v');
+                    url.searchParams.delete('t');
+                    url.searchParams.set('v', Date.now());
+                    url.searchParams.set('t', Date.now());
+                    
+                    // Create new image to force reload
+                    const newImg = new Image();
+                    newImg.crossOrigin = 'anonymous';
+                    newImg.onload = function() {
+                        img.src = this.src;
+                        img.style.opacity = '0';
+                        setTimeout(() => { img.style.opacity = '1'; }, 50);
+                    };
+                    newImg.onerror = function() {
+                        // If error, try without cache-busting (might be Cloudinary issue)
+                        const baseUrl = url.origin + url.pathname;
+                        newImg.src = baseUrl + '?v=' + Date.now();
+                    };
+                    newImg.src = url.toString();
+                }
+                
+                reloadImage(previewImg);
+                reloadImage(sidebarImg);
+            }, 100);
         }
     </script>
 </body>

@@ -87,13 +87,18 @@ function uploadToCloudinary($file_path, $name = '', $options = []) {
 
         // Add custom folder/name if provided
         if (!empty($name)) {
-            // Clean the name for use as folder/filename
-            $clean_name = preg_replace('/[^a-zA-Z0-9_-]/', '_', $name);
+            // Clean the name for use as folder/filename (allow dots for microtime)
+            $clean_name = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $name);
             $upload_options['public_id'] = 'gict_institute/' . $clean_name;
         }
 
-        // Merge with custom options
+        // Merge with custom options (custom options override defaults)
         $upload_options = array_merge($upload_options, $options);
+        
+        // If overwrite is true, disable unique_filename to allow overwriting
+        if (isset($upload_options['overwrite']) && $upload_options['overwrite'] === true) {
+            $upload_options['unique_filename'] = false;
+        }
 
         // Upload file
         $result = $cloudinary->uploadApi()->upload($file_path, $upload_options);
@@ -128,10 +133,11 @@ function uploadToCloudinary($file_path, $name = '', $options = []) {
  * Smart upload function (compatible with previous helper)
  * @param string $file_path Local file path
  * @param string $name Custom name for the file
+ * @param array $options Additional upload options (e.g., ['overwrite' => true])
  * @return array|false Upload result or false on failure
  */
-function smartUpload($file_path, $name = '') {
-    $result = uploadToCloudinary($file_path, $name);
+function smartUpload($file_path, $name = '', $options = []) {
+    $result = uploadToCloudinary($file_path, $name, $options);
     
     if ($result && isset($result['success']) && $result['success']) {
         return $result;
