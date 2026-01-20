@@ -11,7 +11,7 @@
     width: 100%;
     box-sizing: border-box;
     background: #fff;
-} 
+}
 
 .section-title {
     text-align: center;
@@ -23,7 +23,7 @@
     background: #000080;
     padding: 15px;
     /* border-radius: 12px; */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     /* max-width: 1400px; */
     position: relative;
     top: 0;
@@ -92,7 +92,7 @@
     border: 3px solid #000080;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
 }
 
@@ -117,7 +117,7 @@
 
 .course-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* Override common gallery item styles for courses */
@@ -129,93 +129,8 @@
     transform: none;
 }
 
-/* Students Gallery Styles */
-.students-gallery {
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-.students-gallery-track {
-    display: flex;
-    gap: 20px;
-    animation: scroll 40s linear infinite;
-    width: fit-content;
-    will-change: transform;
-    padding-right: 20px;
-}
-
-.students-gallery .gallery-item {
-    flex: 0 0 250px;
-    width: 250px;
-    transform: translateZ(0);
-}
-
-@keyframes scroll {
-    0% {
-        transform: translateX(0);
-    }
-    100% {
-        transform: translateX(calc(-250px * 6 - 20px * 6));
-    }
-}
-
-/* Pause animation on hover */
-.students-gallery:hover .students-gallery-track {
-    animation-play-state: paused;
-}
-
-.students-gallery .gallery-item,
-.student-item {
-    position: relative;
-    border: 2px solid #000080;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-    background: #fff;
-    aspect-ratio: initial;
-    height: auto;
-}
-
-.students-gallery .gallery-item img,
-.student-item img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    display: block;
-    transform: none !important;
-}
-
-.students-gallery .gallery-item .caption,
-.student-item .caption {
-    position: relative !important;
-    background: #1a75ff !important;
-    padding: 10px;
-    transform: none !important;
-    text-align: center;
-    color: #fff;
-    display: block !important;
-}
-
-.students-gallery .gallery-item:hover,
-.student-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-}
-
-.students-gallery .gallery-item:hover img,
-.student-item:hover img {
-    transform: none !important;
-}
-
-.students-gallery .gallery-item:hover .caption,
-.student-item:hover .caption {
-    transform: none !important;
-}
+/* Students Gallery Styles - REMOVED (Now using faculty-gallery styles) */
+/* .students-gallery styles removed to unify with faculty gallery */
 
 /* Centers Gallery Styles */
 .centers-gallery {
@@ -255,6 +170,7 @@
     0% {
         transform: translateX(0);
     }
+
     100% {
         transform: translateX(-50%);
     }
@@ -271,7 +187,7 @@
     border: 2px solid #000080;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
     background: #fff;
     display: flex;
@@ -328,7 +244,7 @@
 .faculty-gallery .gallery-item:hover,
 .faculty-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .faculty-gallery .gallery-item:hover img,
@@ -352,7 +268,7 @@
 
 .gallery-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .gallery-item img {
@@ -392,6 +308,7 @@
     .courses-gallery {
         grid-template-columns: repeat(4, 1fr);
     }
+
     .students-gallery,
     .centers-gallery {
         grid-template-columns: repeat(5, 1fr);
@@ -402,24 +319,27 @@
     .courses-gallery {
         grid-template-columns: repeat(3, 1fr);
     }
+
     .students-gallery,
     .centers-gallery {
         grid-template-columns: repeat(4, 1fr);
     }
+
     .gallery-container {
         max-height: 600px;
     }
-    
+
     .faculty-item .caption h3 {
         font-size: 13px;
     }
-    
+
     .faculty-item .caption p {
         font-size: 11px;
     }
 }
 
 @media (max-width: 992px) {
+
     .courses-gallery,
     .students-gallery,
     .centers-gallery {
@@ -428,6 +348,7 @@
 }
 
 @media (max-width: 768px) {
+
     .gallery-wrapper,
     .gallery-section {
         margin: 0 !important;
@@ -438,6 +359,7 @@
         right: auto !important;
         box-sizing: border-box !important;
     }
+
     .section-title {
         position: static !important;
         left: auto !important;
@@ -471,7 +393,7 @@
         gap: 10px;
         max-height: 400px;
     }
-    
+
 
 }
 
@@ -483,7 +405,7 @@
     overflow: hidden;
     margin: 0;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .slide {
@@ -603,4 +525,4 @@
     border-radius: 0 !important;
     box-sizing: border-box !important;
     z-index: 10;
-} 
+}

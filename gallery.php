@@ -16,15 +16,15 @@
                 WHERE u.user_type_id = 3 AND u.status = 'active' 
                 ORDER BY u.experience_years DESC";
                 $faculty_members = getRows($faculty_sql);
-                
+
                 if (!empty($faculty_members)) {
                     foreach ($faculty_members as $faculty) {
                         $profile_img = !empty($faculty['profile_image']) ? $faculty['profile_image'] : 'assets/images/default-faculty.png';
-                        
+
                         // Use qualification as specialty, fallback to experience years
-                        $specialty = !empty($faculty['qualification']) ? $faculty['qualification'] : 
-                                    ($faculty['experience_years'] > 0 ? $faculty['experience_years'] . ' years experience' : 'Faculty Member');
-                        
+                        $specialty = !empty($faculty['qualification']) ? $faculty['qualification'] :
+                            ($faculty['experience_years'] > 0 ? $faculty['experience_years'] . ' years experience' : 'Faculty Member');
+
                         echo '<div class="gallery-item faculty-item">';
                         echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($faculty['full_name']) . '" onerror="this.onerror=null; this.src=\'assets/images/default-faculty.png\'">';
                         echo '<div class="caption">';
@@ -53,13 +53,13 @@
                 WHERE c.status = 'active' 
                 ORDER BY c.name";
                 $courses = getRows($courses_sql);
-                
+
                 if (!empty($courses)) {
                     foreach ($courses as $course) {
                         // Use ImgBB image if available, fallback to default
                         $course_image = !empty($course['course_image']) ? $course['course_image'] : 'assets/images/computer course.jpeg';
                         $image_alt = !empty($course['course_image_alt']) ? $course['course_image_alt'] : $course['name'];
-                        
+
                         echo '<div class="gallery-item course-item">';
                         echo '<img src="' . htmlspecialchars($course_image) . '" alt="' . htmlspecialchars($image_alt) . '" onerror="this.onerror=null; this.src=\'assets/images/computer course.jpeg\'">';
                         echo '<div class="caption">' . htmlspecialchars($course['name']) . '</div>';
@@ -76,7 +76,7 @@
 
         <!-- Recently Joined Student Section -->
         <h2 class="section-title">Recently Joined Student</h2>
-        <div class="gallery-container students-gallery">
+        <div class="faculty-gallery students-gallery">
             <?php
             // Get recent students from database
             try {
@@ -85,13 +85,21 @@
                 WHERE u.user_type_id = 2 AND u.status = 'active' 
                 ORDER BY u.joining_date DESC LIMIT 6";
                 $recent_students = getRows($students_sql);
-                
+
                 if (!empty($recent_students)) {
                     foreach ($recent_students as $student) {
                         $profile_img = !empty($student['profile_image']) ? $student['profile_image'] : 'assets/images/default-student.png';
-                        echo '<div class="gallery-item student-item">';
+
+                        // Use qualification as subtitle, fallback to joining date
+                        $subtitle = !empty($student['qualification']) ? $student['qualification'] :
+                            (!empty($student['joining_date']) ? 'Joined: ' . date('M Y', strtotime($student['joining_date'])) : 'Student');
+
+                        echo '<div class="gallery-item faculty-item student-item">';
                         echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($student['full_name']) . '" onerror="this.onerror=null; this.src=\'assets/images/default-student.png\'">';
-                        echo '<div class="caption">' . htmlspecialchars($student['full_name']) . '</div>';
+                        echo '<div class="caption">';
+                        echo '<h3>' . htmlspecialchars($student['full_name']) . '</h3>';
+                        echo '<p>' . htmlspecialchars($subtitle) . '</p>';
+                        echo '</div>';
                         echo '</div>';
                     }
                 } else {
@@ -105,4 +113,4 @@
     </section>
 </div>
 <script src="assets/js/student-gallery.js"></script>
-<script src="assets/js/faculty-gallery.js"></script> 
+<script src="assets/js/faculty-gallery.js"></script>
