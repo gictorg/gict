@@ -77,24 +77,24 @@ require_once 'includes/session_manager.php';
                         </div> -->
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">COURSES <i class="fas fa-caret-down"></i></a>
-                            <div class="nav-dropdown-content">
+                            <!-- <div class="nav-dropdown-content">
                                 <a href="#">Option 1</a>
                                 <a href="#">Option 2</a>
-                            </div>
+                            </div> -->
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">PROJECT <i class="fas fa-caret-down"></i></a>
-                            <div class="nav-dropdown-content">
+                            <!-- <div class="nav-dropdown-content">
                                 <a href="#">Option 1</a>
                                 <a href="#">Option 2</a>
-                            </div>
+                            </div> -->
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">GALLERY <i class="fas fa-caret-down"></i></a>
-                            <div class="nav-dropdown-content">
+                            <!-- <div class="nav-dropdown-content">
                                 <a href="#">Option 1</a>
                                 <a href="#">Option 2</a>
-                            </div>
+                            </div> -->
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">CONTACT <i class="fas fa-caret-down"></i></a>

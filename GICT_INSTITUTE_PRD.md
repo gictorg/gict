@@ -422,5 +422,5 @@ The modular architecture allows for future enhancements and scalability, ensurin
 
 **Document Version**: 2.0  
 **Last Updated**: January 2025  
-**Next Review**: March 2025  
+**Next Review**: March 2026
 **Document Owner**: GICT Institute Development Team
