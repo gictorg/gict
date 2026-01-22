@@ -98,6 +98,74 @@
     </section>
 </footer>
 
+<!-- Global Enquiry Modal -->
+<div id="enquiryModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-question-circle"></i> Course Inquiry</h2>
+            <span class="close" onclick="closeEnquiryModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="enquiryMessage"
+                style="display: none; margin-bottom: 20px; padding: 15px; border-radius: 8px; font-weight: 500;"></div>
+
+            <form id="enquiryForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modal_name">Full Name *</label>
+                        <input type="text" id="modal_name" name="name" required placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_mobile">Mobile Number *</label>
+                        <input type="tel" id="modal_mobile" name="mobile" required
+                            placeholder="Enter 10-digit mobile number" pattern="[0-9]{10}" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal_email">Email Address</label>
+                    <input type="email" id="modal_email" name="email" placeholder="Enter your email address (optional)">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modal_course_id">Course Category</label>
+                        <select id="modal_course_id" name="course_id" onchange="updateModalSubCourses()">
+                            <option value="">Select Course Category</option>
+                            <option value="1">Technology</option>
+                            <option value="2">Marketing</option>
+                            <option value="3">Fashion</option>
+                            <option value="4">Wellness</option>
+                            <option value="5">Skills</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_sub_course_id">Specific Course</label>
+                        <select id="modal_sub_course_id" name="sub_course_id">
+                            <option value="">Select Specific Course</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal_message">Message</label>
+                    <textarea id="modal_message" name="message" rows="3"
+                        placeholder="Tell us about your interest in the course or any specific questions you have..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEnquiryModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Submit Inquiry
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+<script src="assets/js/enquiry-modal.js"></script>
 </body>
-</html> 
+
+</html>

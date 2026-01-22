@@ -133,7 +133,7 @@ require_once 'includes/session_manager.php';
                             </div>
                         <?php endif; ?>
                         <div class="nav-dropdown">
-                            <a href="#" class="nav-btn enquiry-btn" onclick="openEnquiryModal()">
+                            <a href="javascript:void(0)" class="nav-btn enquiry-btn" onclick="openEnquiryModal()">
                                 <i class="fas fa-question-circle"></i> Add Enquiry
                             </a>
                         </div>

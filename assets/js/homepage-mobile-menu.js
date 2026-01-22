@@ -160,6 +160,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            // Don't close menu for Enquiry button (it handles its own logic and modal needs scroll lock)
+            if (this.classList.contains('enquiry-btn')) {
+                e.preventDefault(); // Prevent '#' from being added to URL
+                // We'll close the menu visually but keep the scroll lock
+                setTimeout(() => {
+                    isMenuOpen = false;
+                    navLinks.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                    body.classList.remove('mobile-menu-open');
+                    if (mobileMenuClose) mobileMenuClose.style.display = 'none';
+                    if (window.innerWidth <= 768) navLinks.style.display = 'none';
+                }, 100);
+                return;
+            }
+
             // Close menu for actual links
             if (window.innerWidth <= 768) {
                 closeMenu();
