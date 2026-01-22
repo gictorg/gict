@@ -268,3 +268,151 @@
         transform: translate(0%, 90%)
     }
 }
+
+/* Premium Certificate Portal Card */
+.certificate-portal-card {
+    background: #fff;
+    padding: 0;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 550px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.portal-header {
+    background: linear-gradient(135deg, #1a2a6c, #2a4858);
+    padding: 40px 30px;
+    text-align: center;
+    color: #fff;
+}
+
+.portal-icon {
+    font-size: 50px;
+    margin-bottom: 20px;
+    color: #c5a059;
+    /* Gold */
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.portal-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.portal-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.certificate-portal-card .verification-form {
+    padding: 40px;
+    gap: 25px;
+}
+
+.input-with-icon {
+    position: relative;
+    width: 100%;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #1a2a6c;
+    font-size: 18px;
+    opacity: 0.7;
+}
+
+.input-with-icon .form-control {
+    padding-left: 50px !important;
+    height: 55px;
+    border: 1px solid #e0e0e0;
+    background-color: #fff;
+    font-weight: 500;
+}
+
+.input-with-icon .form-control:focus {
+    border-color: #1a2a6c;
+    box-shadow: 0 0 0 4px rgba(26, 42, 108, 0.1);
+}
+
+.form-actions {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-portal-submit {
+    width: 100%;
+    background: linear-gradient(to right, #1a2a6c, #c5a059);
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(26, 42, 108, 0.3);
+}
+
+.btn-portal-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(26, 42, 108, 0.4);
+    filter: brightness(1.1);
+}
+
+.portal-error {
+    background: #fff5f5;
+    color: #e53e3e;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #feb2b2;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.portal-footer-note {
+    background: #f8fafc;
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.portal-footer-note i {
+    color: #1a2a6c;
+}
+
+/* Responsive fixes for Portal */
+@media (max-width: 600px) {
+    .certificate-portal-card {
+        margin: 10px;
+    }
+
+    .portal-header {
+        padding: 30px 20px;
+    }
+
+    .certificate-portal-card .verification-form {
+        padding: 25px 20px;
+    }
+}

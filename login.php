@@ -18,9 +18,9 @@ unset($_SESSION['login_error']);
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = strtoupper(trim($_POST['username'] ?? ''));
     $password = $_POST['password'] ?? '';
-    
+
     // Validate input
     if (empty($username) || empty($password)) {
         $_SESSION['login_error'] = 'Please enter both username and password';
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         FROM users u 
                         WHERE u.username = ? AND u.status = 'active'";
                 $user = getRow($sql, [$username]);
-                
+
                 // Map user_type_id to user_type name
                 if ($user) {
                     switch ($user['user_type_id']) {
@@ -56,10 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $user['user_type'] = 'unknown';
                     }
                 }
-                
+
                 if ($user) {
                     $passwordValid = password_verify($password, $user['password']);
-                    
+
                     if ($passwordValid) {
                         // Login successful
                         $_SESSION['user_id'] = $user['id'];
@@ -67,11 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $_SESSION['user_type'] = $user['user_type'];
                         $_SESSION['full_name'] = $user['full_name'];
                         $_SESSION['email'] = $user['email'];
-                        
+
                         // Log successful login (commented out as user_logins table doesn't exist in new schema)
                         // $login_sql = "INSERT INTO user_logins (user_id, login_time, ip_address) VALUES (?, NOW(), ?)";
                         // insertData($login_sql, [$user['id'], $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
-                        
+
                         // Redirect to appropriate dashboard
                         $dashboard_url = getDashboardUrl();
                         header('Location: ' . $dashboard_url);
@@ -98,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -116,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin: 0;
             font-family: 'Arial', sans-serif;
         }
-        
+
         .login-container {
             background: white;
             padding: 40px;
@@ -126,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             max-width: 400px;
             text-align: center;
         }
-        
+
         .login-logo {
             width: 150px;
             height: 150px;
@@ -139,13 +140,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background: white;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .login-logo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .login-title {
             color: #333;
             margin-bottom: 30px;
@@ -153,27 +154,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-weight: bold;
             text-align: center;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
             text-align: left;
         }
-        
+
         form {
             text-align: center;
         }
-        
+
         form .form-group {
             text-align: left;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             color: #555;
             font-weight: 500;
         }
-        
+
         .form-group input {
             width: 100%;
             padding: 12px 15px;
@@ -183,12 +184,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             transition: border-color 0.3s ease;
             box-sizing: border-box;
         }
-        
+
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
         }
-        
+
         .login-btn {
             width: 100%;
             padding: 12px;
@@ -204,11 +205,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             display: block;
             margin: 0 auto;
         }
-        
+
         .login-btn:hover {
             transform: translateY(-2px);
         }
-        
+
         .error-message {
             background: #ff6b6b;
             color: white;
@@ -218,12 +219,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 14px;
             animation: slideIn 0.3s ease-out;
         }
-        
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -231,50 +233,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     </style>
 </head>
+
 <body>
     <div class="login-container">
         <div class="login-logo">
             <img src="logo.png" alt="GICT Logo">
         </div>
-        
+
         <h1 class="login-title">Welcome to GICT</h1>
         <p style="color: #666; margin-bottom: 30px;">Please login to continue</p>
-        
+
         <?php if (!empty($error_message)): ?>
             <div class="error-message" id="errorAlert">
                 <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php endif; ?>
-        
+
         <form method="POST" action="login.php">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" required style="text-transform: uppercase;"
+                    placeholder="e.g. SA2026001">
             </div>
-            
+
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            
+
             <button type="submit" class="login-btn">Login</button>
         </form>
-        
+
 
     </div>
-    
+
     <script>
         // Auto-dismiss error message after 5 seconds
         const errorAlert = document.getElementById('errorAlert');
         if (errorAlert) {
-            setTimeout(function() {
+            setTimeout(function () {
                 errorAlert.style.transition = 'opacity 0.5s ease-out';
                 errorAlert.style.opacity = '0';
-                setTimeout(function() {
+                setTimeout(function () {
                     errorAlert.remove();
                 }, 500);
             }, 5000);
         }
     </script>
 </body>
-</html> 
+
+</html>

@@ -108,6 +108,7 @@ require_once 'includes/session_manager.php';
                             <div class="nav-dropdown-content">
                                 <a href="verification.php">Verification</a>
                                 <a href="result.php">Result</a>
+                                <a href="certificate.php">Certificate</a>
                             </div>
                         </div>
                         <?php if (isLoggedIn()): ?>

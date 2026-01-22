@@ -208,9 +208,9 @@ require_once 'includes/session_manager.php';
         <div class="sidebar">
             <div class="sidebar-menu">
                 <a href="about-gict.php" class="menu-item"><i class="fas fa-info-circle"></i> ABOUT GICT</a>
-                <a href="#" class="menu-item"><i class="fas fa-user-graduate"></i> STUDENT SECTION</a>
-                <!-- <a href="#" class="menu-item"><i class="fas fa-book"></i> COURSE SECTION</a>
-                <a href="#" class="menu-item"><i class="fas fa-download"></i> DOWNLOAD RESULT</a> -->
+                <a href="verification.php" class="menu-item"><i class="fas fa-user-graduate"></i> STUDENT
+                    VERIFICATION</a>
+                <a href="result.php" class="menu-item"><i class="fas fa-file-invoice"></i> DOWNLOAD RESULT</a>
                 <a href="#" class="menu-item"><i class="fas fa-users"></i> GICT TEAM</a>
                 <a href="#" class="menu-item"><i class="fas fa-trophy"></i> ACHIEVEMENT</a>
                 <a href="#" class="menu-item"><i class="fas fa-laptop"></i> ONLINE STUDY MATERIAL</a>

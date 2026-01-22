@@ -1,0 +1,360 @@
+/* Professional Marksheet Styles */
+.marksheet-container {
+    max-width: 900px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 30px;
+    border: 10px solid #2c3e50;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.marksheet-inner {
+    border: 2px solid #2c3e50;
+    padding: 20px;
+    position: relative;
+}
+
+.marksheet-header {
+    text-align: center;
+    border-bottom: 2px solid #2c3e50;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+}
+
+.institute-logo {
+    width: 100px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.institute-name {
+    font-size: 28px;
+    font-weight: 800;
+    color: #2c3e50;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.institute-address {
+    font-size: 14px;
+    color: #555;
+    margin: 5px 0;
+}
+
+.marksheet-title {
+    background: #2c3e50;
+    color: #fff;
+    display: inline-block;
+    padding: 5px 30px;
+    margin-top: 10px;
+    font-weight: 600;
+    border-radius: 20px;
+}
+
+/* Student Info Section */
+.student-info-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.student-details {
+    flex: 1;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+.detail-label {
+    width: 180px;
+    font-weight: 600;
+    color: #333;
+}
+
+.detail-value {
+    flex: 1;
+    color: #555;
+    border-bottom: 1px dotted #ccc;
+}
+
+.student-photo-box {
+    width: 130px;
+    height: 160px;
+    border: 1px solid #2c3e50;
+    padding: 5px;
+    background: #fff;
+    margin-left: 20px;
+    position: relative;
+    /* Added for stamp positioning */
+}
+
+.student-photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* Marks Table */
+.marks-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+.marks-table th,
+.marks-table td {
+    border: 1px solid #2c3e50;
+    padding: 12px;
+    text-align: center;
+}
+
+.marks-table th {
+    background: #f4f7f6;
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+.subject-name {
+    text-align: left !important;
+}
+
+/* Summary Section */
+.marks-summary {
+    display: flex;
+    justify-content: space-between;
+    border-top: 2px solid #2c3e50;
+    padding-top: 20px;
+}
+
+.summary-item {
+    text-align: center;
+    flex: 1;
+}
+
+.summary-label {
+    display: block;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #2c3e50;
+}
+
+.result-status {
+    padding: 2px 15px;
+    border-radius: 4px;
+}
+
+.status-pass {
+    color: #27ae60;
+}
+
+.status-fail {
+    color: #e74c3c;
+}
+
+/* Footer Signatures */
+.marksheet-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 60px;
+    padding-bottom: 20px;
+}
+
+.signature-box {
+    text-align: center;
+    width: 200px;
+}
+
+.sig-line {
+    border-top: 1px solid #2c3e50;
+    margin-bottom: 5px;
+}
+
+.sig-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Watermark - Fixed to stay centered */
+.marksheet-watermark {
+    position: absolute;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    opacity: 0.12;
+    z-index: 0;
+    pointer-events: none;
+    width: 75%;
+    filter: contrast(1.1);
+}
+
+.watermark-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='70'><text x='50%' y='50%' fill='rgba(0,0,0,0.12)' font-family='Arial' font-weight='bold' font-size='14' text-anchor='middle' transform='rotate(-30, 50, 35)'>GICT</text></svg>");
+    background-repeat: repeat;
+}
+
+
+/* Official Seal on Result */
+.result-item {
+    position: relative;
+}
+
+.result-seal {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -40%) rotate(-15deg);
+    width: 90px;
+    height: 90px;
+    opacity: 0.7;
+    z-index: 5;
+    pointer-events: none;
+    filter: sepia(1) hue-rotate(180deg) saturate(2.5) contrast(1.1);
+}
+
+/* Print Utilities */
+@media print {
+    @page {
+        margin: 0.2cm;
+        size: A4 portrait;
+    }
+
+    header,
+    footer,
+    nav,
+    .header-container,
+    .top-links,
+    .logo-section,
+    .no-print,
+    .action-container {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .main-content,
+    .container,
+    .student-corner-container {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .marksheet-container {
+        position: static !important;
+        margin: 0 auto !important;
+        width: 19cm !important;
+        border: 3px solid #000 !important;
+        padding: 10px !important;
+        background-color: white !important;
+        page-break-inside: avoid !important;
+        transform: scale(0.98);
+        /* Slightly scale down to guarantee A4 fit */
+        transform-origin: top center;
+    }
+
+    .marksheet-inner {
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+    }
+
+    .institute-name {
+        font-size: 22px !important;
+    }
+
+    .institute-address {
+        font-size: 11px !important;
+    }
+
+    .marksheet-title {
+        padding: 3px 20px !important;
+        font-size: 14px !important;
+    }
+
+    .student-info-grid {
+        margin-bottom: 10px !important;
+    }
+
+    .detail-row {
+        margin-bottom: 2px !important;
+        font-size: 11px !important;
+    }
+
+    .marks-table th,
+    .marks-table td {
+        padding: 4px !important;
+        font-size: 11px !important;
+    }
+
+    .marks-summary {
+        margin-top: 10px !important;
+        padding: 10px !important;
+    }
+
+    .summary-value {
+        font-size: 14px !important;
+    }
+
+    .marksheet-footer {
+        margin-top: 25px !important;
+        page-break-before: avoid !important;
+    }
+
+    .sig-label {
+        font-size: 11px !important;
+    }
+
+    /* Force visibility of watermarks */
+    .marksheet-watermark {
+        opacity: 0.18 !important;
+        width: 60% !important;
+    }
+
+    .watermark-text {
+        display: block !important;
+        opacity: 0.3 !important;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='70'><text x='50%' y='50%' fill='rgba(0,0,0,0.2)' font-family='Arial' font-weight='bold' font-size='14' text-anchor='middle' transform='rotate(-30, 50, 35)'>GICT</text></svg>") !important;
+    }
+
+    .result-seal {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        opacity: 1 !important;
+        width: 75px !important;
+        height: 75px !important;
+    }
+
+    .status-pass {
+        color: #27ae60 !important;
+    }
+
+    .status-fail {
+        color: #e74c3c !important;
+    }
+}

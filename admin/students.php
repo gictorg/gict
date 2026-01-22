@@ -26,21 +26,21 @@ $user = getCurrentUser();
 // Handle AJAX requests for sub-courses
 if (isset($_GET['action']) && $_GET['action'] === 'get_sub_courses') {
     header('Content-Type: application/json');
-    
+
     $course_id = intval($_GET['course_id'] ?? 0);
     if ($course_id <= 0) {
         echo json_encode(['error' => 'Invalid course ID']);
         exit;
     }
-    
+
     try {
         $sub_courses_sql = "SELECT sc.id, sc.name, sc.fee, sc.duration
             FROM sub_courses sc
             WHERE sc.course_id = ? AND sc.status = 'active'
             ORDER BY sc.name";
-        
+
         $sub_courses = getRows($sub_courses_sql, [$course_id]);
-        
+
         echo json_encode([
             'success' => true,
             'sub_courses' => $sub_courses
@@ -56,13 +56,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_sub_courses') {
 // Handle AJAX requests for enrollment data
 if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
     header('Content-Type: application/json');
-    
+
     $student_id = intval($_GET['student_id'] ?? 0);
     if ($student_id <= 0) {
         echo json_encode(['error' => 'Invalid student ID']);
         exit;
     }
-    
+
     try {
         $enrollment_sql = "SELECT 
             se.id,
@@ -80,9 +80,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
         LEFT JOIN course_categories cc ON c.category_id = cc.id
         WHERE se.user_id = ?
         ORDER BY se.created_at DESC";
-        
+
         $enrollments = getRows($enrollment_sql, [$student_id]);
-        
+
         // Format the data for display
         $formatted_enrollments = [];
         foreach ($enrollments as $enrollment) {
@@ -97,13 +97,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
                 'duration' => $enrollment['course_duration'] ?? 'N/A'
             ];
         }
-        
+
         echo json_encode([
             'success' => true,
             'enrollments' => $formatted_enrollments,
             'total' => count($formatted_enrollments)
         ]);
-        
+
     } catch (Exception $e) {
         echo json_encode([
             'error' => 'Failed to fetch enrollment data: ' . $e->getMessage()
@@ -115,21 +115,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_enrollments') {
 // Handle GET request for student data (for editing)
 if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['action'] == 'get_student') {
     header('Content-Type: application/json');
-    
+
     $student_id = intval($_GET['student_id'] ?? 0);
     if ($student_id <= 0) {
         echo json_encode(['error' => 'Invalid student ID']);
         exit;
     }
-    
+
     try {
         $student = getRow("
-            SELECT id, username, email, full_name, phone, address, date_of_birth, gender, 
+            SELECT id, username, email, full_name, father_name, phone, address, date_of_birth, gender, 
                    qualification, joining_date, profile_image
             FROM users 
             WHERE id = ? AND user_type_id = 2
         ", [$student_id]);
-        
+
         if (!$student) {
             // Try without user_type_id check to see if user exists at all
             $user_check = getRow("SELECT id, username, full_name, user_type_id FROM users WHERE id = ?", [$student_id]);
@@ -140,10 +140,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['action']) && $_GET['acti
             }
             exit;
         }
-        
+
         // Add previous_institute as null (column may not exist)
         $student['previous_institute'] = null;
-        
+
         echo json_encode([
             'success' => true,
             'student' => $student
@@ -163,6 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             case 'add_student':
                 $email = $_POST['email'] ?? '';
                 $full_name = $_POST['full_name'] ?? '';
+                $father_name = $_POST['father_name'] ?? '';
                 $phone = $_POST['phone'] ?? '';
                 $address = $_POST['address'] ?? '';
                 $date_of_birth = $_POST['date_of_birth'] ?? '';
@@ -170,7 +171,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $qualification = $_POST['qualification'] ?? '';
                 $joining_date = $_POST['joining_date'] ?? '';
                 $previous_institute = $_POST['previous_institute'] ?? '';
-                
+
+                // Validate Father's Name - Mandatory
+                if (empty(trim($father_name))) {
+                    $_SESSION['error_message'] = "Father's name is mandatory.";
+                    header('Location: students.php');
+                    exit;
+                }
+
                 // Validate gender - required field, must be one of the allowed ENUM values
                 $allowed_genders = ['male', 'female', 'other'];
                 if (empty($gender)) {
@@ -182,14 +190,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     header('Location: students.php');
                     exit;
                 }
-                
+
                 // Validate date of birth - cannot be in the future
                 if (!empty($date_of_birth) && $date_of_birth > date('Y-m-d')) {
                     $_SESSION['error_message'] = "Date of birth cannot be in the future.";
                     header('Location: students.php');
                     exit;
                 }
-                
+
                 // Generate unique user ID for student
                 $generated_user_id = generateUniqueUserId('student');
                 if (!$generated_user_id) {
@@ -202,20 +210,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $marksheet_url = '';
                     $aadhaar_card_url = '';
                     $uploaded_files = [];
-                    
-                                        // Profile Image Upload
+
+                    // Profile Image Upload
                     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
                         $profile_file = $_FILES['profile_image'];
                         $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
-                        
+
                         if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
                             // Use timestamp for unique filename (same approach as update)
                             $upload_result = smartUpload(
-                                $profile_file['tmp_name'], 
+                                $profile_file['tmp_name'],
                                 $generated_user_id . '_profile_' . time()
                             );
-                            
+
                             if ($upload_result && $upload_result['success']) {
                                 $profile_image_url = $upload_result['url'];
                                 $uploaded_files[] = [
@@ -233,19 +241,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $error_message = "Profile image must be JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
-                    
+
                     // Marksheet Upload
                     if (isset($_FILES['marksheet']) && $_FILES['marksheet']['error'] == 0) {
                         $marksheet_file = $_FILES['marksheet'];
                         $marksheet_ext = strtolower(pathinfo($marksheet_file['name'], PATHINFO_EXTENSION));
                         $allowed_doc_exts = ['pdf', 'jpg', 'jpeg', 'png'];
-                        
+
                         if (in_array($marksheet_ext, $allowed_doc_exts) && $marksheet_file['size'] <= 400 * 1024) {
                             $upload_result = smartUpload(
-                                $marksheet_file['tmp_name'], 
+                                $marksheet_file['tmp_name'],
                                 $generated_user_id . '_marksheet'
                             );
-                            
+
                             if ($upload_result && $upload_result['success']) {
                                 $marksheet_url = $upload_result['url'];
                                 $uploaded_files[] = [
@@ -263,19 +271,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $error_message = "Marksheet must be PDF, JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
-                    
+
                     // Aadhaar Card Upload
                     if (isset($_FILES['aadhaar_card']) && $_FILES['aadhaar_card']['error'] == 0) {
                         $aadhaar_file = $_FILES['aadhaar_card'];
                         $aadhaar_ext = strtolower(pathinfo($aadhaar_file['name'], PATHINFO_EXTENSION));
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
-                        
+
                         if (in_array($aadhaar_ext, $allowed_image_exts) && $aadhaar_file['size'] <= 400 * 1024) {
                             $upload_result = smartUpload(
-                                $aadhaar_file['tmp_name'], 
+                                $aadhaar_file['tmp_name'],
                                 $generated_user_id . '_aadhaar'
                             );
-                            
+
                             if ($upload_result && $upload_result['success']) {
                                 $aadhaar_card_url = $upload_result['url'];
                                 $uploaded_files[] = [
@@ -293,19 +301,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $error_message = "Aadhaar card must be JPG, JPEG, or PNG and under 400KB.";
                         }
                     }
-                    
+
                     if (empty($error_message)) {
                         // Generate default password (generated_user_id + 123)
                         $default_password = $generated_user_id . '123';
                         $hashed_password = password_hash($default_password, PASSWORD_DEFAULT);
-                        
+
                         try {
-                            $sql = "INSERT INTO users (username, password, email, full_name, user_type_id, phone, address, date_of_birth, gender, qualification, joining_date, profile_image) VALUES (?, ?, ?, ?, 2, ?, ?, ?, ?, ?, ?, ?)";
-                            $result = insertData($sql, [$generated_user_id, $hashed_password, $email, $full_name, $phone, $address, $date_of_birth, $gender, $qualification, $joining_date, $profile_image_url]);
-                            
+                            $sql = "INSERT INTO users (username, password, email, full_name, father_name, user_type_id, phone, address, date_of_birth, gender, qualification, joining_date, profile_image) VALUES (?, ?, ?, ?, ?, 2, ?, ?, ?, ?, ?, ?, ?)";
+                            $result = insertData($sql, [$generated_user_id, $hashed_password, $email, $full_name, $father_name, $phone, $address, $date_of_birth, $gender, $qualification, $joining_date, $profile_image_url]);
+
                             if ($result) {
                                 $user_id = getDBConnection()->lastInsertId();
-                                
+
                                 // Insert document records with Cloudinary URLs
                                 if (!empty($uploaded_files)) {
                                     foreach ($uploaded_files as $file) {
@@ -319,11 +327,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         ]);
                                     }
                                 }
-                                
+
                                 $success_message = "Student '$full_name' added successfully!<br>";
                                 $success_message .= "<strong>User ID:</strong> $generated_user_id<br>";
                                 $success_message .= "<strong>Default Password:</strong> $default_password<br>";
-                                
+
                                 if (!empty($uploaded_files)) {
                                     $success_message .= "<br><br><strong>Cloudinary URLs (Stored in Database):</strong><br>";
                                     foreach ($uploaded_files as $file) {
@@ -338,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     }
                 }
-                
+
                 // Store message in session and redirect (always execute, even if error occurred)
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -349,11 +357,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'update_student':
                 $student_id = $_POST['student_id'] ?? 0;
                 $email = $_POST['email'] ?? '';
                 $full_name = $_POST['full_name'] ?? '';
+                $father_name = $_POST['father_name'] ?? '';
                 $phone = $_POST['phone'] ?? '';
                 $address = $_POST['address'] ?? '';
                 $date_of_birth = $_POST['date_of_birth'] ?? '';
@@ -361,13 +370,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $qualification = $_POST['qualification'] ?? '';
                 $joining_date = $_POST['joining_date'] ?? '';
                 $previous_institute = $_POST['previous_institute'] ?? '';
-                
+
                 if (!$student_id) {
                     $_SESSION['error_message'] = "Invalid student ID.";
                     header('Location: students.php');
                     exit;
                 }
-                
+
                 // Validate gender if provided
                 if (!empty($gender)) {
                     $allowed_genders = ['male', 'female', 'other'];
@@ -377,14 +386,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         exit;
                     }
                 }
-                
+
                 // Validate date of birth - cannot be in the future
                 if (!empty($date_of_birth) && $date_of_birth > date('Y-m-d')) {
                     $_SESSION['error_message'] = "Date of birth cannot be in the future.";
                     header('Location: students.php');
                     exit;
                 }
-                
+
                 try {
                     // Get existing student data
                     $existing_student = getRow("SELECT username, profile_image FROM users WHERE id = ? AND user_type_id = 2", [$student_id]);
@@ -393,24 +402,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         header('Location: students.php');
                         exit;
                     }
-                    
+
                     $profile_image_url = $existing_student['profile_image'];
-                    
+
                     // Handle profile image upload if provided
                     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
                         $profile_file = $_FILES['profile_image'];
                         $profile_ext = strtolower(pathinfo($profile_file['name'], PATHINFO_EXTENSION));
                         $allowed_image_exts = ['jpg', 'jpeg', 'png'];
-                        
+
                         if (in_array($profile_ext, $allowed_image_exts) && $profile_file['size'] <= 400 * 1024) {
                             $upload_result = smartUpload(
-                                $profile_file['tmp_name'], 
+                                $profile_file['tmp_name'],
                                 $existing_student['username'] . '_profile_' . time()
                             );
-                            
+
                             if ($upload_result && $upload_result['success']) {
                                 $profile_image_url = $upload_result['url'];
-                                
+
                                 // Update or insert in student_documents
                                 $existing_doc = getRow("SELECT id FROM student_documents WHERE user_id = ? AND document_type = 'profile'", [$student_id]);
                                 if ($existing_doc) {
@@ -423,11 +432,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                         }
                     }
-                    
+
                     // Update student information
-                    $sql = "UPDATE users SET email = ?, full_name = ?, phone = ?, address = ?, date_of_birth = ?, gender = ?, qualification = ?, joining_date = ?, profile_image = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 2";
-                    $result = updateData($sql, [$email, $full_name, $phone, $address, $date_of_birth ?: null, $gender ?: null, $qualification, $joining_date ?: null, $profile_image_url, $student_id]);
-                    
+                    $sql = "UPDATE users SET email = ?, full_name = ?, father_name = ?, phone = ?, address = ?, date_of_birth = ?, gender = ?, qualification = ?, joining_date = ?, profile_image = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 2";
+                    $result = updateData($sql, [$email, $full_name, $father_name, $phone, $address, $date_of_birth ?: null, $gender ?: null, $qualification, $joining_date ?: null, $profile_image_url, $student_id]);
+
                     if ($result) {
                         $_SESSION['success_message'] = "Student '$full_name' updated successfully!";
                     } else {
@@ -436,11 +445,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } catch (Exception $e) {
                     $_SESSION['error_message'] = "Error: " . $e->getMessage();
                 }
-                
+
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'delete_student':
                 $student_id = $_POST['student_id'] ?? 0;
                 if ($student_id) {
@@ -448,14 +457,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         // First check if student exists and is actually a student
                         $check_sql = "SELECT id, username, full_name FROM users WHERE id = ? AND user_type_id = 2";
                         $student = getRow($check_sql, [$student_id]);
-                        
+
                         if (!$student) {
                             $error_message = "Student not found or invalid user type.";
                         } else {
                             // Delete student (cascade will handle related records)
                             $sql = "DELETE FROM users WHERE id = ? AND user_type_id = 2";
                             $result = deleteData($sql, [$student_id]);
-                            
+
                             if ($result) {
                                 $success_message = "Student '{$student['full_name']}' (ID: {$student['username']}) deleted successfully!";
                                 // Related records will be automatically deleted due to CASCADE constraints
@@ -469,7 +478,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } else {
                     $error_message = "Invalid student ID provided.";
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -480,7 +489,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'toggle_status':
                 $student_id = $_POST['student_id'] ?? 0;
                 $new_status = $_POST['new_status'] ?? '';
@@ -497,7 +506,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -508,12 +517,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'enroll_student':
                 $student_id = intval($_POST['student_id'] ?? 0);
                 $sub_course_id = intval($_POST['sub_course_id'] ?? 0);
                 $enrollment_date = $_POST['enrollment_date'] ?? date('Y-m-d');
-                
+
                 if ($student_id <= 0 || $sub_course_id <= 0) {
                     $error_message = "Invalid student or course selection.";
                 } else {
@@ -523,7 +532,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (!$student) {
                             throw new Exception("Student not found.");
                         }
-                        
+
                         // Check if student already has an enrollment
                         $existing_enrollment = getRow("
                             SELECT se.id, sc.name as sub_course_name, c.name as course_name
@@ -532,11 +541,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             JOIN courses c ON sc.course_id = c.id
                             WHERE se.user_id = ? AND se.status IN ('enrolled', 'payment_pending')
                         ", [$student_id]);
-                        
+
                         if ($existing_enrollment) {
                             throw new Exception("Student is already enrolled in: {$existing_enrollment['course_name']} - {$existing_enrollment['sub_course_name']}");
                         }
-                        
+
                         // Verify sub-course exists and is active
                         $sub_course = getRow("
                             SELECT sc.id, sc.name, sc.fee, c.name as course_name
@@ -544,15 +553,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             JOIN courses c ON sc.course_id = c.id
                             WHERE sc.id = ? AND sc.status = 'active'
                         ", [$sub_course_id]);
-                        
+
                         if (!$sub_course) {
                             throw new Exception("Invalid or inactive sub-course selected.");
                         }
-                        
+
+                        // Calculate Session in background
+                        $enrDate = new DateTime($enrollment_date);
+                        $startYear = $enrDate->format('Y');
+
+                        $months = 0;
+                        $durationStr = $sub_course['duration'];
+                        if (preg_match('/(\d+)\s*month/', $durationStr, $matches)) {
+                            $months = (int) $matches[1];
+                        } elseif (preg_match('/(\d+)\s*year/', $durationStr, $matches)) {
+                            $months = (int) $matches[1] * 12;
+                        } else {
+                            $months = 12;
+                        }
+
+                        $endDate = clone $enrDate;
+                        $endDate->modify("+$months months");
+                        $endYear = $endDate->format('Y');
+
+                        $session = ($startYear == $endYear) ? $startYear . "-" . ($startYear + 1) : $startYear . "-" . $endYear;
+
                         // Create enrollment with fee tracking
-                        $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status, total_fee, paid_fees, remaining_fees) VALUES (?, ?, ?, 'payment_pending', ?, 0.00, ?)";
-                        $enrollment_result = insertData($enrollment_sql, [$student_id, $sub_course_id, $enrollment_date, $sub_course['fee'], $sub_course['fee']]);
-                        
+                        $enrollment_sql = "INSERT INTO student_enrollments (user_id, sub_course_id, session, enrollment_date, status, total_fee, paid_fees, remaining_fees) VALUES (?, ?, ?, ?, 'payment_pending', ?, 0.00, ?)";
+                        $enrollment_result = insertData($enrollment_sql, [$student_id, $sub_course_id, $session, $enrollment_date, $sub_course['fee'], $sub_course['fee']]);
+
                         if ($enrollment_result) {
                             $success_message = "Student '{$student['full_name']}' enrolled successfully in:<br>";
                             $success_message .= "<strong>Course:</strong> {$sub_course['course_name']} - {$sub_course['name']}<br>";
@@ -565,7 +594,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -576,11 +605,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'update_enrollment_fees':
                 $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
                 $paid_fees = floatval($_POST['paid_fees'] ?? 0);
-                
+
                 if ($enrollment_id <= 0) {
                     $error_message = "Invalid enrollment ID.";
                 } else {
@@ -592,29 +621,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             JOIN sub_courses sc ON se.sub_course_id = sc.id
                             WHERE se.id = ?
                         ", [$enrollment_id]);
-                        
+
                         if (!$enrollment) {
                             throw new Exception("Enrollment not found.");
                         }
-                        
+
                         $total_fee = floatval($enrollment['total_fee'] ?? $enrollment['course_fee']);
                         if ($paid_fees < 0 || $paid_fees > $total_fee) {
                             throw new Exception("Paid fees must be between 0 and total fee (₹{$total_fee}).");
                         }
-                        
+
                         $remaining_fees = $total_fee - $paid_fees;
                         $new_status = ($remaining_fees <= 0) ? 'enrolled' : $enrollment['status'];
-                        
+
                         // Calculate the difference (new payment amount)
                         $previous_paid = floatval($enrollment['paid_fees'] ?? 0);
                         $payment_amount = $paid_fees - $previous_paid;
-                        
+
                         // Update enrollment
                         $update_sql = "UPDATE student_enrollments 
                                       SET paid_fees = ?, remaining_fees = ?, total_fee = ?, status = ?, updated_at = NOW() 
                                       WHERE id = ?";
                         $result = updateData($update_sql, [$paid_fees, $remaining_fees, $total_fee, $new_status, $enrollment_id]);
-                        
+
                         if ($result) {
                             // Create or update payment record if there's a payment amount
                             if ($payment_amount > 0) {
@@ -626,7 +655,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     ORDER BY created_at DESC 
                                     LIMIT 1
                                 ", [$enrollment['user_id'], $enrollment['sub_course_id']]);
-                                
+
                                 if ($existing_payment && $existing_payment['status'] === 'pending') {
                                     // Update existing pending payment
                                     $update_payment_sql = "UPDATE payments 
@@ -634,9 +663,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                               status = 'completed', payment_date = CURDATE(), updated_at = NOW() 
                                                           WHERE id = ?";
                                     updateData($update_payment_sql, [
-                                        $paid_fees, 
-                                        $total_fee, 
-                                        $remaining_fees, 
+                                        $paid_fees,
+                                        $total_fee,
+                                        $remaining_fees,
                                         $existing_payment['id']
                                     ]);
                                 } else {
@@ -654,7 +683,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     ]);
                                 }
                             }
-                            
+
                             $status_msg = ($remaining_fees <= 0) ? " and enrollment status updated to 'enrolled'" : "";
                             $success_message = "Fees updated successfully! Paid: ₹" . number_format($paid_fees, 2) . ", Remaining: ₹" . number_format($remaining_fees, 2) . $status_msg;
                         } else {
@@ -664,7 +693,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -675,11 +704,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'update_enrollment_status':
                 $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
                 $new_status = $_POST['new_status'] ?? '';
-                
+
                 if ($enrollment_id <= 0 || empty($new_status)) {
                     $error_message = "Invalid enrollment ID or status.";
                 } else {
@@ -688,14 +717,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (!in_array($new_status, $valid_statuses)) {
                             throw new Exception("Invalid status.");
                         }
-                        
+
                         $update_sql = "UPDATE student_enrollments SET status = ?, updated_at = NOW() WHERE id = ?";
                         if ($new_status === 'completed') {
                             $update_sql = "UPDATE student_enrollments SET status = ?, completion_date = CURDATE(), updated_at = NOW() WHERE id = ?";
                         }
-                        
+
                         $result = updateData($update_sql, [$new_status, $enrollment_id]);
-                        
+
                         if ($result) {
                             $success_message = "Enrollment status updated to '" . ucfirst(str_replace('_', ' ', $new_status)) . "' successfully!";
                         } else {
@@ -705,7 +734,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -716,10 +745,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'mark_completed':
                 $enrollment_id = intval($_POST['enrollment_id'] ?? 0);
-                
+
                 if ($enrollment_id <= 0) {
                     $error_message = "Invalid enrollment ID.";
                 } else {
@@ -732,18 +761,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             JOIN sub_courses sc ON se.sub_course_id = sc.id
                             WHERE se.id = ?
                         ", [$enrollment_id]);
-                        
+
                         if (!$enrollment) {
                             throw new Exception("Enrollment not found.");
                         }
-                        
+
                         if ($enrollment['remaining_fees'] > 0) {
                             throw new Exception("Cannot mark as completed. Remaining fees: ₹" . number_format($enrollment['remaining_fees'], 2));
                         }
-                        
+
                         $update_sql = "UPDATE student_enrollments SET status = 'completed', completion_date = CURDATE(), updated_at = NOW() WHERE id = ?";
                         $result = updateData($update_sql, [$enrollment_id]);
-                        
+
                         if ($result) {
                             $success_message = "Course marked as completed for {$enrollment['student_name']} - {$enrollment['sub_course_name']}!";
                         } else {
@@ -753,7 +782,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $error_message = "Error: " . $e->getMessage();
                     }
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -764,7 +793,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: students.php');
                 exit;
                 break;
-                
+
             case 'update_password':
                 $student_id = $_POST['student_id'] ?? 0;
                 $new_password = $_POST['new_password'] ?? '';
@@ -774,11 +803,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (strlen($new_password) < 8) {
                             throw new Exception("New password must be at least 8 characters long.");
                         }
-                        
+
                         if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/', $new_password)) {
                             throw new Exception("Password must contain at least one lowercase letter, one uppercase letter, and one number.");
                         }
-                        
+
                         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                         $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ? AND user_type_id = 2";
                         $result = updateData($sql, [$hashed_password, $student_id]);
@@ -793,7 +822,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 } else {
                     $error_message = "Please provide a new password.";
                 }
-                
+
                 // Store message in session and redirect
                 if (isset($success_message)) {
                     $_SESSION['success_message'] = $success_message;
@@ -840,6 +869,7 @@ try {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -853,6 +883,7 @@ try {
         .admin-content {
             padding: 20px;
         }
+
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -861,6 +892,7 @@ try {
             padding: 25px 0;
             border-bottom: 2px solid #e9ecef;
         }
+
         .page-header h1 {
             font-size: 28px;
             font-weight: 700;
@@ -870,10 +902,12 @@ try {
             align-items: center;
             gap: 12px;
         }
+
         .page-header h1 i {
             color: #667eea;
             font-size: 32px;
         }
+
         .add-student-btn {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
@@ -888,15 +922,17 @@ try {
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
+
         .add-student-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
         }
-        
+
         .section-header {
             margin-bottom: 25px;
             text-align: center;
         }
+
         .section-header h2 {
             font-size: 24px;
             font-weight: 700;
@@ -907,15 +943,17 @@ try {
             justify-content: center;
             gap: 10px;
         }
+
         .section-header h2 i {
             color: #667eea;
         }
+
         .section-header p {
             color: #6c757d;
             font-size: 16px;
             margin: 0;
         }
-        
+
         /* Search Section Styling */
         .search-section {
             background: white;
@@ -925,10 +963,12 @@ try {
             margin-bottom: 30px;
             border: 1px solid #e9ecef;
         }
+
         .search-box {
             position: relative;
             margin-bottom: 20px;
         }
+
         .search-box i {
             position: absolute;
             left: 15px;
@@ -937,6 +977,7 @@ try {
             color: #6c757d;
             font-size: 18px;
         }
+
         .search-box input {
             width: 100%;
             padding: 15px 50px 15px 45px;
@@ -946,11 +987,13 @@ try {
             transition: all 0.3s ease;
             box-sizing: border-box;
         }
+
         .search-box input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
         .clear-search {
             position: absolute;
             right: 15px;
@@ -968,15 +1011,18 @@ try {
             justify-content: center;
             transition: all 0.2s ease;
         }
+
         .clear-search:hover {
             background: #c82333;
             transform: translateY(-50%) scale(1.1);
         }
+
         .search-filters {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
         }
+
         .search-filters select {
             padding: 10px 15px;
             border: 2px solid #e9ecef;
@@ -986,21 +1032,23 @@ try {
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         .search-filters select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
+
         .search-filters select:hover {
             border-color: #667eea;
         }
-        
+
         .action-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
-        
+
         .btn-small {
             padding: 6px 12px;
             border: none;
@@ -1011,67 +1059,67 @@ try {
             text-decoration: none;
             display: inline-block;
         }
-        
+
         .btn-edit {
             background: #17a2b8;
             color: white;
         }
-        
+
         .btn-edit:hover {
             background: #138496;
         }
-        
+
         .btn-password {
             background: #6f42c1;
             color: white;
         }
-        
+
         .btn-password:hover {
             background: #5a32a3;
         }
-        
+
         .btn-view {
             background: #667eea;
             color: white;
         }
-        
+
         .btn-view:hover {
             background: #5568d3;
         }
-        
+
         .btn-icard {
             background: #17a2b8;
             color: white;
         }
-        
+
         .btn-icard:hover {
             background: #138496;
         }
-        
+
         .btn-delete {
             background: #dc3545;
             color: white;
         }
-        
+
         .btn-delete:hover {
             background: #c82333;
         }
-        
+
         .btn-enroll {
             background: #28a745;
             color: white;
         }
-        
+
         .btn-enroll:hover {
             background: #218838;
         }
-        
+
         .btn-sm {
             padding: 4px 8px;
             font-size: 11px;
             border-radius: 4px;
         }
-        
+
         .fees-info {
             margin-top: 10px;
             padding: 8px;
@@ -1079,24 +1127,27 @@ try {
             border-radius: 4px;
             border: 1px solid #e9ecef;
         }
-        
+
         .btn-toggle {
             background: #ffc107;
             color: #212529;
         }
-        
+
         .btn-toggle:hover {
             background: #e0a800;
         }
+
         .add-student-btn:hover {
             transform: translateY(-2px);
         }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 25px;
             margin-bottom: 35px;
         }
+
         .stat-card {
             background: white;
             border-radius: 16px;
@@ -1108,6 +1159,7 @@ try {
             position: relative;
             overflow: hidden;
         }
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -1117,16 +1169,19 @@ try {
             height: 4px;
             background: linear-gradient(90deg, #667eea, #764ba2);
         }
+
         .stat-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
         }
+
         .stat-card h3 {
             margin: 0 0 15px 0;
             color: #495057;
             font-size: 16px;
             font-weight: 600;
         }
+
         .stat-card .value {
             font-size: 36px;
             font-weight: 800;
@@ -1134,11 +1189,13 @@ try {
             margin-bottom: 8px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .stat-card .label {
             color: #6c757d;
             font-size: 13px;
             font-weight: 500;
         }
+
         /* Table Styles */
         .table-responsive {
             overflow-x: auto;
@@ -1147,18 +1204,18 @@ try {
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             border: 1px solid #e9ecef;
         }
-        
+
         .students-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
         }
-        
+
         .students-table thead {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
+
         .students-table th {
             padding: 18px 16px;
             text-align: left;
@@ -1169,38 +1226,38 @@ try {
             border: none;
             white-space: nowrap;
         }
-        
+
         .students-table tbody tr {
             border-bottom: 1px solid #f1f5f9;
             transition: background-color 0.2s ease;
         }
-        
+
         .students-table tbody tr:hover {
             background-color: #f8fafc;
         }
-        
+
         .students-table tbody tr:last-child {
             border-bottom: none;
         }
-        
+
         .students-table td {
             padding: 18px 16px;
             vertical-align: middle;
             color: #374151;
             font-size: 14px;
         }
-        
+
         /* Student Info Cell */
         .student-info-cell {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-        
+
         .student-avatar {
             flex-shrink: 0;
         }
-        
+
         .student-avatar img.profile-img {
             width: 50px;
             height: 50px;
@@ -1208,7 +1265,7 @@ try {
             object-fit: cover;
             border: 3px solid #e9ecef;
         }
-        
+
         .default-avatar {
             width: 50px;
             height: 50px;
@@ -1221,23 +1278,23 @@ try {
             font-size: 20px;
             border: 3px solid #e9ecef;
         }
-        
+
         .student-details {
             flex: 1;
         }
-        
+
         .student-name {
             font-weight: 600;
             color: #1f2937;
             font-size: 16px;
             margin-bottom: 4px;
         }
-        
+
         .student-username {
             color: #6b7280;
             font-size: 14px;
         }
-        
+
         /* Contact Info Cell */
         .contact-info div {
             margin-bottom: 8px;
@@ -1245,13 +1302,13 @@ try {
             align-items: center;
             gap: 8px;
         }
-        
+
         .contact-info i {
             color: #667eea;
             width: 16px;
             text-align: center;
         }
-        
+
         /* Status Cell */
         .status-badge {
             display: inline-block;
@@ -1262,48 +1319,48 @@ try {
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .status-active {
             background: #d1fae5;
             color: #065f46;
         }
-        
+
         .status-inactive {
             background: #fee2e2;
             color: #991b1b;
         }
-        
+
         .status-success {
             background: #d1fae5;
             color: #065f46;
         }
-        
+
         .status-pending {
             background: #fef3c7;
             color: #92400e;
         }
-        
+
         /* Enrollment Cell */
         .enrollment-summary {
             margin-bottom: 10px;
         }
-        
+
         .enrollment-stat {
             display: flex;
             justify-content: space-between;
             margin-bottom: 4px;
             font-size: 12px;
         }
-        
+
         .stat-label {
             color: #6b7280;
         }
-        
+
         .stat-value {
             font-weight: 600;
             color: #374151;
         }
-        
+
         .btn-expand {
             background: #667eea;
             color: white;
@@ -1314,18 +1371,18 @@ try {
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        
+
         .btn-expand:hover {
             background: #5a67d8;
         }
-        
+
         /* Actions Cell */
         .action-buttons {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
-        
+
         .action-buttons .btn {
             padding: 8px 12px;
             border: none;
@@ -1339,52 +1396,52 @@ try {
             align-items: center;
             justify-content: center;
         }
-        
+
         .btn-edit {
             background: #17a2b8;
             color: white;
         }
-        
+
         .btn-edit:hover {
             background: #138496;
         }
-        
+
         .btn-password {
             background: #ffc107;
             color: #212529;
         }
-        
+
         .btn-password:hover {
             background: #e0a800;
         }
-        
+
         .btn-toggle {
             background: #28a745;
             color: white;
         }
-        
+
         .btn-toggle:hover {
             background: #218838;
         }
-        
+
         .btn-delete {
             background: #dc3545;
             color: white;
         }
-        
+
         .btn-delete:hover {
             background: #c82333;
         }
-        
+
         /* Enrollment Details Row */
         .enrollment-details-row {
             background: #f8fafc;
         }
-        
+
         .enrollment-details {
             padding: 20px;
         }
-        
+
         .enrollment-details h4 {
             margin: 0 0 15px 0;
             color: #374151;
@@ -1392,52 +1449,57 @@ try {
             align-items: center;
             gap: 10px;
         }
-        
+
         .enrollment-details h4 i {
             color: #667eea;
         }
-        
+
         .enrollment-loading {
             text-align: center;
             color: #6b7280;
             padding: 20px;
         }
-        
+
         .enrollment-loading i {
             font-size: 20px;
             margin-bottom: 10px;
         }
-        
+
         .enrollment-loading .fa-spinner {
             animation: spin 1s linear infinite;
         }
-        
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         .no-enrollments,
         .enrollment-error {
             text-align: center;
             color: #6b7280;
             padding: 20px;
         }
-        
+
         .no-enrollments i {
             font-size: 24px;
             color: #9ca3af;
             margin-bottom: 10px;
         }
-        
+
         .enrollment-error i {
             font-size: 24px;
             color: #ef4444;
             margin-bottom: 10px;
         }
-        
 
-        
+
+
         /* Enrollment Details Table */
         .enrollment-details-table {
             width: 100%;
@@ -1447,12 +1509,12 @@ try {
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         .enrollment-details-table thead {
             background: #f1f5f9;
             color: #374151;
         }
-        
+
         .enrollment-details-table th {
             padding: 12px 16px;
             text-align: center;
@@ -1462,81 +1524,88 @@ try {
             letter-spacing: 0.5px;
             border-bottom: 1px solid #e5e7eb;
         }
-        
+
         .enrollment-details-table td {
             padding: 12px 16px;
             text-align: center;
             border-bottom: 1px solid #f3f4f6;
             font-size: 14px;
         }
-        
+
         .enrollment-details-table tbody tr:hover {
             background-color: #f9fafb;
         }
-        
+
         .enrollment-details-table tbody tr:last-child td {
             border-bottom: none;
         }
-        
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .students-table {
                 font-size: 12px;
             }
-            
+
             .students-table th,
             .students-table td {
                 padding: 12px 8px;
             }
-            
+
             .action-buttons {
                 flex-direction: column;
             }
-            
+
             .action-buttons .btn {
                 min-width: 32px;
                 height: 32px;
                 font-size: 11px;
             }
         }
-        
+
         .students-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
             gap: 25px;
             margin-top: 25px;
         }
-        
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .students-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
+
             .stats-grid {
                 grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
                 gap: 15px;
             }
+
             .student-header {
                 flex-direction: column;
                 text-align: center;
                 gap: 15px;
             }
+
             .student-actions {
                 justify-content: center;
             }
+
             .page-header {
                 flex-direction: column;
                 gap: 20px;
                 text-align: center;
             }
+
             .search-filters {
                 flex-direction: column;
             }
+
             .search-filters select {
                 width: 100%;
             }
         }
+
         .student-card {
             background: white;
             border-radius: 16px;
@@ -1547,6 +1616,7 @@ try {
             position: relative;
             overflow: hidden;
         }
+
         .student-card::before {
             content: '';
             position: absolute;
@@ -1556,19 +1626,23 @@ try {
             height: 4px;
             background: linear-gradient(90deg, #28a745, #20c997, #17a2b8);
         }
+
         .student-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
         }
+
         .student-header {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
             gap: 15px;
         }
+
         .student-avatar {
             flex-shrink: 0;
         }
+
         .profile-img {
             width: 80px;
             height: 80px;
@@ -1577,6 +1651,7 @@ try {
             border: 3px solid #667eea;
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
+
         .default-avatar {
             width: 80px;
             height: 80px;
@@ -1590,20 +1665,24 @@ try {
             border: 3px solid #667eea;
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
+
         .student-details {
             flex: 1;
         }
+
         .student-name {
             font-size: 20px;
             font-weight: 700;
             color: #333;
             margin-bottom: 4px;
         }
+
         .student-username {
             font-size: 14px;
             color: #667eea;
             font-weight: 500;
         }
+
         .student-status {
             background: #f8f9fa;
             padding: 4px 12px;
@@ -1611,8 +1690,17 @@ try {
             font-size: 12px;
             font-weight: 500;
         }
-        .student-status.active { background: #d4edda; color: #155724; }
-        .student-status.inactive { background: #f8d7da; color: #721c24; }
+
+        .student-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .student-status.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .student-info {
             margin-bottom: 20px;
             font-size: 14px;
@@ -1621,12 +1709,14 @@ try {
             border-radius: 10px;
             border: 1px solid #e9ecef;
         }
+
         .student-info strong {
             color: #495057;
             min-width: 100px;
             display: inline-block;
             font-weight: 600;
         }
+
         .enrollment-stats {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             padding: 20px;
@@ -1634,6 +1724,7 @@ try {
             margin-bottom: 20px;
             border: 1px solid #dee2e6;
         }
+
         .enrollment-stats h4 {
             margin: 0 0 15px 0;
             color: #495057;
@@ -1643,23 +1734,39 @@ try {
             align-items: center;
             gap: 8px;
         }
+
         .enrollment-stats h4::before {
             content: '📊';
             font-size: 18px;
         }
+
         .stats-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
         }
-        .stats-row:last-child { margin-bottom: 0; }
-        .stats-label { color: #666; font-size: 12px; }
-        .stats-value { color: #333; font-weight: 500; font-size: 12px; }
+
+        .stats-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-label {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .stats-value {
+            color: #333;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
         .student-actions {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
         }
+
         .btn {
             padding: 10px 16px;
             border: none;
@@ -1674,32 +1781,44 @@ try {
             min-width: 80px;
             justify-content: center;
         }
-        .btn-edit { 
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); 
-            color: white; 
+
+        .btn-edit {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
             box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
         }
-        .btn-password { 
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); 
-            color: #212529; 
+
+        .btn-password {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
             box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
         }
-        .btn-toggle { 
-            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); 
-            color: white; 
+
+        .btn-toggle {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+            color: white;
             box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
         }
-        .btn-delete { 
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
-            color: white; 
+
+        .btn-delete {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
         }
-        .btn:hover { 
+
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .status-active { color: #28a745; }
-        .status-inactive { color: #dc3545; }
+
+        .status-active {
+            color: #28a745;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -1708,8 +1827,9 @@ try {
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
         }
+
         .modal-content {
             background-color: white;
             margin: 5% auto;
@@ -1720,29 +1840,39 @@ try {
             max-height: 80vh;
             overflow-y: auto;
         }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
+
         .close {
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
             color: #aaa;
         }
-        .close:hover { color: #000; }
+
+        .close:hover {
+            color: #000;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
             color: #333;
         }
-        .form-group input, .form-group select, .form-group textarea {
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 2px solid #e1e5e9;
@@ -1750,31 +1880,57 @@ try {
             font-size: 14px;
             box-sizing: border-box;
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #007bff;
         }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+
         .form-actions {
             display: flex;
             gap: 15px;
             justify-content: flex-end;
             margin-top: 30px;
         }
-        .btn-primary { background: #007bff; color: white; padding: 12px 24px; }
-        .btn-secondary { background: #6c757d; color: white; padding: 12px 24px; }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 12px 24px;
+        }
+
         .alert {
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
         }
-        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         /* Enhanced Modal Styles */
         .form-section {
             background: #f8f9fa;
@@ -1783,7 +1939,7 @@ try {
             margin-bottom: 25px;
             border: 1px solid #e9ecef;
         }
-        
+
         .form-section h3 {
             margin: 0 0 20px 0;
             color: #495057;
@@ -1793,12 +1949,12 @@ try {
             align-items: center;
             gap: 10px;
         }
-        
+
         .form-section h3 i {
             color: #667eea;
             font-size: 20px;
         }
-        
+
         .file-upload-wrapper {
             position: relative;
             border: 2px dashed #dee2e6;
@@ -1809,12 +1965,12 @@ try {
             transition: all 0.3s ease;
             cursor: pointer;
         }
-        
+
         .file-upload-wrapper:hover {
             border-color: #667eea;
             background: #f8f9ff;
         }
-        
+
         .file-upload-wrapper input[type="file"] {
             position: absolute;
             top: 0;
@@ -1824,7 +1980,7 @@ try {
             opacity: 0;
             cursor: pointer;
         }
-        
+
         .file-upload-info {
             display: flex;
             flex-direction: column;
@@ -1832,30 +1988,30 @@ try {
             gap: 10px;
             color: #6c757d;
         }
-        
+
         .file-upload-info i {
             font-size: 24px;
             color: #667eea;
         }
-        
+
         .file-upload-info span {
             font-size: 14px;
             font-weight: 500;
         }
-        
+
         .image-preview {
             margin-top: 15px;
             text-align: center;
         }
-        
+
         .image-preview img {
             max-width: 150px;
             max-height: 150px;
             border-radius: 8px;
             border: 2px solid #e9ecef;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
+
         .image-preview .file-info {
             margin-top: 10px;
             padding: 8px 12px;
@@ -1864,19 +2020,20 @@ try {
             font-size: 12px;
             color: #495057;
         }
-        
+
         .form-text {
             margin-top: 8px;
             font-size: 12px;
             color: #6c757d;
         }
-        
+
         .form-text i {
             margin-right: 5px;
             color: #667eea;
         }
     </style>
 </head>
+
 <body class="admin-dashboard-body">
     <div class="admin-layout">
         <aside class="admin-sidebar">
@@ -1909,7 +2066,7 @@ try {
             <div class="topbar-left">
                 <button class="menu-toggle"><i class="fas fa-bars"></i></button>
                 <div class="breadcrumbs">
-                    <a href="../index.php" class="home-link">Home</a> / 
+                    <a href="../index.php" class="home-link">Home</a> /
                     <a href="../dashboard.php">Dashboard</a> / Students
                 </div>
             </div>
@@ -1940,17 +2097,29 @@ try {
                 </div>
                 <div class="stat-card">
                     <h3>Active Students</h3>
-                    <div class="value"><?php echo count(array_filter($students, function($s) { return $s['status'] === 'active'; })); ?></div>
+                    <div class="value">
+                        <?php echo count(array_filter($students, function ($s) {
+                            return $s['status'] === 'active';
+                        })); ?>
+                    </div>
                     <div class="label">Currently Active</div>
                 </div>
                 <div class="stat-card">
                     <h3>Enrolled Students</h3>
-                    <div class="value"><?php echo count(array_filter($students, function($s) { return !empty($s['course_name']); })); ?></div>
+                    <div class="value">
+                        <?php echo count(array_filter($students, function ($s) {
+                            return !empty($s['course_name']);
+                        })); ?>
+                    </div>
                     <div class="label">With Course Assigned</div>
                 </div>
                 <div class="stat-card">
                     <h3>Pending Enrollment</h3>
-                    <div class="value"><?php echo count(array_filter($students, function($s) { return $s['enrollment_status'] === 'payment_pending'; })); ?></div>
+                    <div class="value">
+                        <?php echo count(array_filter($students, function ($s) {
+                            return $s['enrollment_status'] === 'payment_pending';
+                        })); ?>
+                    </div>
                     <div class="label">Awaiting Payment</div>
                 </div>
             </div>
@@ -1959,7 +2128,8 @@ try {
             <div class="search-section">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="studentSearch" placeholder="Search students by name, username, email, or phone..." onkeyup="searchStudents()">
+                    <input type="text" id="studentSearch"
+                        placeholder="Search students by name, username, email, or phone..." onkeyup="searchStudents()">
                     <button class="clear-search" onclick="clearSearch()" id="clearSearchBtn" style="display: none;">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1984,7 +2154,7 @@ try {
                 <h2><i class="fas fa-users"></i> All Students</h2>
                 <p>Manage student accounts, view profiles, and track enrollments</p>
             </div>
-            
+
             <div class="table-responsive">
                 <table class="students-table" id="studentsTable">
                     <thead>
@@ -2003,7 +2173,8 @@ try {
                                 <td class="student-info-cell">
                                     <div class="student-avatar">
                                         <?php if (!empty($student['profile_image'])): ?>
-                                            <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile" class="profile-img">
+                                            <img src="<?php echo htmlspecialchars($student['profile_image']); ?>" alt="Profile"
+                                                class="profile-img">
                                         <?php else: ?>
                                             <div class="default-avatar">
                                                 <i class="fas fa-user-graduate"></i>
@@ -2011,14 +2182,19 @@ try {
                                         <?php endif; ?>
                                     </div>
                                     <div class="student-details">
-                                        <div class="student-name"><?php echo htmlspecialchars($student['full_name']); ?></div>
-                                        <div class="student-username">@<?php echo htmlspecialchars($student['username']); ?></div>
+                                        <div class="student-name"><?php echo htmlspecialchars($student['full_name']); ?>
+                                        </div>
+                                        <div class="student-username">@<?php echo htmlspecialchars($student['username']); ?>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="contact-info">
-                                    <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($student['email']); ?></div>
-                                    <div><i class="fas fa-phone"></i> <?php echo htmlspecialchars($student['phone'] ?? 'N/A'); ?></div>
-                                    <div><i class="fas fa-venus-mars"></i> <?php echo htmlspecialchars(ucfirst($student['gender'] ?? 'N/A')); ?></div>
+                                    <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($student['email']); ?>
+                                    </div>
+                                    <div><i class="fas fa-phone"></i>
+                                        <?php echo htmlspecialchars($student['phone'] ?? 'N/A'); ?></div>
+                                    <div><i class="fas fa-venus-mars"></i>
+                                        <?php echo htmlspecialchars(ucfirst($student['gender'] ?? 'N/A')); ?></div>
                                 </td>
                                 <td class="status-cell">
                                     <span class="status-badge status-<?php echo $student['status']; ?>">
@@ -2033,15 +2209,17 @@ try {
                                             </div>
                                             <?php if (!empty($student['sub_course_name'])): ?>
                                                 <div class="sub-course-name">
-                                                    <i class="fas fa-book"></i> <?php echo htmlspecialchars($student['sub_course_name']); ?>
+                                                    <i class="fas fa-book"></i>
+                                                    <?php echo htmlspecialchars($student['sub_course_name']); ?>
                                                 </div>
                                             <?php endif; ?>
                                             <?php if (!empty($student['category_name'])): ?>
                                                 <div class="course-category">
-                                                    <i class="fas fa-tag"></i> <?php echo htmlspecialchars($student['category_name']); ?>
+                                                    <i class="fas fa-tag"></i>
+                                                    <?php echo htmlspecialchars($student['category_name']); ?>
                                                 </div>
                                             <?php endif; ?>
-                                            
+
                                             <?php if (!empty($student['enrollment_status'])): ?>
                                                 <div class="enrollment-status-badge" style="margin-top: 8px;">
                                                     <span class="status-badge status-<?php echo $student['enrollment_status']; ?>">
@@ -2051,7 +2229,9 @@ try {
                                             <?php endif; ?>
                                         </div>
                                     <?php else: ?>
-                                        <button class="btn btn-enroll" onclick="openEnrollModal(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')" title="Enroll to Course">
+                                        <button class="btn btn-enroll"
+                                            onclick="openEnrollModal(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')"
+                                            title="Enroll to Course">
                                             <i class="fas fa-plus-circle"></i> Enroll to Course
                                         </button>
                                     <?php endif; ?>
@@ -2061,22 +2241,34 @@ try {
                                 </td>
                                 <td class="actions-cell">
                                     <div class="action-buttons">
-                                        <button class="btn btn-view" onclick="viewStudentDetails(<?php echo $student['id']; ?>)" title="View Student Details">
+                                        <button class="btn btn-view"
+                                            onclick="viewStudentDetails(<?php echo $student['id']; ?>)"
+                                            title="View Student Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="btn btn-icard" onclick="showStudentICard(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>', '<?php echo htmlspecialchars($student['username']); ?>')" title="View Student ID Card">
+                                        <button class="btn btn-icard"
+                                            onclick="showStudentICard(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>', '<?php echo htmlspecialchars($student['username']); ?>')"
+                                            title="View Student ID Card">
                                             <i class="fas fa-id-card"></i>
                                         </button>
-                                        <button class="btn btn-edit" onclick="editStudent(<?php echo $student['id']; ?>)" title="Edit Student">
+                                        <button class="btn btn-edit" onclick="editStudent(<?php echo $student['id']; ?>)"
+                                            title="Edit Student">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-password" onclick="openPasswordModal(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['username']); ?>')" title="Change Password">
+                                        <button class="btn btn-password"
+                                            onclick="openPasswordModal(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['username']); ?>')"
+                                            title="Change Password">
                                             <i class="fas fa-key"></i>
                                         </button>
-                                        <button class="btn btn-toggle" onclick="toggleStatus(<?php echo $student['id']; ?>, '<?php echo $student['status'] === 'active' ? 'inactive' : 'active'; ?>')" title="<?php echo $student['status'] === 'active' ? 'Deactivate' : 'Activate'; ?> Student">
-                                            <i class="fas fa-<?php echo $student['status'] === 'active' ? 'toggle-on' : 'toggle-off'; ?>"></i>
+                                        <button class="btn btn-toggle"
+                                            onclick="toggleStatus(<?php echo $student['id']; ?>, '<?php echo $student['status'] === 'active' ? 'inactive' : 'active'; ?>')"
+                                            title="<?php echo $student['status'] === 'active' ? 'Deactivate' : 'Activate'; ?> Student">
+                                            <i
+                                                class="fas fa-<?php echo $student['status'] === 'active' ? 'toggle-on' : 'toggle-off'; ?>"></i>
                                         </button>
-                                        <button class="btn btn-delete" onclick="deleteStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')" title="Delete Student">
+                                        <button class="btn btn-delete"
+                                            onclick="deleteStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>')"
+                                            title="Delete Student">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -2089,164 +2281,174 @@ try {
         </main>
     </div>
 
-        <!-- Add Student Modal -->
+    <!-- Add Student Modal -->
     <div id="addStudentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-user-plus"></i> Add New Student</h2>
                 <span class="close" onclick="closeAddStudentModal()">&times;</span>
             </div>
-            
+
             <form id="addStudentForm" method="POST" action="students.php" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add_student">
-                
+
                 <!-- Info Alert -->
-                
+
                 <!-- Personal Information Section -->
                 <div class="form-section">
                     <h3><i class="fas fa-user"></i> Personal Information</h3>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="full_name">Full Name *</label>
-                            <input type="text" id="full_name" name="full_name" required placeholder="Enter student's full name">
+                            <input type="text" id="full_name" name="full_name" required
+                                placeholder="Enter student's full name">
                         </div>
+                        <div class="form-group">
+                            <label for="father_name">Father's Name *</label>
+                            <input type="text" id="father_name" name="father_name" required
+                                placeholder="Enter father's name">
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label for="email">Email Address *</label>
                             <input type="email" id="email" name="email" required placeholder="student@example.com">
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
                             <input type="tel" id="phone" name="phone" placeholder="+91-9876543210">
                         </div>
-                        <div class="form-group">
-                            <label for="date_of_birth">Date of Birth</label>
-                            <input type="date" id="date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
-                        </div>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="gender">Gender *</label>
-                            <select id="gender" name="gender" required>
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="qualification">Current Qualification *</label>
-                            <select id="qualification" name="qualification" required>
-                                <option value="">Select Qualification</option>
-                                <option value="10th">10th Standard</option>
-                                <option value="12th">12th Standard</option>
-                                <option value="Diploma">Diploma</option>
-                                <option value="B.Tech">B.Tech</option>
-                                <option value="M.Tech">M.Tech</option>
-                                <option value="B.Sc">B.Sc</option>
-                                <option value="M.Sc">M.Sc</option>
-                                <option value="B.Com">B.Com</option>
-                                <option value="M.Com">M.Com</option>
-                                <option value="BBA">BBA</option>
-                                <option value="MBA">MBA</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="address">Address</label>
-                        <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
                     </div>
                 </div>
-                
-                <!-- Academic Information Section -->
-                <div class="form-section">
-                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="joining_date">Joining Date</label>
-                            <input type="date" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>">
-                        </div>
-                        <div class="form-group">
-                            <label for="previous_institute">Previous Institute (Optional)</label>
-                            <input type="text" id="previous_institute" name="previous_institute" placeholder="Name of previous institute">
-                        </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gender">Gender *</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="qualification">Current Qualification *</label>
+                        <select id="qualification" name="qualification" required>
+                            <option value="">Select Qualification</option>
+                            <option value="10th">10th Standard</option>
+                            <option value="12th">12th Standard</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="B.Tech">B.Tech</option>
+                            <option value="M.Tech">M.Tech</option>
+                            <option value="B.Sc">B.Sc</option>
+                            <option value="M.Sc">M.Sc</option>
+                            <option value="B.Com">B.Com</option>
+                            <option value="M.Com">M.Com</option>
+                            <option value="BBA">BBA</option>
+                            <option value="MBA">MBA</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                 </div>
-                
-                <!-- Document Upload Section -->
-                <div class="form-section">
-                    <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="profile_image">Profile Image *</label>
-                            <div class="file-upload-wrapper">
-                                <input type="file" id="profile_image" name="profile_image" required accept="image/*" onchange="previewImage(this, 'profile-preview')">
-                                <div class="file-upload-info">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>Click to upload or drag & drop</span>
-                                </div>
-                            </div>
-                            <div id="profile-preview" class="image-preview"></div>
-                            <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                Max size: 400KB. Formats: JPG, JPEG, PNG
-                            </small>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="marksheet">Marksheet/Certificate *</label>
-                            <div class="file-upload-wrapper">
-                                <input type="file" id="marksheet" name="marksheet" required accept=".pdf,.jpg,.jpeg,.png" onchange="previewImage(this, 'marksheet-preview')">
-                                <div class="file-upload-info">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>Click to upload or drag & drop</span>
-                                </div>
-                            </div>
-                            <div id="marksheet-preview" class="image-preview"></div>
-                            <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                Max size: 400KB. Formats: PDF, JPG, JPEG, PNG
-                            </small>
-                        </div>
-                        <div class="form-group">
-                            <label for="aadhaar_card">Aadhaar Card (Optional)</label>
-                            <div class="file-upload-wrapper">
-                                <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*" onchange="previewImage(this, 'aadhaar-preview')">
-                                <div class="file-upload-info">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>Click to upload or drag & drop</span>
-                                </div>
-                            </div>
-                            <div id="aadhaar-preview" class="image-preview"></div>
-                            <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                Max size: 400KB. Formats: JPG, JPEG, PNG
-                            </small>
-                        </div>
-                    </div>
+
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
                 </div>
-                
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-user-plus"></i> Add Student
-                    </button>
-                </div>
-            </form>
         </div>
+
+        <!-- Academic Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="joining_date">Joining Date</label>
+                    <input type="date" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="previous_institute">Previous Institute (Optional)</label>
+                    <input type="text" id="previous_institute" name="previous_institute"
+                        placeholder="Name of previous institute">
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Upload Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="profile_image">Profile Image *</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="profile_image" name="profile_image" required accept="image/*"
+                            onchange="previewImage(this, 'profile-preview')">
+                        <div class="file-upload-info">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click to upload or drag & drop</span>
+                        </div>
+                    </div>
+                    <div id="profile-preview" class="image-preview"></div>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Max size: 400KB. Formats: JPG, JPEG, PNG
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="marksheet">Marksheet/Certificate *</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="marksheet" name="marksheet" required accept=".pdf,.jpg,.jpeg,.png"
+                            onchange="previewImage(this, 'marksheet-preview')">
+                        <div class="file-upload-info">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click to upload or drag & drop</span>
+                        </div>
+                    </div>
+                    <div id="marksheet-preview" class="image-preview"></div>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Max size: 400KB. Formats: PDF, JPG, JPEG, PNG
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="aadhaar_card">Aadhaar Card (Optional)</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*"
+                            onchange="previewImage(this, 'aadhaar-preview')">
+                        <div class="file-upload-info">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Click to upload or drag & drop</span>
+                        </div>
+                    </div>
+                    <div id="aadhaar-preview" class="image-preview"></div>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Max size: 400KB. Formats: JPG, JPEG, PNG
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Add Student
+            </button>
+        </div>
+        </form>
+    </div>
     </div>
 
 
@@ -2258,24 +2460,25 @@ try {
                 <h2><i class="fas fa-key"></i> Update Password</h2>
                 <span class="close" onclick="closePasswordModal()">&times;</span>
             </div>
-            
+
             <form method="POST" action="students.php">
                 <input type="hidden" name="action" value="update_password">
                 <input type="hidden" id="password_student_id" name="student_id">
-                
+
                 <div class="form-group">
                     <label for="new_password">New Password *</label>
-                    <input type="password" id="new_password" name="new_password" required 
-                           minlength="8" placeholder="Enter new password (min 8 characters)">
-                    <small>Password must be at least 8 characters long and contain lowercase, uppercase, and number</small>
+                    <input type="password" id="new_password" name="new_password" required minlength="8"
+                        placeholder="Enter new password (min 8 characters)">
+                    <small>Password must be at least 8 characters long and contain lowercase, uppercase, and
+                        number</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="confirm_password">Confirm Password *</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required 
-                           minlength="8" placeholder="Confirm new password">
+                    <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
+                        placeholder="Confirm new password">
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update Password</button>
@@ -2291,120 +2494,129 @@ try {
                 <h2><i class="fas fa-user-edit"></i> Edit Student</h2>
                 <span class="close" onclick="closeEditStudentModal()">&times;</span>
             </div>
-            
+
             <form id="editStudentForm" method="POST" action="students.php" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="update_student">
                 <input type="hidden" id="edit_student_id" name="student_id">
-                
+
                 <!-- Personal Information Section -->
                 <div class="form-section">
                     <h3><i class="fas fa-user"></i> Personal Information</h3>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="edit_full_name">Full Name *</label>
-                            <input type="text" id="edit_full_name" name="full_name" required placeholder="Enter student's full name">
+                            <input type="text" id="edit_full_name" name="full_name" required
+                                placeholder="Enter student's full name">
                         </div>
+                        <div class="form-group">
+                            <label for="edit_father_name">Father's Name *</label>
+                            <input type="text" id="edit_father_name" name="father_name" required
+                                placeholder="Enter father's name">
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label for="edit_email">Email Address *</label>
                             <input type="email" id="edit_email" name="email" required placeholder="student@example.com">
                         </div>
-                    </div>
-                    
-                    <div class="form-row">
                         <div class="form-group">
                             <label for="edit_phone">Phone Number</label>
                             <input type="tel" id="edit_phone" name="phone" placeholder="+91-9876543210">
                         </div>
-                        <div class="form-group">
-                            <label for="edit_date_of_birth">Date of Birth</label>
-                            <input type="date" id="edit_date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
-                        </div>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit_gender">Gender</label>
-                            <select id="edit_gender" name="gender">
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit_qualification">Current Qualification</label>
-                            <select id="edit_qualification" name="qualification">
-                                <option value="">Select Qualification</option>
-                                <option value="10th">10th Standard</option>
-                                <option value="12th">12th Standard</option>
-                                <option value="Diploma">Diploma</option>
-                                <option value="B.Tech">B.Tech</option>
-                                <option value="M.Tech">M.Tech</option>
-                                <option value="B.Sc">B.Sc</option>
-                                <option value="M.Sc">M.Sc</option>
-                                <option value="B.Com">B.Com</option>
-                                <option value="M.Com">M.Com</option>
-                                <option value="BBA">BBA</option>
-                                <option value="MBA">MBA</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="edit_address">Address</label>
-                        <textarea id="edit_address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                        <label for="edit_date_of_birth">Date of Birth</label>
+                        <input type="date" id="edit_date_of_birth" name="date_of_birth"
+                            max="<?php echo date('Y-m-d'); ?>">
                     </div>
                 </div>
-                
-                <!-- Academic Information Section -->
-                <div class="form-section">
-                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="edit_joining_date">Joining Date</label>
-                            <input type="date" id="edit_joining_date" name="joining_date">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit_previous_institute">Previous Institute (Optional)</label>
-                            <input type="text" id="edit_previous_institute" name="previous_institute" placeholder="Name of previous institute">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Profile Image Upload Section -->
-                <div class="form-section">
-                    <h3><i class="fas fa-image"></i> Profile Image</h3>
-                    
+
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="edit_profile_image">Update Profile Image (Optional)</label>
-                        <div class="file-upload-wrapper">
-                            <input type="file" id="edit_profile_image" name="profile_image" accept="image/*" onchange="previewImage(this, 'edit-profile-preview')">
-                            <div class="file-upload-info">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <span>Click to upload or drag & drop</span>
-                            </div>
-                        </div>
-                        <div id="edit-profile-preview" class="image-preview"></div>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-info-circle"></i> 
-                            Max size: 400KB. Formats: JPG, JPEG, PNG. Leave empty to keep current image.
-                        </small>
+                        <label for="edit_gender">Gender</label>
+                        <select id="edit_gender" name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_qualification">Current Qualification</label>
+                        <select id="edit_qualification" name="qualification">
+                            <option value="">Select Qualification</option>
+                            <option value="10th">10th Standard</option>
+                            <option value="12th">12th Standard</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="B.Tech">B.Tech</option>
+                            <option value="M.Tech">M.Tech</option>
+                            <option value="B.Sc">B.Sc</option>
+                            <option value="M.Sc">M.Sc</option>
+                            <option value="B.Com">B.Com</option>
+                            <option value="M.Com">M.Com</option>
+                            <option value="BBA">BBA</option>
+                            <option value="MBA">MBA</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                 </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditStudentModal()">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Update Student
-                    </button>
+
+                <div class="form-group">
+                    <label for="edit_address">Address</label>
+                    <textarea id="edit_address" name="address" rows="3" placeholder="Enter complete address"></textarea>
                 </div>
-            </form>
         </div>
+
+        <!-- Academic Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="edit_joining_date">Joining Date</label>
+                    <input type="date" id="edit_joining_date" name="joining_date">
+                </div>
+                <div class="form-group">
+                    <label for="edit_previous_institute">Previous Institute (Optional)</label>
+                    <input type="text" id="edit_previous_institute" name="previous_institute"
+                        placeholder="Name of previous institute">
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Image Upload Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-image"></i> Profile Image</h3>
+
+            <div class="form-group">
+                <label for="edit_profile_image">Update Profile Image (Optional)</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="edit_profile_image" name="profile_image" accept="image/*"
+                        onchange="previewImage(this, 'edit-profile-preview')">
+                    <div class="file-upload-info">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Click to upload or drag & drop</span>
+                    </div>
+                </div>
+                <div id="edit-profile-preview" class="image-preview"></div>
+                <small class="form-text text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    Max size: 400KB. Formats: JPG, JPEG, PNG. Leave empty to keep current image.
+                </small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeEditStudentModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Update Student
+            </button>
+        </div>
+        </form>
+    </div>
     </div>
 
     <!-- Enroll Student Modal -->
@@ -2414,22 +2626,23 @@ try {
                 <h2><i class="fas fa-graduation-cap"></i> Enroll Student to Course</h2>
                 <span class="close" onclick="closeEnrollModal()">&times;</span>
             </div>
-            
+
             <form method="POST" action="students.php" id="enrollStudentForm">
                 <input type="hidden" name="action" value="enroll_student">
                 <input type="hidden" id="enroll_student_id" name="student_id">
-                
+
                 <div class="modal-body">
-                    
+
                     <div class="form-group">
                         <label>Student Name</label>
                         <input type="text" id="enroll_student_name" readonly style="background: #f8f9fa;">
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="enroll_course_id">Main Course *</label>
-                            <select id="enroll_course_id" name="course_id" required onchange="loadEnrollSubCourses(this.value)">
+                            <select id="enroll_course_id" name="course_id" required
+                                onchange="loadEnrollSubCourses(this.value)">
                                 <option value="">Select Main Course</option>
                                 <?php
                                 $courses = getRows("
@@ -2450,16 +2663,18 @@ try {
                             <select id="enroll_sub_course_id" name="sub_course_id" required>
                                 <option value="">Select Main Course First</option>
                             </select>
-                            <small class="form-text text-muted">Sub-courses will appear after selecting a main course</small>
+                            <small class="form-text text-muted">Sub-courses will appear after selecting a main
+                                course</small>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="enroll_enrollment_date">Enrollment Date *</label>
-                        <input type="date" id="enroll_enrollment_date" name="enrollment_date" value="<?php echo date('Y-m-d'); ?>" required>
+                        <input type="date" id="enroll_enrollment_date" name="enrollment_date"
+                            value="<?php echo date('Y-m-d'); ?>" required>
                     </div>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeEnrollModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">
@@ -2477,30 +2692,31 @@ try {
                 <h2><i class="fas fa-money-bill-wave"></i> Edit Enrollment Fees</h2>
                 <span class="close" onclick="closeEditFeesModal()">&times;</span>
             </div>
-            
+
             <form method="POST" action="students.php" id="editFeesForm">
                 <input type="hidden" name="action" value="update_enrollment_fees">
                 <input type="hidden" id="edit_fees_enrollment_id" name="enrollment_id">
-                
+
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Total Course Fee</label>
-                        <input type="text" id="edit_fees_total" readonly style="background: #f8f9fa; font-weight: bold;">
+                        <input type="text" id="edit_fees_total" readonly
+                            style="background: #f8f9fa; font-weight: bold;">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="edit_fees_paid">Paid Fees (₹) *</label>
                         <input type="number" id="edit_fees_paid" name="paid_fees" step="0.01" min="0" required>
                         <small class="form-text text-muted">Enter the amount paid by the student</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Remaining Fees (Auto-calculated)</label>
                         <input type="text" id="edit_fees_remaining" readonly style="background: #f8f9fa;">
                     </div>
-                    
+
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeEditFeesModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">
@@ -2518,11 +2734,11 @@ try {
                 <h2><i class="fas fa-exchange-alt"></i> Change Enrollment Status</h2>
                 <span class="close" onclick="closeEditStatusModal()">&times;</span>
             </div>
-            
+
             <form method="POST" action="students.php" id="editStatusForm">
                 <input type="hidden" name="action" value="update_enrollment_status">
                 <input type="hidden" id="edit_status_enrollment_id" name="enrollment_id">
-                
+
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="edit_status_new">New Status *</label>
@@ -2536,9 +2752,9 @@ try {
                         </select>
                         <small class="form-text text-muted">Select the new enrollment status</small>
                     </div>
-                    
+
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeEditStatusModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">
@@ -2551,17 +2767,17 @@ try {
 
     <!-- Mobile Menu JavaScript -->
     <script src="../assets/js/mobile-menu.js"></script>
-    
+
     <script>
         // Image preview functionality
         function previewImage(input, previewId) {
             const preview = document.getElementById(previewId);
             const file = input.files[0];
-            
+
             if (file) {
                 // Clear previous preview
                 preview.innerHTML = '';
-                
+
                 // Check file size (400KB limit)
                 const fileSize = file.size / 1024; // Convert to KB
                 if (fileSize > 400) {
@@ -2569,7 +2785,7 @@ try {
                     input.value = '';
                     return;
                 }
-                
+
                 // Check file type
                 const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
                 if (!allowedTypes.includes(file.type)) {
@@ -2577,16 +2793,16 @@ try {
                     input.value = '';
                     return;
                 }
-                
+
                 if (file.type.startsWith('image/')) {
                     // Show image preview
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         const img = document.createElement('img');
                         img.src = e.target.result;
                         img.alt = 'Preview';
                         preview.appendChild(img);
-                        
+
                         // Add file info
                         const fileInfo = document.createElement('div');
                         fileInfo.className = 'file-info';
@@ -2612,13 +2828,13 @@ try {
                 }
             }
         }
-        
+
         // Form validation
         function validateStudentForm() {
             const form = document.getElementById('addStudentForm');
             const requiredFields = form.querySelectorAll('[required]');
             let isValid = true;
-            
+
             requiredFields.forEach(field => {
                 if (!field.value.trim()) {
                     field.style.borderColor = '#dc3545';
@@ -2627,44 +2843,44 @@ try {
                     field.style.borderColor = '#e1e5e9';
                 }
             });
-            
+
             if (!isValid) {
                 alert('Please fill in all required fields marked with *');
             }
-            
+
             return isValid;
         }
-        
+
         // Enhanced form submission
-        document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+        document.getElementById('addStudentForm').addEventListener('submit', function (e) {
             if (!validateStudentForm()) {
                 e.preventDefault();
                 return false;
             }
-            
+
             // Show loading state
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Student...';
             submitBtn.disabled = true;
-            
+
             // Re-enable after a delay (in case of error)
             setTimeout(() => {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }, 10000);
         });
-        
+
         function viewStudentDetails(studentId) {
             window.location.href = 'student-details.php?id=' + studentId;
         }
-        
+
         function editStudent(studentId) {
             if (!studentId || studentId <= 0) {
                 alert('Invalid student ID');
                 return;
             }
-            
+
             // Fetch student data and populate edit form
             fetch('students.php?action=get_student&student_id=' + studentId)
                 .then(response => {
@@ -2682,24 +2898,25 @@ try {
                         alert('Error: Invalid response from server. Check console for details.');
                         return;
                     }
-                    
+
                     if (data.error) {
                         alert('Error: ' + data.error);
                         console.error('Error fetching student:', data.error, 'Student ID:', studentId);
                         return;
                     }
-                    
+
                     if (!data.success || !data.student) {
                         alert('Error: Invalid response from server');
                         console.error('Invalid response:', data);
                         return;
                     }
-                    
+
                     const student = data.student;
-                    
+
                     // Populate form fields
                     document.getElementById('edit_student_id').value = student.id;
                     document.getElementById('edit_full_name').value = student.full_name || '';
+                    document.getElementById('edit_father_name').value = student.father_name || '';
                     document.getElementById('edit_email').value = student.email || '';
                     document.getElementById('edit_phone').value = student.phone || '';
                     document.getElementById('edit_date_of_birth').value = student.date_of_birth || '';
@@ -2708,7 +2925,7 @@ try {
                     document.getElementById('edit_address').value = student.address || '';
                     document.getElementById('edit_joining_date').value = student.joining_date || '';
                     document.getElementById('edit_previous_institute').value = student.previous_institute || '';
-                    
+
                     // Show current profile image if exists
                     const preview = document.getElementById('edit-profile-preview');
                     if (student.profile_image) {
@@ -2716,7 +2933,7 @@ try {
                     } else {
                         preview.innerHTML = '';
                     }
-                    
+
                     // Show modal
                     document.getElementById('editStudentModal').style.display = 'block';
                 })
@@ -2725,49 +2942,49 @@ try {
                     alert('Failed to load student data. Please try again.');
                 });
         }
-        
+
         function closeEditStudentModal() {
             document.getElementById('editStudentModal').style.display = 'none';
             // Reset form
             document.getElementById('editStudentForm').reset();
             document.getElementById('edit-profile-preview').innerHTML = '';
         }
-        
+
         function deleteStudent(studentId, studentName) {
             if (confirm(`Are you sure you want to delete student "${studentName}"? This action cannot be undone.`)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'students.php';
-                
+
                 const actionInput = document.createElement('input');
                 actionInput.type = 'hidden';
                 actionInput.name = 'action';
                 actionInput.value = 'delete_student';
-                
+
                 const studentIdInput = document.createElement('input');
                 studentIdInput.type = 'hidden';
                 studentIdInput.name = 'student_id';
                 studentIdInput.value = studentId;
-                
+
                 form.appendChild(actionInput);
                 form.appendChild(studentIdInput);
                 document.body.appendChild(form);
                 form.submit();
             }
         }
-        
+
         function openPasswordModal(studentId, username) {
             document.getElementById('password_student_id').value = studentId;
             document.getElementById('passwordModal').style.display = 'block';
             document.getElementById('new_password').focus();
         }
-        
+
         function closePasswordModal() {
             document.getElementById('passwordModal').style.display = 'none';
             document.getElementById('new_password').value = '';
             document.getElementById('confirm_password').value = '';
         }
-        
+
         // Enroll Student Modal Functions
         function openEnrollModal(studentId, studentName) {
             document.getElementById('enroll_student_id').value = studentId;
@@ -2777,36 +2994,36 @@ try {
             document.getElementById('enroll_course_id').value = '';
             document.getElementById('enroll_sub_course_id').innerHTML = '<option value="">Select Main Course First</option>';
         }
-        
+
         function closeEnrollModal() {
             document.getElementById('enrollStudentModal').style.display = 'none';
             document.getElementById('enrollStudentForm').reset();
             document.getElementById('enroll_sub_course_id').innerHTML = '<option value="">Select Main Course First</option>';
         }
-        
+
         // Load sub-courses for enrollment modal
         function loadEnrollSubCourses(courseId) {
             const subCourseSelect = document.getElementById('enroll_sub_course_id');
-            
+
             if (!courseId || courseId === '') {
                 if (subCourseSelect) {
                     subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
                 }
                 return;
             }
-            
+
             if (!subCourseSelect) return;
-            
+
             // Show loading state
             subCourseSelect.innerHTML = '<option value="">Loading sub-courses...</option>';
             subCourseSelect.disabled = true;
-            
+
             // Fetch sub-courses from server
             fetch(`students.php?action=get_sub_courses&course_id=${courseId}`)
                 .then(response => response.json())
                 .then(data => {
                     subCourseSelect.innerHTML = '<option value="">Select Sub-Course</option>';
-                    
+
                     if (data.success && data.sub_courses && data.sub_courses.length > 0) {
                         data.sub_courses.forEach(subCourse => {
                             const option = document.createElement('option');
@@ -2825,29 +3042,29 @@ try {
                     subCourseSelect.disabled = false;
                 });
         }
-        
+
         function toggleStatus(studentId, newStatus) {
             const action = newStatus === 'active' ? 'activate' : 'deactivate';
             if (confirm(`Are you sure you want to ${action} this student?`)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'students.php';
-                
+
                 const actionInput = document.createElement('input');
                 actionInput.type = 'hidden';
                 actionInput.name = 'action';
                 actionInput.value = 'toggle_status';
-                
+
                 const studentIdInput = document.createElement('input');
                 studentIdInput.type = 'hidden';
                 studentIdInput.name = 'student_id';
                 studentIdInput.value = studentId;
-                
+
                 const statusInput = document.createElement('input');
                 statusInput.type = 'hidden';
                 statusInput.name = 'new_status';
                 statusInput.value = newStatus;
-                
+
                 form.appendChild(actionInput);
                 form.appendChild(studentIdInput);
                 form.appendChild(statusInput);
@@ -2855,15 +3072,15 @@ try {
                 form.submit();
             }
         }
-        
+
         // Close modal when clicking outside
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             const modal = document.getElementById('addStudentModal');
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
         }
-        
+
         // Function to close all enrollment rows
         function closeAllEnrollments() {
             const allEnrollmentRows = document.querySelectorAll('[id^="enrollment-"]');
@@ -2882,22 +3099,22 @@ try {
                 }
             });
         }
-        
+
         // Search, Filter, and Sort Functions
         let allStudents = [];
-        
 
-        
+
+
         function searchStudents() {
             const searchInput = document.getElementById('studentSearch');
             if (!searchInput) {
                 console.error('Search input not found');
                 return;
             }
-            
+
             const searchTerm = searchInput.value.toLowerCase();
             const clearBtn = document.getElementById('clearSearchBtn');
-            
+
             if (clearBtn) {
                 if (searchTerm.length > 0) {
                     clearBtn.style.display = 'block';
@@ -2905,72 +3122,72 @@ try {
                     clearBtn.style.display = 'none';
                 }
             }
-            
+
             // Close all enrollments when searching to ensure clean state
             closeAllEnrollments();
-            
+
             // Apply both search and status filter
             filterStudents();
         }
-        
+
         function clearSearch() {
             document.getElementById('studentSearch').value = '';
             document.getElementById('clearSearchBtn').style.display = 'none';
-            
+
             // Re-apply status filter after clearing search
             filterStudents();
         }
-        
+
         function filterStudents() {
             if (!allStudents || allStudents.length === 0) {
                 console.warn('No students data loaded yet');
                 return;
             }
-            
+
             const statusFilterEl = document.getElementById('statusFilter');
             const searchInput = document.getElementById('studentSearch');
-            
+
             const statusFilter = statusFilterEl ? statusFilterEl.value.toLowerCase() : '';
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-            
+
             let visibleCount = 0;
-            
+
             allStudents.forEach(student => {
                 if (!student || !student.element) {
                     return;
                 }
-                
+
                 let show = true;
-                
+
                 // Apply status filter
                 if (statusFilter && student.status !== statusFilter) {
                     show = false;
                 }
-                
+
                 // Apply search filter
                 if (searchTerm && show) {
                     const matchesName = student.name && student.name.includes(searchTerm);
                     const matchesUsername = student.username && student.username.includes(searchTerm);
                     const matchesEmail = student.email && student.email.includes(searchTerm);
                     const matchesPhone = student.phone && student.phone.includes(searchTerm);
-                    
+
                     if (!(matchesName || matchesUsername || matchesEmail || matchesPhone)) {
                         show = false;
                     }
                 }
-                
+
                 if (student.element) {
                     student.element.style.display = show ? 'table-row' : 'none';
                     if (show) visibleCount++;
                 }
             });
-            
+
             // Close all enrollment rows when filtering to ensure clean state
             closeAllEnrollments();
-            
+
             updateStudentCount();
         }
-        
+
         // Initialize students data for search/filter
         function initializeStudentsData() {
             const studentRows = document.querySelectorAll('.student-row');
@@ -2978,14 +3195,14 @@ try {
                 console.warn('No student rows found');
                 return;
             }
-            
+
             allStudents = Array.from(studentRows).map(row => {
                 const nameEl = row.querySelector('.student-name');
                 const usernameEl = row.querySelector('.student-username');
                 const contactEl = row.querySelector('.contact-info');
                 const statusEl = row.querySelector('.status-badge');
                 const dateEl = row.querySelector('.date-cell');
-                
+
                 return {
                     element: row,
                     name: nameEl ? nameEl.textContent.toLowerCase() : '',
@@ -2996,12 +3213,12 @@ try {
                     created_at: dateEl ? new Date(dateEl.textContent.trim()) : new Date()
                 };
             });
-            
+
         }
-        
+
         // Apply default filter on page load
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 initializeStudentsData();
                 // Apply default filter to show only active students
                 filterStudents();
@@ -3011,27 +3228,27 @@ try {
             initializeStudentsData();
             filterStudents();
         }
-        
+
         function updateStudentCount() {
-            const visibleCount = allStudents.filter(student => 
+            const visibleCount = allStudents.filter(student =>
                 student.element.style.display !== 'none'
             ).length;
-            
+
             // Update the total students count in the stats
             const totalStudentsStat = document.querySelector('.stat-card .value');
             if (totalStudentsStat) {
                 totalStudentsStat.textContent = visibleCount;
             }
         }
-        
+
         // Enrollment Toggle Function
         function toggleEnrollments(studentId) {
             const enrollmentRow = document.getElementById(`enrollment-${studentId}`);
             const expandButton = event.target;
-            
+
             // Ensure we have the button element (in case event.target is a child element)
             const button = expandButton.tagName === 'BUTTON' ? expandButton : expandButton.closest('button');
-            
+
             if (enrollmentRow.style.display === 'none') {
                 // Close any other open enrollment rows first
                 const allEnrollmentRows = document.querySelectorAll('[id^="enrollment-"]');
@@ -3047,12 +3264,12 @@ try {
                         }
                     }
                 });
-                
+
                 // Show enrollment details for current student
                 enrollmentRow.style.display = 'table-row';
                 button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
                 button.setAttribute('data-expanded', 'true');
-                
+
                 // Always load fresh enrollment data when expanding
                 loadEnrollmentDetails(studentId);
             } else {
@@ -3060,7 +3277,7 @@ try {
                 enrollmentRow.style.display = 'none';
                 button.innerHTML = '<i class="fas fa-chevron-down"></i> View Details';
                 button.setAttribute('data-expanded', 'false');
-                
+
                 // Clear enrollment data to ensure fresh data on next expansion
                 const loadingDiv = enrollmentRow.querySelector('.enrollment-loading');
                 if (loadingDiv) {
@@ -3068,12 +3285,12 @@ try {
                 }
             }
         }
-        
+
         // Load Enrollment Details
         function loadEnrollmentDetails(studentId) {
             const enrollmentRow = document.getElementById(`enrollment-${studentId}`);
             const loadingDiv = enrollmentRow.querySelector('.enrollment-loading');
-            
+
             // Fetch real enrollment data from the server
             fetch(`students.php?action=get_enrollments&student_id=${studentId}`)
                 .then(response => response.json())
@@ -3081,9 +3298,9 @@ try {
                     if (data.success && data.enrollments.length > 0) {
                         let tableRows = '';
                         data.enrollments.forEach(enrollment => {
-                            const statusClass = enrollment.status.toLowerCase() === 'enrolled' ? 'status-active' : 
-                                              enrollment.status.toLowerCase() === 'completed' ? 'status-success' : 'status-pending';
-                            
+                            const statusClass = enrollment.status.toLowerCase() === 'enrolled' ? 'status-active' :
+                                enrollment.status.toLowerCase() === 'completed' ? 'status-success' : 'status-pending';
+
                             tableRows += `
                                 <tr>
                                     <td>${enrollment.course_name}</td>
@@ -3094,7 +3311,7 @@ try {
                                 </tr>
                             `;
                         });
-                        
+
                         loadingDiv.innerHTML = `
                             <div class="enrollment-content">
                                 <div class="enrollment-table">
@@ -3138,18 +3355,18 @@ try {
                     `;
                 });
         }
-        
+
         function sortStudents() {
             const sortBy = document.getElementById('sortBy').value;
             const studentsTable = document.getElementById('studentsTable');
             const tbody = studentsTable.querySelector('tbody');
-            const visibleStudents = allStudents.filter(student => 
+            const visibleStudents = allStudents.filter(student =>
                 student.element.style.display !== 'none'
             );
-            
+
             // Sort the visible students
             visibleStudents.sort((a, b) => {
-                switch(sortBy) {
+                switch (sortBy) {
                     case 'full_name':
                         return a.name.localeCompare(b.name);
                     case 'username':
@@ -3161,11 +3378,11 @@ try {
                         return b.created_at - a.created_at;
                 }
             });
-            
+
             // Reorder the DOM elements
             visibleStudents.forEach(student => {
                 tbody.appendChild(student.element);
-                
+
                 // Also move the corresponding enrollment row
                 const enrollmentRow = document.getElementById(`enrollment-${student.element.dataset.studentId}`);
                 if (enrollmentRow) {
@@ -3173,17 +3390,17 @@ try {
                 }
             });
         }
-        
+
         function updateStudentCount() {
-            const visibleCount = allStudents.filter(student => 
+            const visibleCount = allStudents.filter(student =>
                 student.element.style.display !== 'none'
             ).length;
-            
+
             const totalCount = allStudents.length;
             const sectionHeader = document.querySelector('.section-header h2');
             sectionHeader.innerHTML = `<i class="fas fa-users"></i> Students (${visibleCount}/${totalCount})`;
         }
-        
+
         // Add Student Modal Functions
         function openAddStudentModal() {
             document.getElementById('addStudentModal').style.display = 'block';
@@ -3193,7 +3410,7 @@ try {
                 subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
             }
         }
-        
+
         function closeAddStudentModal() {
             document.getElementById('addStudentModal').style.display = 'none';
             // Reset form
@@ -3204,30 +3421,30 @@ try {
                 subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
             }
         }
-        
+
         // Load sub-courses when course is selected
         function loadSubCourses(courseId) {
             const subCourseSelect = document.getElementById('sub_course_id');
-            
+
             if (!courseId || courseId === '') {
                 if (subCourseSelect) {
                     subCourseSelect.innerHTML = '<option value="">Select Main Course First</option>';
                 }
                 return;
             }
-            
+
             if (!subCourseSelect) return;
-            
+
             // Show loading state
             subCourseSelect.innerHTML = '<option value="">Loading sub-courses...</option>';
             subCourseSelect.disabled = true;
-            
+
             // Fetch sub-courses from server
             fetch(`students.php?action=get_sub_courses&course_id=${courseId}`)
                 .then(response => response.json())
                 .then(data => {
                     subCourseSelect.innerHTML = '<option value="">Select Sub-Course</option>';
-                    
+
                     if (data.success && data.sub_courses && data.sub_courses.length > 0) {
                         data.sub_courses.forEach(subCourse => {
                             const option = document.createElement('option');
@@ -3246,40 +3463,40 @@ try {
                     subCourseSelect.disabled = false;
                 });
         }
-        
+
         // Edit Fees Modal Functions
         function openEditFeesModal(enrollmentId, totalFee, paidFees) {
             document.getElementById('edit_fees_enrollment_id').value = enrollmentId;
-            document.getElementById('edit_fees_total').value = '₹' + parseFloat(totalFee).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('edit_fees_total').value = '₹' + parseFloat(totalFee).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById('edit_fees_paid').value = paidFees;
             document.getElementById('edit_fees_paid').max = totalFee;
             updateRemainingFees();
             document.getElementById('editFeesModal').style.display = 'block';
         }
-        
+
         function closeEditFeesModal() {
             document.getElementById('editFeesModal').style.display = 'none';
             document.getElementById('editFeesForm').reset();
         }
-        
+
         function updateRemainingFees() {
             const totalFee = parseFloat(document.getElementById('edit_fees_paid').max);
             const paidFees = parseFloat(document.getElementById('edit_fees_paid').value) || 0;
             const remaining = totalFee - paidFees;
-            document.getElementById('edit_fees_remaining').value = '₹' + remaining.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('edit_fees_remaining').value = '₹' + remaining.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.getElementById('edit_fees_remaining').style.color = remaining > 0 ? '#dc3545' : '#28a745';
         }
-        
+
         // Add event listener for paid fees input
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const paidFeesInput = document.getElementById('edit_fees_paid');
             if (paidFeesInput) {
                 paidFeesInput.addEventListener('input', updateRemainingFees);
             }
-            
+
             // Check for query parameters to open modals
             const urlParams = new URLSearchParams(window.location.search);
-            
+
             // Open edit fees modal if parameters are present
             const editFeesId = urlParams.get('edit_fees');
             const totalFee = urlParams.get('total_fee');
@@ -3289,7 +3506,7 @@ try {
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
-            
+
             // Open edit status modal if parameters are present
             const editStatusId = urlParams.get('edit_status');
             const currentStatus = urlParams.get('current_status');
@@ -3299,51 +3516,51 @@ try {
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
-        
+
         // Edit Status Modal Functions
         function openEditStatusModal(enrollmentId, currentStatus) {
             document.getElementById('edit_status_enrollment_id').value = enrollmentId;
             document.getElementById('edit_status_new').value = currentStatus;
             document.getElementById('editStatusModal').style.display = 'block';
         }
-        
+
         function closeEditStatusModal() {
             document.getElementById('editStatusModal').style.display = 'none';
             document.getElementById('editStatusForm').reset();
         }
-        
+
         // Mark as Completed Function
         function markCompleted(enrollmentId) {
             if (confirm('Are you sure you want to mark this course as completed? This action cannot be undone.')) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'students.php';
-                
+
                 const actionInput = document.createElement('input');
                 actionInput.type = 'hidden';
                 actionInput.name = 'action';
                 actionInput.value = 'mark_completed';
-                
+
                 const enrollmentInput = document.createElement('input');
                 enrollmentInput.type = 'hidden';
                 enrollmentInput.name = 'enrollment_id';
                 enrollmentInput.value = enrollmentId;
-                
+
                 form.appendChild(actionInput);
                 form.appendChild(enrollmentInput);
                 document.body.appendChild(form);
                 form.submit();
             }
         }
-        
+
         // Close modal when clicking outside
-        window.onclick = function(event) {
+        window.onclick = function (event) {
             const modal = document.getElementById('addStudentModal');
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
         }
-        
+
         // Show Student ID Card
         function showStudentICard(studentId, fullName, username) {
             // Create modal for i-card display
@@ -3351,7 +3568,7 @@ try {
             modal.className = 'modal';
             modal.id = 'iCardModal';
             modal.style.display = 'block';
-            
+
             modal.innerHTML = `
                 <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
                     <div class="modal-header">
@@ -3368,44 +3585,44 @@ try {
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             // Fetch the complete ID card from id.php (same as student dashboard)
             loadStudentIDCard(studentId, fullName, username);
         }
-        
+
         function closeICardModal() {
             const modal = document.getElementById('iCardModal');
             if (modal) {
                 modal.remove();
             }
         }
-        
 
-        
+
+
         function loadStudentIDCard(studentId, fullName, username) {
             // Create form data - only send student ID (same as student dashboard)
             const formData = new FormData();
             formData.append('student_id', studentId);
-            
+
             // Fetch the content from id.php (same as student dashboard)
             fetch('../id.php', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text())
-            .then(html => {
-                // Create a temporary div to parse the HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                
-                // Find the ID card element
-                const idCard = tempDiv.querySelector('#idCard');
-                
-                if (idCard) {
-                    // Create the styled ID card (same as student dashboard)
-                    const styledCard = `
+                .then(response => response.text())
+                .then(html => {
+                    // Create a temporary div to parse the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+
+                    // Find the ID card element
+                    const idCard = tempDiv.querySelector('#idCard');
+
+                    if (idCard) {
+                        // Create the styled ID card (same as student dashboard)
+                        const styledCard = `
                         <div id="idCard" style="width: 340px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; padding-bottom: 1rem; margin: 0 auto;">
                             <div class="id-card-header" style="display: flex; align-items: center; background: #1d4ed8; color: #fff; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0;">
                                 <img src="../assets/images/logo.png" alt="Institute Logo" class="id-card-logo" style="height: 60px; width: 60px; border-radius: 50%; object-fit: cover; background: white; margin-right: 1rem; border: 2px solid #fff;" onerror="this.style.display='none'">
@@ -3429,41 +3646,42 @@ try {
                             <div class="id-card-footer" style="margin-top: 1rem; font-size: 0.75rem; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">If found, please return to the university admin office.</div>
                         </div>
                     `;
-                    
-                    document.getElementById('idCardContainer').innerHTML = styledCard;
-                } else {
+
+                        document.getElementById('idCardContainer').innerHTML = styledCard;
+                    } else {
+                        document.getElementById('idCardContainer').innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading ID card:', error);
                     document.getElementById('idCardContainer').innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading ID card:', error);
-                document.getElementById('idCardContainer').innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
-            });
+                });
         }
-        
+
         // Auto-dismiss alerts after 5 seconds
         const successAlert = document.getElementById('successAlert');
         const errorAlert = document.getElementById('errorAlert');
-        
+
         if (successAlert) {
-            setTimeout(function() {
+            setTimeout(function () {
                 successAlert.style.transition = 'opacity 0.5s ease-out';
                 successAlert.style.opacity = '0';
-                setTimeout(function() {
+                setTimeout(function () {
                     successAlert.remove();
                 }, 500);
             }, 5000);
         }
-        
+
         if (errorAlert) {
-            setTimeout(function() {
+            setTimeout(function () {
                 errorAlert.style.transition = 'opacity 0.5s ease-out';
                 errorAlert.style.opacity = '0';
-                setTimeout(function() {
+                setTimeout(function () {
                     errorAlert.remove();
                 }, 500);
             }, 5000);
         }
     </script>
 </body>
+
 </html>

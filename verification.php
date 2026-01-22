@@ -52,7 +52,9 @@ require_once 'header.php';
                 <form method="POST" action="" class="verification-form">
                     <div class="form-group">
                         <label for="enrollment_no" class="form-label">Enter Roll No.*</label>
-                        <input type="text" id="enrollment_no" name="enrollment_no" class="form-control" required>
+                        <input type="text" id="enrollment_no" name="enrollment_no" class="form-control" required
+                            style="text-transform: uppercase;"
+                            value="<?php echo isset($_POST['enrollment_no']) ? htmlspecialchars(strtoupper($_POST['enrollment_no'])) : ''; ?>">
                     </div>
                     <button type="submit" class="btn-verify">Verify</button>
 
@@ -95,7 +97,7 @@ require_once 'header.php';
                             </tr>
                             <tr>
                                 <td class="label-cell">Enrollment No :</td>
-                                <td><?php echo htmlspecialchars($student['enrollment_no']); ?></td>
+                                <td><?php echo htmlspecialchars(strtoupper($student['enrollment_no'])); ?></td>
                             </tr>
                             <tr>
                                 <td class="label-cell">Student Name :</td>

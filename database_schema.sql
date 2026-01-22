@@ -43,6 +43,7 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
+    father_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     address TEXT,
@@ -87,6 +88,7 @@ CREATE TABLE student_enrollments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     sub_course_id INT NOT NULL,
+    session VARCHAR(50),
     enrollment_date DATE NOT NULL,
     completion_date DATE,
     status ENUM('enrolled', 'completed', 'dropped') DEFAULT 'enrolled',
@@ -134,14 +136,14 @@ INSERT INTO institutes (name, slug, address, phone, email, status) VALUES
 
 -- Insert users (including super admin)
 INSERT INTO users (institute_id, username, password, full_name, email, phone, user_type, status) VALUES
-(NULL, 'superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Super Administrator', 'superadmin@gict.edu', '+91-9999999999', 'super_admin', 'active'),
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main Branch Admin', 'admin@gict.edu', '+91-8888888888', 'admin', 'active'),
-(2, 'admin_north', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'North Branch Admin', 'admin_north@gict.edu', '+91-8888888889', 'admin', 'active'),
-(3, 'admin_tailoring', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Tailoring Admin', 'admin_tailoring@gict.edu', '+91-8888888890', 'admin', 'active'),
-(1, 'student1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Rahul Kumar', 'rahul@example.com', '+91-7777777777', 'student', 'active'),
-(2, 'student2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Priya Sharma', 'priya@example.com', '+91-7777777778', 'student', 'active'),
-(3, 'student3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Amit Patel', 'amit@example.com', '+91-7777777779', 'student', 'active'),
-(1, 'faculty1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Rajesh Singh', 'rajesh@example.com', '+91-6666666666', 'faculty', 'active');
+(NULL, 'superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Super Administrator', 'Admin Father', 'superadmin@gict.edu', '+91-9999999999', 'super_admin', 'active'),
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main Branch Admin', 'Admin Father', 'admin@gict.edu', '+91-8888888888', 'admin', 'active'),
+(2, 'admin_north', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'North Branch Admin', 'Admin Father', 'admin_north@gict.edu', '+91-8888888889', 'admin', 'active'),
+(3, 'admin_tailoring', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Tailoring Admin', 'Admin Father', 'admin_tailoring@gict.edu', '+91-8888888890', 'admin', 'active'),
+(1, 'student1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Rahul Kumar', 'Suresh Kumar', 'rahul@example.com', '+91-7777777777', 'student', 'active'),
+(2, 'student2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Priya Sharma', 'Rajesh Sharma', 'priya@example.com', '+91-7777777778', 'student', 'active'),
+(3, 'student3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Amit Patel', 'Dinesh Patel', 'amit@example.com', '+91-7777777779', 'student', 'active'),
+(1, 'faculty1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Rajesh Singh', 'Singh Sr.', 'rajesh@example.com', '+91-6666666666', 'faculty', 'active');
 
 -- Insert main courses (no fees)
 INSERT INTO courses (institute_id, name, description, category, duration, status) VALUES
@@ -191,12 +193,12 @@ INSERT INTO sub_courses (course_id, name, description, fee, duration, status) VA
 (6, 'Kashida Embroidery', 'Kashmiri embroidery techniques', 3000.00, '2 months', 'active');
 
 -- Insert sample enrollments
-INSERT INTO student_enrollments (user_id, sub_course_id, enrollment_date, status) VALUES
-(5, 1, '2024-01-15', 'enrolled'),
-(5, 2, '2024-02-01', 'enrolled'),
-(6, 9, '2024-01-20', 'enrolled'),
-(7, 14, '2024-01-10', 'enrolled'),
-(7, 15, '2024-02-05', 'enrolled');
+INSERT INTO student_enrollments (user_id, sub_course_id, session, enrollment_date, status) VALUES
+(5, 1, '2024-2025', '2024-01-15', 'enrolled'),
+(5, 2, '2024-2025', '2024-02-01', 'enrolled'),
+(6, 9, '2024-2025', '2024-01-20', 'enrolled'),
+(7, 14, '2024-2025', '2024-01-10', 'enrolled'),
+(7, 15, '2024-2025', '2024-02-05', 'enrolled');
 
 -- Insert sample payments
 INSERT INTO payments (user_id, sub_course_id, amount, payment_date, payment_method, status) VALUES
