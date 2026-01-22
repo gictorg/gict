@@ -75,6 +75,11 @@ require_once 'header.php';
             ?>
 
             <div class="verification-result">
+                <!-- Watermark -->
+                <div class="watermark">
+                    <img src="assets/images/logo bgremove.png" alt="Institute Logo">
+                </div>
+
                 <div class="verified-header">
                     <span class="verified-badge">
                         Verified <i class="fas fa-check-circle"></i>
@@ -119,12 +124,7 @@ require_once 'header.php';
                     </div>
                 </div>
 
-                <!-- Watermark -->
-                <div class="watermark">
-                    <img src="assets/images/logo bgremove.png" alt="Institute Logo">
-                </div>
-
-                <div style="text-align: center; margin-top: 30px;">
+                <div class="action-container" style="text-align: center; margin-top: 30px;">
                     <a href="verification.php" class="btn-verify"
                         style="text-decoration: none; display: inline-block;">Verify Another</a>
                 </div>
