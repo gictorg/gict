@@ -4,6 +4,7 @@ require_once 'includes/session_manager.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,10 +26,10 @@ require_once 'includes/session_manager.php';
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(5px);
         }
-        
+
         .modal-content {
             background-color: white;
             margin: 5% auto;
@@ -36,21 +37,22 @@ require_once 'includes/session_manager.php';
             border-radius: 15px;
             width: 90%;
             max-width: 600px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             animation: modalSlideIn 0.3s ease-out;
         }
-        
+
         @keyframes modalSlideIn {
             from {
                 opacity: 0;
                 transform: translateY(-50px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -60,13 +62,13 @@ require_once 'includes/session_manager.php';
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .modal-header h2 {
             margin: 0;
             font-size: 1.5rem;
             font-weight: 600;
         }
-        
+
         .modal-header .close {
             color: white;
             font-size: 28px;
@@ -74,33 +76,33 @@ require_once 'includes/session_manager.php';
             cursor: pointer;
             transition: opacity 0.3s ease;
         }
-        
+
         .modal-header .close:hover {
             opacity: 0.7;
         }
-        
+
         .modal-body {
             padding: 30px;
         }
-        
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #2c3e50;
         }
-        
+
         .form-group input,
         .form-group select,
         .form-group textarea {
@@ -112,7 +114,7 @@ require_once 'includes/session_manager.php';
             transition: border-color 0.3s ease;
             box-sizing: border-box;
         }
-        
+
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -120,14 +122,14 @@ require_once 'includes/session_manager.php';
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
+
         .form-actions {
             display: flex;
             gap: 15px;
             justify-content: flex-end;
             margin-top: 30px;
         }
-        
+
         .btn {
             padding: 12px 25px;
             border: none;
@@ -141,55 +143,55 @@ require_once 'includes/session_manager.php';
             align-items: center;
             gap: 8px;
         }
-        
+
         .btn-secondary {
             background: #6c757d;
             color: white;
         }
-        
+
         .btn-secondary:hover {
             background: #5a6268;
             transform: translateY(-2px);
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
-        
+
         @media (max-width: 768px) {
             .modal-content {
                 margin: 10% auto;
                 width: 95%;
             }
-            
+
             .modal-header {
                 padding: 15px 20px;
             }
-            
+
             .modal-header h2 {
                 font-size: 1.3rem;
             }
-            
+
             .modal-body {
                 padding: 20px;
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
                 gap: 15px;
             }
-            
+
             .form-actions {
                 flex-direction: column;
             }
-            
+
             .btn {
                 width: 100%;
                 justify-content: center;
@@ -263,7 +265,7 @@ require_once 'includes/session_manager.php';
                     </ul>
                 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -280,171 +282,173 @@ require_once 'includes/session_manager.php';
 
 <?php include 'footer.php'; ?>
 
-    <!-- Enquiry Modal -->
-    <div id="enquiryModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-question-circle"></i> Course Inquiry</h2>
-                <span class="close" onclick="closeEnquiryModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div id="enquiryMessage" style="display: none; margin-bottom: 20px; padding: 15px; border-radius: 8px; font-weight: 500;"></div>
-                
-                <form id="enquiryForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="modal_name">Full Name *</label>
-                            <input type="text" id="modal_name" name="name" required placeholder="Enter your full name">
-                        </div>
-                        <div class="form-group">
-                            <label for="modal_mobile">Mobile Number *</label>
-                            <input type="tel" id="modal_mobile" name="mobile" required placeholder="Enter 10-digit mobile number" pattern="[0-9]{10}" maxlength="10">
-                        </div>
-                    </div>
-                    
+<!-- Enquiry Modal -->
+<div id="enquiryModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="fas fa-question-circle"></i> Course Inquiry</h2>
+            <span class="close" onclick="closeEnquiryModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="enquiryMessage"
+                style="display: none; margin-bottom: 20px; padding: 15px; border-radius: 8px; font-weight: 500;"></div>
+
+            <form id="enquiryForm">
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="modal_email">Email Address</label>
-                        <input type="email" id="modal_email" name="email" placeholder="Enter your email address (optional)">
+                        <label for="modal_name">Full Name *</label>
+                        <input type="text" id="modal_name" name="name" required placeholder="Enter your full name">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="modal_course_id">Course Category</label>
-                            <select id="modal_course_id" name="course_id" onchange="updateModalSubCourses()">
-                                <option value="">Select Course Category</option>
-                                <option value="1">Technology</option>
-                                <option value="2">Marketing</option>
-                                <option value="3">Fashion</option>
-                                <option value="4">Wellness</option>
-                                <option value="5">Skills</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="modal_sub_course_id">Specific Course</label>
-                            <select id="modal_sub_course_id" name="sub_course_id">
-                                <option value="">Select Specific Course</option>
-                            </select>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
-                        <label for="modal_message">Message</label>
-                        <textarea id="modal_message" name="message" rows="3" placeholder="Tell us about your interest in the course or any specific questions you have..."></textarea>
+                        <label for="modal_mobile">Mobile Number *</label>
+                        <input type="tel" id="modal_mobile" name="mobile" required
+                            placeholder="Enter 10-digit mobile number" pattern="[0-9]{10}" maxlength="10">
                     </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeEnquiryModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <i class="fas fa-paper-plane"></i> Submit Inquiry
-                        </button>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal_email">Email Address</label>
+                    <input type="email" id="modal_email" name="email" placeholder="Enter your email address (optional)">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modal_course_id">Course Category</label>
+                        <select id="modal_course_id" name="course_id" onchange="updateModalSubCourses()">
+                            <option value="">Select Course Category</option>
+                            <option value="1">Technology</option>
+                            <option value="2">Marketing</option>
+                            <option value="3">Fashion</option>
+                            <option value="4">Wellness</option>
+                            <option value="5">Skills</option>
+                        </select>
                     </div>
-                </form>
-            </div>
+                    <div class="form-group">
+                        <label for="modal_sub_course_id">Specific Course</label>
+                        <select id="modal_sub_course_id" name="sub_course_id">
+                            <option value="">Select Specific Course</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal_message">Message</label>
+                    <textarea id="modal_message" name="message" rows="3"
+                        placeholder="Tell us about your interest in the course or any specific questions you have..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEnquiryModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Submit Inquiry
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-    <script src="assets/js/homepage-mobile-menu.js"></script>
-    <script>
-        // Enquiry Modal Functions
-        function openEnquiryModal() {
-            document.getElementById('enquiryModal').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            // Hide any previous messages
-            document.getElementById('enquiryMessage').style.display = 'none';
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+<script>
+    // Enquiry Modal Functions
+    function openEnquiryModal() {
+        document.getElementById('enquiryModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        // Hide any previous messages
+        document.getElementById('enquiryMessage').style.display = 'none';
+    }
+
+    function closeEnquiryModal() {
+        document.getElementById('enquiryModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        // Reset form
+        document.getElementById('enquiryForm').reset();
+        // Hide any messages
+        document.getElementById('enquiryMessage').style.display = 'none';
+    }
+
+    function showMessage(message, isSuccess = true) {
+        const messageDiv = document.getElementById('enquiryMessage');
+        messageDiv.textContent = message;
+        messageDiv.style.display = 'block';
+        messageDiv.style.backgroundColor = isSuccess ? '#d4edda' : '#f8d7da';
+        messageDiv.style.color = isSuccess ? '#155724' : '#721c24';
+        messageDiv.style.border = isSuccess ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+    }
+
+    function updateModalSubCourses() {
+        const courseId = document.getElementById('modal_course_id').value;
+        const subCourseSelect = document.getElementById('modal_sub_course_id');
+
+        // Reset sub-course dropdown
+        subCourseSelect.innerHTML = '<option value="">Select Specific Course</option>';
+
+        // Course options based on selected category
+        const courseOptions = {
+            '1': [ // Technology
+                { value: '1', text: 'CCC (Course on Computer Concepts)' },
+                { value: '2', text: 'ADCA (Advanced Diploma in Computer Applications)' },
+                { value: '3', text: 'PGDCA (Post Graduate Diploma in Computer Applications)' },
+                { value: '4', text: 'DCA (Diploma in Computer Applications)' },
+                { value: '5', text: 'Tally ERP 9' }
+            ],
+            '2': [ // Marketing
+                { value: '6', text: 'SEO (Search Engine Optimization)' },
+                { value: '7', text: 'SEM (Search Engine Marketing)' },
+                { value: '8', text: 'Social Media Marketing' },
+                { value: '9', text: 'Content Marketing' }
+            ],
+            '3': [ // Fashion
+                { value: '10', text: 'Basic Stitching' },
+                { value: '11', text: 'Pants Sewing' },
+                { value: '12', text: 'Blouse Sewing' },
+                { value: '13', text: 'Kurta Sewing' },
+                { value: '14', text: 'Dress Making' }
+            ],
+            '4': [ // Wellness
+                { value: '15', text: 'Yoga Certificate' },
+                { value: '16', text: 'Health & Wellness' },
+                { value: '17', text: 'Meditation Course' }
+            ],
+            '5': [ // Skills
+                { value: '18', text: 'Beautician Certificate' },
+                { value: '19', text: 'Vocational Course' },
+                { value: '20', text: 'Skill Development' }
+            ]
+        };
+
+        if (courseId && courseOptions[courseId]) {
+            courseOptions[courseId].forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.text;
+                subCourseSelect.appendChild(optionElement);
+            });
         }
-        
-        function closeEnquiryModal() {
-            document.getElementById('enquiryModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-            // Reset form
-            document.getElementById('enquiryForm').reset();
-            // Hide any messages
-            document.getElementById('enquiryMessage').style.display = 'none';
-        }
-        
-        function showMessage(message, isSuccess = true) {
-            const messageDiv = document.getElementById('enquiryMessage');
-            messageDiv.textContent = message;
-            messageDiv.style.display = 'block';
-            messageDiv.style.backgroundColor = isSuccess ? '#d4edda' : '#f8d7da';
-            messageDiv.style.color = isSuccess ? '#155724' : '#721c24';
-            messageDiv.style.border = isSuccess ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
-        }
-        
-        function updateModalSubCourses() {
-            const courseId = document.getElementById('modal_course_id').value;
-            const subCourseSelect = document.getElementById('modal_sub_course_id');
-            
-            // Reset sub-course dropdown
-            subCourseSelect.innerHTML = '<option value="">Select Specific Course</option>';
-            
-            // Course options based on selected category
-            const courseOptions = {
-                '1': [ // Technology
-                    {value: '1', text: 'CCC (Course on Computer Concepts)'},
-                    {value: '2', text: 'ADCA (Advanced Diploma in Computer Applications)'},
-                    {value: '3', text: 'PGDCA (Post Graduate Diploma in Computer Applications)'},
-                    {value: '4', text: 'DCA (Diploma in Computer Applications)'},
-                    {value: '5', text: 'Tally ERP 9'}
-                ],
-                '2': [ // Marketing
-                    {value: '6', text: 'SEO (Search Engine Optimization)'},
-                    {value: '7', text: 'SEM (Search Engine Marketing)'},
-                    {value: '8', text: 'Social Media Marketing'},
-                    {value: '9', text: 'Content Marketing'}
-                ],
-                '3': [ // Fashion
-                    {value: '10', text: 'Basic Stitching'},
-                    {value: '11', text: 'Pants Sewing'},
-                    {value: '12', text: 'Blouse Sewing'},
-                    {value: '13', text: 'Kurta Sewing'},
-                    {value: '14', text: 'Dress Making'}
-                ],
-                '4': [ // Wellness
-                    {value: '15', text: 'Yoga Certificate'},
-                    {value: '16', text: 'Health & Wellness'},
-                    {value: '17', text: 'Meditation Course'}
-                ],
-                '5': [ // Skills
-                    {value: '18', text: 'Beautician Certificate'},
-                    {value: '19', text: 'Vocational Course'},
-                    {value: '20', text: 'Skill Development'}
-                ]
-            };
-            
-            if (courseId && courseOptions[courseId]) {
-                courseOptions[courseId].forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option.value;
-                    optionElement.textContent = option.text;
-                    subCourseSelect.appendChild(optionElement);
-                });
+    }
+
+    // Form submission handler
+    document.getElementById('enquiryForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerHTML;
+
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        submitBtn.disabled = true;
+
+        // Get form data
+        const formData = new FormData(this);
+
+        // Submit via AJAX
+        fetch('inquiry.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        }
-        
-        // Form submission handler
-        document.getElementById('enquiryForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.innerHTML;
-            
-            // Show loading state
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.disabled = true;
-            
-            // Get form data
-            const formData = new FormData(this);
-            
-            // Submit via AJAX
-            fetch('inquiry.php', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -466,20 +470,18 @@ require_once 'includes/session_manager.php';
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             });
-        });
-        
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('enquiryModal');
-            if (event.target === modal) {
-                closeEnquiryModal();
-            }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function (event) {
+        const modal = document.getElementById('enquiryModal');
+        if (event.target === modal) {
+            closeEnquiryModal();
         }
-        
-        // Add any custom JavaScript here
-        document.addEventListener('DOMContentLoaded', function() {
-            // Your existing JavaScript
-        });
-    </script>
-</body>
-</html>
+    }
+
+    // Add any custom JavaScript here
+    document.addEventListener('DOMContentLoaded', function () {
+        // Your existing JavaScript
+    });
+</script>

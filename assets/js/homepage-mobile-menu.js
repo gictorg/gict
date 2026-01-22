@@ -1,5 +1,5 @@
 // Homepage Mobile Menu - CLEAN AND RELIABLE
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const navLinks = document.getElementById('navLinks');
     const mobileMenuClose = document.getElementById('mobileMenuClose');
@@ -21,46 +21,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openMenu() {
         isMenuOpen = true;
-        
+
         // Add classes for CSS to handle
         navLinks.classList.add('mobile-open');
         overlay.classList.add('active');
         body.classList.add('mobile-menu-open');
-        
+
         // Show close button
         if (mobileMenuClose) {
             mobileMenuClose.style.display = 'flex';
         }
-        
+
         // Prevent body scroll
         body.style.overflow = 'hidden';
+
+        // Force display flex via inline style as well to ensure visibility
+        navLinks.style.display = 'flex';
     }
 
     function closeMenu() {
         isMenuOpen = false;
-        
+
         // Remove classes
         navLinks.classList.remove('mobile-open');
         overlay.classList.remove('active');
         body.classList.remove('mobile-menu-open');
-        
+
         // Hide close button
         if (mobileMenuClose) {
             mobileMenuClose.style.display = 'none';
         }
-        
+
         // Restore body scroll
         body.style.overflow = '';
-        
+
         // Close all dropdowns
         const dropdowns = navLinks.querySelectorAll('.nav-dropdown');
         dropdowns.forEach(dropdown => {
             dropdown.classList.remove('open');
             const content = dropdown.querySelector('.nav-dropdown-content');
             if (content) {
-                content.style.display = 'none';
+                content.style.display = '';
+                content.style.maxHeight = '';
             }
         });
+
+        // Hide links on mobile
+        if (window.innerWidth <= 768) {
+            navLinks.style.display = 'none';
+        }
     }
 
     function toggleMenu() {
@@ -72,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Hamburger button click
-    mobileMenuToggle.addEventListener('click', function(e) {
+    mobileMenuToggle.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         toggleMenu();
@@ -80,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close button click
     if (mobileMenuClose) {
-        mobileMenuClose.addEventListener('click', function(e) {
+        mobileMenuClose.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
             closeMenu();
@@ -88,14 +97,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Overlay click to close
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) {
-            closeMenu();
-        }
+    overlay.addEventListener('click', function (e) {
+        closeMenu();
     });
 
     // Escape key to close
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && isMenuOpen) {
             closeMenu();
         }
@@ -108,66 +115,52 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = dropdown.querySelector('.nav-dropdown-content');
 
         if (btn && content) {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 if (window.innerWidth <= 768) {
+                    // Prevent navigation and other listeners (like nav-dropdown.js)
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation();
 
-                    // Close other dropdowns
+                    const isOpen = dropdown.classList.contains('open');
+
+                    // Close ALL other dropdowns first
                     dropdowns.forEach(d => {
                         if (d !== dropdown) {
                             d.classList.remove('open');
                             const otherContent = d.querySelector('.nav-dropdown-content');
                             if (otherContent) {
                                 otherContent.style.display = 'none';
+                                otherContent.style.maxHeight = '0';
                             }
                         }
                     });
 
                     // Toggle current dropdown
-                    if (dropdown.classList.contains('open')) {
+                    if (isOpen) {
                         dropdown.classList.remove('open');
                         content.style.display = 'none';
+                        content.style.maxHeight = '0';
                     } else {
                         dropdown.classList.add('open');
                         content.style.display = 'block';
+                        content.style.maxHeight = '500px'; // Ensure it's large enough
                     }
                 }
             });
         }
     });
 
-    // Handle login/user button clicks on mobile
-    const loginBtn = navLinks.querySelector('.nav-dropdown .login-btn');
-    const userBtn = navLinks.querySelector('.nav-dropdown .user-btn');
-    
-    if (loginBtn) {
-        loginBtn.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
-                closeMenu();
-            }
-        });
-    }
-    
-    if (userBtn) {
-        userBtn.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
-                closeMenu();
-            }
-        });
-    }
-
-    // Handle navigation link clicks on mobile
+    // Handle regular navigation link clicks on mobile
     const navItems = navLinks.querySelectorAll('a');
     navItems.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Don't close menu for dropdown toggles
-            if (this.parentElement.classList.contains('nav-dropdown') &&
-                this.classList.contains('nav-btn')) {
+        link.addEventListener('click', function (e) {
+            // Don't close menu for dropdown TOGGLE buttons
+            if (this.classList.contains('nav-btn') && this.nextElementSibling && this.nextElementSibling.classList.contains('nav-dropdown-content')) {
                 return;
             }
 
-            // Close menu for regular navigation links
+            // Close menu for actual links
             if (window.innerWidth <= 768) {
                 closeMenu();
             }
@@ -175,17 +168,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle window resize
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            // Desktop mode
-            if (isMenuOpen) {
-                closeMenu();
+    let resizeTimer;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+            if (window.innerWidth > 768) {
+                // Return to desktop mode
+                if (isMenuOpen) {
+                    closeMenu();
+                }
+                navLinks.style.display = 'flex';
+                // Reset any mobile-specific inline styles on dropdowns
+                dropdowns.forEach(d => {
+                    const content = d.querySelector('.nav-dropdown-content');
+                    if (content) {
+                        content.style.display = '';
+                        content.style.maxHeight = '';
+                    }
+                });
+            } else {
+                // Return to mobile mode
+                if (!isMenuOpen) {
+                    navLinks.style.display = 'none';
+                } else {
+                    navLinks.style.display = 'flex';
+                }
             }
-            navLinks.style.display = 'flex';
-        } else {
-            // Mobile mode
-            navLinks.style.display = 'none';
-        }
+        }, 100);
     });
 
     // Set initial display based on screen size
@@ -195,3 +204,4 @@ document.addEventListener('DOMContentLoaded', function() {
         navLinks.style.display = 'flex';
     }
 });
+

@@ -75,7 +75,7 @@
         </div>
 
         <!-- Recently Joined Student Section -->
-        <h2 class="section-title">Recently Joined Student</h2>
+        <h2 class="section-title">Recently Joined Students</h2>
         <div class="faculty-gallery students-gallery">
             <?php
             // Get recent students from database

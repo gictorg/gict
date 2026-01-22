@@ -1,7 +1,8 @@
 /* ============================ header.css (Corrected) ============================ */
 /* In this file, a new rule was added inside @media (max-width: 768px) to force mobile menu items to be visible. */
 
-html, body {
+html,
+body {
     margin: 0 !important;
     padding: 0 !important;
 }
@@ -89,7 +90,7 @@ html, body {
     width: 100vw;
     z-index: 10000;
     background: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 0 0;
     display: flex;
     flex-direction: column;
@@ -197,7 +198,7 @@ html, body {
     .nav-links {
         display: flex !important;
     }
-    
+
     .mobile-menu-toggle {
         display: none !important;
     }
@@ -223,10 +224,11 @@ html, body {
 }
 
 .nav-links a:hover {
-    background: #f4b400;;
+    background: #f4b400;
+    ;
     color: #000080;
     border-radius: 0;
-} 
+}
 
 .nav-right {
     color: #fff;
@@ -255,7 +257,7 @@ html, body {
 }
 
 .mobile-menu-toggle:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-50%) scale(1.05);
 }
 
@@ -268,26 +270,26 @@ html, body {
     .nav-links {
         gap: 15px;
     }
-    
+
     .nav-links a {
         font-size: 12px;
     }
-    
+
     /* Ensure nav container doesn't overflow but allow dropdowns */
     .main-nav .container {
         overflow: visible;
     }
-    
+
     /* Adjust nav links for medium screens */
     .nav-links {
         gap: 10px;
         flex-wrap: wrap;
     }
-    
+
     .nav-links .nav-dropdown {
         min-width: auto;
     }
-    
+
     /* Ensure login button is always visible */
     .login-dropdown,
     .user-dropdown {
@@ -299,17 +301,17 @@ html, body {
     .nav-links {
         gap: 8px;
     }
-    
+
     .nav-links a {
         font-size: 11px;
         padding: 0 12px;
     }
-    
+
     /* Hide fewer nav items on medium screens but keep login visible */
     .nav-links .nav-dropdown:not(.login-dropdown):not(.user-dropdown):nth-child(n+7) {
         display: none;
     }
-    
+
     /* Ensure login button is always visible */
     .login-dropdown,
     .user-dropdown {
@@ -325,28 +327,29 @@ html, body {
         overflow: visible;
         justify-content: space-between;
     }
-    
+
     .nav-links a {
         font-size: 10px;
         padding: 0 8px;
         white-space: nowrap;
     }
-    
+
     /* Show more nav items on medium screens */
     .nav-links .nav-dropdown:not(.login-dropdown):not(.user-dropdown):nth-child(n+8) {
         display: none;
     }
-    
+
     /* Ensure login button is always visible and properly styled */
     .login-dropdown,
     .user-dropdown {
         display: block !important;
-        margin-left: auto; /* Push to the right */
+        margin-left: auto;
+        /* Push to the right */
         flex-shrink: 0;
         position: relative;
         z-index: 1000;
     }
-    
+
     /* .login-dropdown .login-btn,
     .user-dropdown .user-btn {
         padding: 0 12px !important;
@@ -358,13 +361,13 @@ html, body {
         border-radius: 4px;
         color: #fff !important;
     } */
-    
+
     /* Ensure container can accommodate all items */
     .main-nav .container {
         overflow: visible;
         padding: 0 15px;
     }
-    
+
     /* Force login button visibility */
     .login-dropdown,
     .user-dropdown {
@@ -376,6 +379,7 @@ html, body {
 
 /* Extra specific rule for 968px dimension */
 @media (max-width: 968px) and (min-width: 769px) {
+
     .login-dropdown,
     .user-dropdown {
         display: block !important;
@@ -384,7 +388,7 @@ html, body {
         position: relative !important;
         z-index: 9999 !important;
     }
-    
+
     .login-dropdown .login-btn,
     .user-dropdown .user-btn {
         display: flex !important;
@@ -403,29 +407,30 @@ html, body {
         align-items: center;
         justify-content: center;
     }
-    
+
     /* Ensure the nav container shows the login button */
     .nav-links {
         justify-content: space-between !important;
         overflow: visible !important;
     }
-    
+
     .main-nav .container {
         overflow: visible !important;
     }
 }
 
 @media (max-width: 768px) {
+
     /* Hide desktop navigation completely on mobile */
     .nav-links {
         display: none;
     }
-    
+
     /* Show mobile navigation */
     .nav-links.mobile-open {
         display: flex;
     }
-    
+
     /* Ensure mobile menu toggle is visible on mobile */
     .mobile-menu-toggle {
         display: flex !important;
@@ -460,35 +465,36 @@ html, body {
         margin: 0 auto;
         display: block;
     }
-    
+
     /* Mobile navigation layout fixes */
     .main-nav .container {
         position: relative;
         justify-content: space-between;
         padding: 0 15px;
     }
-    
+
     .nav-left {
         position: relative;
         width: 100%;
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .main-nav .nav-left .home-icon {
         margin: 0;
         order: 1;
         position: relative;
-        z-index: 10001; /* Lower than overlay and nav-links */
+        z-index: 10001;
+        /* Lower than overlay and nav-links */
         flex-shrink: 0;
     }
-    
+
     /* Mobile Menu Toggle Button - LIKE UNIVERSITY OF LUCKNOW */
     .mobile-menu-toggle {
         display: block !important;
         order: 3;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         color: #fff;
         font-size: 18px;
         cursor: pointer;
@@ -505,14 +511,14 @@ html, body {
         align-items: center;
         justify-content: center;
     }
-    
+
     .mobile-menu-toggle:hover {
-        background: rgba(255,255,255,0.2);
-        border-color: rgba(255,255,255,0.5);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
     }
-    
+
     .mobile-menu-toggle:active {
-        background: rgba(255,255,255,0.3);
+        background: rgba(255, 255, 255, 0.3);
         transform: scale(0.95);
     }
 
@@ -530,7 +536,7 @@ html, body {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 10002;
         overflow-y: auto;
-        box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.15);
         display: none;
         transform: translateX(-20px);
         opacity: 0;
@@ -539,25 +545,25 @@ html, body {
         justify-content: flex-start;
         align-items: stretch;
         scrollbar-width: thin;
-        scrollbar-color: rgba(0,0,0,0.3) transparent;
+        scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
     }
-    
+
     /* Custom scrollbar for mobile navigation */
     .nav-links::-webkit-scrollbar {
         width: 6px;
     }
-    
+
     .nav-links::-webkit-scrollbar-track {
         background: transparent;
     }
-    
+
     .nav-links::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.3);
+        background: rgba(0, 0, 0, 0.3);
         border-radius: 3px;
     }
-    
+
     .nav-links::-webkit-scrollbar-thumb:hover {
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
     }
 
     /* CRITICAL: When mobile-open class is added, show the menu immediately */
@@ -570,44 +576,45 @@ html, body {
         display: flex !important;
         z-index: 10002 !important;
     }
-    
+
     /* Ensure ALL elements in mobile menu are visible */
     .nav-links.mobile-open * {
         visibility: visible !important;
         opacity: 1 !important;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
         position: relative !important;
     }
-    
+
     .nav-links.mobile-open .nav-btn {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
         position: relative !important;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown-content {
         visibility: visible !important;
         opacity: 1 !important;
     }
-    
+
     /* Slide-in animation keyframes */
     @keyframes slideIn {
         from {
             transform: translateX(-100%);
             opacity: 0;
         }
+
         to {
             transform: translateX(0);
             opacity: 1;
         }
     }
-    
+
     /* Mobile menu close button - LIKE UNIVERSITY OF LUCKNOW */
     .mobile-menu-close {
         position: fixed;
@@ -627,9 +634,9 @@ html, body {
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    
+
     .mobile-menu-close:hover {
         background: #c82333;
         transform: scale(1.1);
@@ -665,7 +672,7 @@ html, body {
         border-radius: 0;
         margin: 0;
     }
-    
+
     .nav-links .nav-btn:hover,
     .nav-links .nav-btn:active {
         background: #f8f9fa;
@@ -690,7 +697,7 @@ html, body {
         max-height: 0;
         overflow: hidden;
     }
-    
+
     /* When dropdown is open, expand the submenu */
     .nav-dropdown.open .nav-dropdown-content {
         max-height: 300px !important;
@@ -698,7 +705,7 @@ html, body {
         display: block !important;
         overflow: visible !important;
     }
-    
+
     /* Ensure dropdown content is properly styled when open */
     .nav-dropdown.open .nav-dropdown-content a {
         padding: 12px 40px !important;
@@ -718,7 +725,7 @@ html, body {
         border-left: 3px solid transparent !important;
         background: transparent !important;
     }
-    
+
     .nav-dropdown.open .nav-dropdown-content a:hover,
     .nav-dropdown.open .nav-dropdown-content a:active {
         background: #e9ecef !important;
@@ -739,8 +746,8 @@ html, body {
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 10000;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9988;
         cursor: pointer;
         opacity: 0;
         transition: opacity 0.3s ease;
@@ -750,20 +757,22 @@ html, body {
 
     /* CRITICAL: When active class is added, show the overlay immediately */
     .mobile-overlay.active {
-        /* display: block !important; */
+        display: block !important;
         opacity: 1 !important;
         pointer-events: auto !important;
         transition: opacity 0.3s ease;
         visibility: visible !important;
     }
-    
+
     /* Mobile dropdown indicators - LIKE UNIVERSITY OF LUCKNOW */
     .nav-dropdown .nav-btn::after {
-        content: none; /* Hide in desktop */
+        content: none;
+        /* Hide in desktop */
     }
-    
+
     .nav-links.mobile-open .nav-dropdown .nav-btn::after {
-        content: '\f107'; /* Show in mobile */
+        content: '\f107';
+        /* Show in mobile */
         font-family: 'Font Awesome 6 Free';
         font-weight: 900;
         margin-left: auto;
@@ -774,34 +783,37 @@ html, body {
         text-align: center;
         color: #666;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown.open .nav-btn::after {
         transform: rotate(180deg);
         color: #000080;
     }
-    
+
     /* Show caret-down icons in desktop, hide in mobile */
     .nav-dropdown .nav-btn i.fa-caret-down {
-        display: inline-block; /* Show in desktop */
+        display: inline-block;
+        /* Show in desktop */
     }
-    
+
     /* Hide caret-down icons in mobile view completely */
     .nav-links.mobile-open .nav-dropdown .nav-btn i.fa-caret-down,
     .nav-links.mobile-open .nav-dropdown .nav-btn svg[data-icon="caret-down"] {
-        display: none !important; /* Hide in mobile */
+        display: none !important;
+        /* Hide in mobile */
     }
-    
+
     /* Fix z-index for dropdown content */
     .nav-dropdown-content {
-        z-index: 10003 !important; /* Higher than overlay and other content */
+        z-index: 10003 !important;
+        /* Higher than overlay and other content */
         position: absolute;
         background: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         border-radius: 4px;
         min-width: 200px;
         display: none;
     }
-    
+
     /* Mobile dropdown content styling */
     .nav-links.mobile-open .nav-dropdown-content {
         position: static !important;
@@ -811,12 +823,13 @@ html, body {
         margin-top: 5px;
         padding-top: 10px;
         background: transparent;
-        display: none; /* Start hidden */
+        display: none;
+        /* Start hidden */
         max-height: 0;
         overflow: hidden;
         transition: all 0.3s ease;
     }
-    
+
     /* When dropdown is open in mobile, show content */
     .nav-links.mobile-open .nav-dropdown.open .nav-dropdown-content {
         display: block !important;
@@ -824,7 +837,7 @@ html, body {
         overflow: visible !important;
         padding: 10px 0 !important;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown-content a {
         padding: 12px 20px;
         color: #333;
@@ -833,24 +846,24 @@ html, body {
         border-bottom: 1px solid #f0f0f0;
         transition: background-color 0.2s ease;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown-content a:hover {
         background-color: #f8f9fa;
     }
-    
+
     /* Login and User buttons now use standard nav-dropdown styling */
     .nav-links.mobile-open .nav-dropdown .login-btn {
         background: #28a745 !important;
         color: #fff !important;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown .enquiry-btn {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: #fff !important;
         margin-left: 0 !important;
         margin-top: 10px;
     }
-    
+
     .nav-links.mobile-open .nav-dropdown .user-btn {
         background: #007bff !important;
         color: #fff !important;
@@ -864,7 +877,7 @@ html, body {
         position: fixed;
         width: 100%;
     }
-    
+
     /* Prevent body scroll when mobile menu is open */
     body.mobile-menu-open .main-content {
         pointer-events: none;
@@ -874,25 +887,26 @@ html, body {
 }
 
 .main-content {
-  padding-top: 180px;
+    padding-top: 180px;
 }
+
 .nav-btn,
 .login-btn,
 .enquiry-btn {
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  max-width: 100%;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .nav-btn i,
 .login-btn i,
 .enquiry-btn i {
-  font-size: 14px;
-  vertical-align: middle;
+    font-size: 14px;
+    vertical-align: middle;
 }
 
 /* Enquiry Button Styles */
@@ -902,13 +916,13 @@ html, body {
     border-radius: 5px;
     margin-left: 10px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .enquiry-btn:hover {
     background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     color: white !important;
 }
 
@@ -954,7 +968,7 @@ html, body {
     top: 100%;
     background: #fff;
     min-width: 180px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     z-index: 10003;
     border-radius: 0 0 8px 8px;
     border: .2px solid #c3c8e7;
@@ -1022,7 +1036,7 @@ html, body {
     top: auto;
     background: #fff;
     min-width: 180px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     z-index: 10003;
     flex-direction: column;
     border: .2px solid #c3c8e7;
@@ -1105,7 +1119,7 @@ html, body {
     top: 100%;
     background: #fff;
     min-width: 180px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     z-index: 10003;
     border-radius: 0 0 8px 8px;
     border: .2px solid #c3c8e7;
@@ -1157,4 +1171,3 @@ html, body {
 .user-dropdown:hover .user-dropdown-content {
     display: flex;
 }
-

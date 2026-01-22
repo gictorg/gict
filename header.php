@@ -154,6 +154,3 @@ require_once 'includes/session_manager.php';
 
     <script src="assets/js/nav-dropdown.js"></script>
     <script src="assets/js/homepage-mobile-menu.js"></script>
-</body>
-
-</html>

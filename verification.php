@@ -124,10 +124,10 @@ require_once 'header.php';
                     </div>
                 </div>
 
-                <div class="action-container" style="text-align: center; margin-top: 30px;">
+                <!-- <div class="action-container" style="text-align: center; margin-top: 20px;">
                     <a href="verification.php" class="btn-verify"
                         style="text-decoration: none; display: inline-block;">Verify Another</a>
-                </div>
+                </div> -->
             </div>
         <?php endif; ?>
     </div>
