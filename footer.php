@@ -91,8 +91,8 @@
     <section class="footer-bottom">
         <div class="container">
             <div class="footer-bottom-container">
-                <div class="update-info">Page Last Updated on : 25 April 2025</div>
-                <div class="visitor-count">Number of Visitors : 10</div>
+                <div class="update-info">Page Last Updated on : 20 January 2026</div>
+                <div class="visitor-count">Number of Visitors : 30</div>
             </div>
         </div>
     </section>

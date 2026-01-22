@@ -588,7 +588,7 @@ $documents = getRows("
                          alt="Profile Photo" 
                          class="profile-avatar" 
                          id="profile-image-preview"
-                         onerror="this.src='../assets/images/default-avatar.png'">
+                     onerror="this.src='../assets/images/default-avatar.png'">
                     <button onclick="document.getElementById('profile-image-upload').click()" 
                             class="btn btn-primary" 
                             style="position: absolute; bottom: 0; right: 0; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); background: #667eea; border: none; cursor: pointer;"

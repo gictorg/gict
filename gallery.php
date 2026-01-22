@@ -83,7 +83,7 @@
                 $students_sql = "SELECT u.full_name, u.qualification, u.joining_date, u.profile_image 
                 FROM users u 
                 WHERE u.user_type_id = 2 AND u.status = 'active' 
-                ORDER BY u.joining_date DESC LIMIT 6";
+                ORDER BY u.joining_date DESC LIMIT 10";
                 $recent_students = getRows($students_sql);
 
                 if (!empty($recent_students)) {
@@ -98,7 +98,7 @@
                         echo '<img src="' . htmlspecialchars($profile_img) . '" alt="' . htmlspecialchars($student['full_name']) . '" onerror="this.onerror=null; this.src=\'assets/images/default-student.png\'">';
                         echo '<div class="caption">';
                         echo '<h3>' . htmlspecialchars($student['full_name']) . '</h3>';
-                        echo '<p>' . htmlspecialchars($subtitle) . '</p>';
+                        // echo '<p>' . htmlspecialchars($subtitle) . '</p>';
                         echo '</div>';
                         echo '</div>';
                     }

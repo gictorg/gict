@@ -3,6 +3,7 @@ require_once 'includes/session_manager.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +15,10 @@ require_once 'includes/session_manager.php';
     <link rel="stylesheet" href="assets/css/sidebar.css">
     <link rel="stylesheet" href="assets/css/profile.css">
     <link rel="stylesheet" href="assets/css/gallery.css">
+    <link rel="stylesheet" href="assets/css/footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     <div class="header-container">
         <!-- Top Links Bar -->
@@ -101,21 +104,22 @@ require_once 'includes/session_manager.php';
                             </div>
                         </div>
                         <div class="nav-dropdown">
-                            <a href="index.php" class="nav-btn">CERTIFICATE VERIFICATION <i class="fas fa-caret-down"></i></a>
-                            <!-- <div class="nav-dropdown-content">
-                                <a href="#">Option 1</a>
-                                <a href="#">Option 2</a>
-                            </div> -->
+                            <a href="#" class="nav-btn">STUDENT CORNER <i class="fas fa-caret-down"></i></a>
+                            <div class="nav-dropdown-content">
+                                <a href="verification.php">Verification</a>
+                                <a href="result.php">Result</a>
+                            </div>
                         </div>
                         <?php if (isLoggedIn()): ?>
                             <div class="nav-dropdown">
                                 <a href="#" class="nav-btn user-btn">
-                                    <i class="fas fa-user"></i> 
-                                    <?php echo htmlspecialchars(getUserDisplayName()); ?> 
+                                    <i class="fas fa-user"></i>
+                                    <?php echo htmlspecialchars(getUserDisplayName()); ?>
                                     <i class="fas fa-caret-down"></i>
                                 </a>
                                 <div class="nav-dropdown-content">
-                                    <a href="<?php echo getDashboardUrl(); ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                    <a href="<?php echo getDashboardUrl(); ?>"><i class="fas fa-tachometer-alt"></i>
+                                        Dashboard</a>
                                     <!-- <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
                                     <a href="#"><i class="fas fa-cog"></i> Settings</a> -->
                                     <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -138,7 +142,7 @@ require_once 'includes/session_manager.php';
                     <button class="mobile-menu-toggle" id="mobileMenuToggle">
                         <i class="fas fa-bars"></i>
                     </button>
-                    
+
                     <!-- Mobile Menu Close Button - POSITIONED INSIDE NAVIGATION -->
                     <button class="mobile-menu-close" id="mobileMenuClose" style="display: none;">
                         <i class="fas fa-times"></i>
@@ -147,8 +151,9 @@ require_once 'includes/session_manager.php';
             </div>
         </nav>
     </div>
-    
+
     <script src="assets/js/nav-dropdown.js"></script>
     <script src="assets/js/homepage-mobile-menu.js"></script>
 </body>
+
 </html>

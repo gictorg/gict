@@ -7,8 +7,8 @@
  */
 
 // Database configuration
-// define('DB_HOST', 'mysql.db.svc.cluster.local');
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', 'mysql.db.svc.cluster.local');
+// define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'test_pass');
@@ -19,17 +19,18 @@ $GLOBALS['_db_connection'] = null;
 $GLOBALS['_db_connection_failed'] = false;
 
 // Create database connection
-function getDBConnection() {
+function getDBConnection()
+{
     // If connection already failed, don't retry
     if (!empty($GLOBALS['_db_connection_failed'])) {
         return false;
     }
-    
+
     // Return existing connection if available
     if ($GLOBALS['_db_connection'] !== null) {
         return $GLOBALS['_db_connection'];
     }
-    
+
     try {
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
         $pdo = new PDO($dsn, DB_USER, DB_PASS);
@@ -47,7 +48,8 @@ function getDBConnection() {
 }
 
 // Test database connection
-function testDBConnection() {
+function testDBConnection()
+{
     $pdo = getDBConnection();
     if ($pdo) {
         try {
@@ -61,15 +63,18 @@ function testDBConnection() {
 }
 
 // Close database connection
-function closeDBConnection($pdo) {
+function closeDBConnection($pdo)
+{
     $pdo = null;
 }
 
 // Execute a query and return results
-function executeQuery($sql, $params = []) {
+function executeQuery($sql, $params = [])
+{
     $pdo = getDBConnection();
-    if (!$pdo) return false;
-    
+    if (!$pdo)
+        return false;
+
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -80,7 +85,8 @@ function executeQuery($sql, $params = []) {
 }
 
 // Get a single row
-function getRow($sql, $params = []) {
+function getRow($sql, $params = [])
+{
     $stmt = executeQuery($sql, $params);
     if ($stmt) {
         return $stmt->fetch();
@@ -89,7 +95,8 @@ function getRow($sql, $params = []) {
 }
 
 // Get multiple rows
-function getRows($sql, $params = []) {
+function getRows($sql, $params = [])
+{
     $stmt = executeQuery($sql, $params);
     if ($stmt) {
         return $stmt->fetchAll();
@@ -99,10 +106,12 @@ function getRows($sql, $params = []) {
 }
 
 // Insert data and return last insert ID
-function insertData($sql, $params = []) {
+function insertData($sql, $params = [])
+{
     $pdo = getDBConnection();
-    if (!$pdo) return false;
-    
+    if (!$pdo)
+        return false;
+
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -114,7 +123,8 @@ function insertData($sql, $params = []) {
 }
 
 // Update data and return affected rows
-function updateData($sql, $params = []) {
+function updateData($sql, $params = [])
+{
     $stmt = executeQuery($sql, $params);
     if ($stmt) {
         return $stmt->rowCount();
@@ -123,7 +133,8 @@ function updateData($sql, $params = []) {
 }
 
 // Delete data and return affected rows
-function deleteData($sql, $params = []) {
+function deleteData($sql, $params = [])
+{
     $stmt = executeQuery($sql, $params);
     if ($stmt) {
         return $stmt->rowCount();
@@ -132,7 +143,8 @@ function deleteData($sql, $params = []) {
 }
 
 // Begin a database transaction
-function beginTransaction() {
+function beginTransaction()
+{
     $pdo = getDBConnection();
     if ($pdo) {
         return $pdo->beginTransaction();
@@ -141,7 +153,8 @@ function beginTransaction() {
 }
 
 // Commit a database transaction
-function commitTransaction() {
+function commitTransaction()
+{
     $pdo = getDBConnection();
     if ($pdo) {
         return $pdo->commit();
@@ -150,7 +163,8 @@ function commitTransaction() {
 }
 
 // Rollback a database transaction
-function rollbackTransaction() {
+function rollbackTransaction()
+{
     $pdo = getDBConnection();
     if ($pdo) {
         return $pdo->rollBack();
