@@ -1,4 +1,10 @@
 <?php
+// Prevent direct access
+if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    header("HTTP/1.1 403 Forbidden");
+    exit("Direct access prohibited.");
+}
+
 // Start output buffering to prevent header issues
 ob_start();
 
@@ -13,15 +19,21 @@ require_once 'includes/session_manager.php';
 require_once 'config/database.php';
 
 // Function to require login (redirect if not logged in)
-function requireLogin() {
+function requireLogin()
+{
     if (!isLoggedIn()) {
-        header('Location: login.php');
+        // Get the base path for proper redirection from any subdirectory
+        $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        $loginPath = ($basePath === '' || $basePath === '/') ? '/login.php' : dirname($basePath) . '/login.php';
+        // Simplify: always redirect to root login.php
+        header('Location: /login.php');
         exit();
     }
 }
 
 // Function to get current user info from database
-function getCurrentUser() {
+function getCurrentUser()
+{
     if (isLoggedIn()) {
         try {
             $sql = "SELECT u.id, u.username, u.full_name, u.email, u.phone, u.address, u.status, ut.name as user_type 
@@ -29,7 +41,7 @@ function getCurrentUser() {
                     JOIN user_types ut ON u.user_type_id = ut.id 
                     WHERE u.id = ? AND u.status = 'active'";
             $user = getRow($sql, [$_SESSION['user_id']]);
-            
+
             if ($user) {
                 return [
                     'id' => $user['id'],
@@ -45,7 +57,7 @@ function getCurrentUser() {
         } catch (Exception $e) {
             // Silent fail for security
         }
-        
+
         // If database lookup fails, don't return session data - it might be corrupted
         return null;
     }
@@ -53,7 +65,8 @@ function getCurrentUser() {
 }
 
 // Function to get user by ID
-function getUserById($userId) {
+function getUserById($userId)
+{
     try {
         $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE id = ?";
         return getRow($sql, [$userId]);
@@ -64,7 +77,8 @@ function getUserById($userId) {
 }
 
 // Function to get user by username
-function getUserByUsername($username) {
+function getUserByUsername($username)
+{
     try {
         $sql = "SELECT id, username, user_type, full_name, email, phone, address, status, created_at FROM users WHERE username = ?";
         return getRow($sql, [$username]);
@@ -75,7 +89,8 @@ function getUserByUsername($username) {
 }
 
 // Function to update user profile
-function updateUserProfile($userId, $data) {
+function updateUserProfile($userId, $data)
+{
     try {
         $sql = "UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?, updated_at = NOW() WHERE id = ?";
         $params = [$data['full_name'], $data['email'], $data['phone'], $data['address'], $userId];
@@ -87,23 +102,24 @@ function updateUserProfile($userId, $data) {
 }
 
 // Function to change password
-function changePassword($userId, $currentPassword, $newPassword) {
+function changePassword($userId, $currentPassword, $newPassword)
+{
     try {
         // Verify current password
         $user = getUserById($userId);
         if (!$user || !password_verify($currentPassword, $user['password'])) {
             return false;
         }
-        
+
         // Validate new password strength
         if (strlen($newPassword) < 8) {
             return false;
         }
-        
+
         if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/', $newPassword)) {
             return false;
         }
-        
+
         // Update password
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?";
@@ -115,7 +131,8 @@ function changePassword($userId, $currentPassword, $newPassword) {
 }
 
 // Function to logout user
-function logout() {
+function logout()
+{
     // Log logout activity if user was logged in (commented out as user_logins table doesn't exist)
     // if (isset($_SESSION['user_id'])) {
     //     try {
@@ -125,16 +142,18 @@ function logout() {
     //         // Silent fail for security
     //     }
     // }
-    
+
     // Use secure logout from session manager
     secureLogout();
 }
 
 // Function to require specific role
-function requireRole($role) {
+function requireRole($role)
+{
     if (!hasRole($role)) {
-        header('Location: dashboard.php');
+        // Redirect to root dashboard, not relative path
+        header('Location: /dashboard.php');
         exit();
     }
 }
-?> 
+?>

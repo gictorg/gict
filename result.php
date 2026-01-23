@@ -30,6 +30,7 @@ require_once 'header.php';
                     u.address,
                     u.profile_image,
                     se.id as enrollment_id,
+                    se.sub_course_id,
                     se.enrollment_date,
                     se.marksheet_no,
                     sc.name as sub_course_name,
@@ -153,9 +154,21 @@ require_once 'header.php';
                     <button type="submit" class="btn-verify">Get Statement of Marks</button>
 
                     <?php if ($error): ?>
-                        <div class="error-message" style="width: 100%; margin-top: 20px;">
+                        <div id="error-alert" class="error-message"
+                            style="width: 100%; margin-top: 20px; transition: opacity 0.5s ease-out;">
                             <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
                         </div>
+                        <script>
+                            setTimeout(function () {
+                                var errorAlert = document.getElementById('error-alert');
+                                if (errorAlert) {
+                                    errorAlert.style.opacity = '0';
+                                    setTimeout(function () {
+                                        errorAlert.style.display = 'none';
+                                    }, 500);
+                                }
+                            }, 2000);
+                        </script>
                     <?php endif; ?>
                 </form>
             </div>

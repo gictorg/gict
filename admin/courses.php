@@ -1769,7 +1769,7 @@ if (isset($_GET['manage_subjects']) && is_numeric($_GET['manage_subjects'])) {
     <?php endif; ?>
 
     <!-- Mobile Menu JavaScript -->
-    <!-- <script src="../assets/js/mobile-menu.js"></script> -->
+    <script src="../assets/js/mobile-menu.js"></script>
 
     <script>
         // Open modal if editing

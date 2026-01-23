@@ -5,7 +5,7 @@ require_once '../generate_marksheet.php';
 
 // Check if user is logged in and is a student
 if (!isset($_SESSION['user_id']) || !hasRole('student')) {
-    header('Location: login.php');
+    header('Location: /login.php');
     exit;
 }
 
@@ -37,10 +37,10 @@ if ($enrollment['status'] !== 'completed') {
 try {
     // Initialize marksheet generator
     $generator = new MarksheetGenerator();
-    
+
     // Generate or get existing marksheet
     $result = $generator->generateMarksheet($user_id, $course_id);
-    
+
     if ($result['success']) {
         // Download the marksheet
         $generator->downloadMarksheet($result['file_path']);
@@ -49,7 +49,7 @@ try {
         header('Location: dashboard.php?error=marksheet_generation_failed');
         exit;
     }
-    
+
 } catch (Exception $e) {
     // Log error and redirect
     header('Location: dashboard.php?error=marksheet_generation_failed');

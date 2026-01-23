@@ -1153,6 +1153,7 @@ $user = getCurrentUser();
         </main>
     </div>
 
+    <script src="../assets/js/mobile-menu.js"></script>
     <script>
         function editFees(enrollmentId, totalFee, paidFees) {
             // Redirect to students.php with parameters to open edit fees modal

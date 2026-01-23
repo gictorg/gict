@@ -569,6 +569,7 @@ function generateMarksheet($data)
             </div>
         </main>
     </div>
+    <script src="../assets/js/mobile-menu.js"></script>
 </body>
 
 </html>

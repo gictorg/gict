@@ -6,9 +6,15 @@
  * for the Global Institute of Computer Technology application.
  */
 
+// Prevent direct access to this file
+if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    header("HTTP/1.1 403 Forbidden");
+    exit("Direct access to configuration files is prohibited.");
+}
+
 // Database configuration
-// define('DB_HOST', 'mysql.db.svc.cluster.local');
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', 'mysql.db.svc.cluster.local');
+// define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'test_pass');

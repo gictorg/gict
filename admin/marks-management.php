@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get enrolled students with their counts
 $enrolled_students = getRows("
     SELECT se.*, sc.name as sub_course_name, c.name as course_name, 
-           u.full_name as student_name, sc.number_of_semesters,
+           u.full_name as student_name, u.username, sc.number_of_semesters,
            (SELECT COUNT(*) FROM student_marks WHERE enrollment_id = se.id) as marks_entered,
            (SELECT COUNT(*) FROM course_subjects WHERE sub_course_id = se.sub_course_id) as total_subjects
     FROM student_enrollments se
@@ -532,13 +532,13 @@ if ($enrollment_id) {
         .marks-table th {
             text-align: left;
             padding: 16px 24px;
-            background: white;
-            font-size: 12px;
+            background: #f8fafc;
+            font-size: 13px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #94a3b8;
-            border-bottom: 2px solid var(--premium-border);
+            letter-spacing: 0.5px;
+            color: #334155;
+            border-bottom: 2px solid #e2e8f0;
         }
 
         .marks-table td {
@@ -703,19 +703,19 @@ if ($enrollment_id) {
         }
 
         .stat-card-premium h3 {
-            font-size: 28px;
-            font-weight: 900;
-            color: var(--premium-slate);
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
             margin: 0;
             line-height: 1.1;
         }
 
         .stat-card-premium p {
-            font-size: 11px;
-            font-weight: 800;
-            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             margin: 4px 0 0 0;
         }
 
@@ -740,20 +740,21 @@ if ($enrollment_id) {
         }
 
         .custom-table th {
-            background: var(--premium-gray);
+            background: #f1f5f9;
             padding: 16px 20px;
-            font-size: 11px;
-            font-weight: 800;
-            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             text-align: left;
         }
 
         .custom-table td {
             padding: 18px 20px;
-            border-bottom: 1px solid var(--premium-border);
+            border-bottom: 1px solid #e2e8f0;
             font-size: 14px;
+            color: #1e293b;
         }
 
         .custom-table tr:hover {
@@ -761,9 +762,9 @@ if ($enrollment_id) {
         }
 
         .badge-premium {
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 8px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
         }
 
@@ -911,6 +912,123 @@ if ($enrollment_id) {
             padding-left: 44px !important;
             width: 100% !important;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 1200px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .stat-card-premium {
+                padding: 18px;
+            }
+
+            .stat-card-premium h3 {
+                font-size: 24px;
+            }
+
+            .stat-card-premium .icon-box {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+
+            .dashboard-main-premium {
+                padding: 16px;
+                border-radius: 16px;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            .custom-table th,
+            .custom-table td {
+                padding: 12px;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+
+            .semester-tabs {
+                padding: 12px 16px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
+
+            .semester-tab {
+                flex-shrink: 0;
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .marks-table th,
+            .marks-table td {
+                padding: 12px 16px;
+            }
+
+            .m-input {
+                width: 70px;
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            .btn-premium {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                gap: 12px;
+            }
+
+            .stat-card-premium {
+                padding: 14px;
+                gap: 12px;
+            }
+
+            .stat-card-premium h3 {
+                font-size: 20px;
+            }
+
+            .stat-card-premium p {
+                font-size: 10px;
+            }
+
+            .stat-card-premium .icon-box {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                border-radius: 12px;
+            }
+
+            .dashboard-main-premium {
+                padding: 12px;
+            }
+
+            .custom-table th,
+            .custom-table td {
+                padding: 10px 8px;
+                font-size: 11px;
+            }
+
+            .badge-premium {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 
@@ -962,8 +1080,9 @@ if ($enrollment_id) {
         <!-- Main Content -->
         <main class="admin-content">
             <div class="page-header">
-                <h1><i class="fas fa-award"></i> Marks Management</h1>
-                <p>Academic tracking, grade allotment, and institutional archiving</p>
+                <h1 style="color: #1e293b; font-weight: 700;"><i class="fas fa-award"></i> Marks Management</h1>
+                <p style="color: #475569; font-weight: 500;">Academic tracking, grade allotment, and student results
+                    management</p>
             </div>
 
             <?php if (isset($success_message)): ?>
@@ -1027,10 +1146,10 @@ if ($enrollment_id) {
                 <div class="dashboard-main-premium">
                     <div class="dashboard-header">
                         <div>
-                            <h2 style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin: 0;">
-                                Institutional Performance Matrix</h2>
-                            <p style="color: #64748b; font-size: 13px; font-weight: 500; margin-top: 5px;">A live
-                                overview of student results and identification status</p>
+                            <h2 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
+                                Student Marks Overview</h2>
+                            <p style="color: #475569; font-size: 14px; font-weight: 500; margin-top: 5px;">A live
+                                view of all enrolled students and their academic progress</p>
                         </div>
                         <button class="btn-premium btn-p-outline" style="padding: 10px 20px;"
                             onclick="location.reload()">
@@ -1094,18 +1213,18 @@ if ($enrollment_id) {
                                         data-course="<?php echo strtolower($student['course_name']); ?>"
                                         data-status="<?php echo $status_code; ?>">
                                         <td>
-                                            <div style="font-weight: 600; color: #374151; font-size: 14px;">
+                                            <div style="font-weight: 600; color: #1e293b; font-size: 15px;">
                                                 <?php echo htmlspecialchars($student['student_name']); ?>
                                             </div>
-                                            <div style="font-size: 12px; color: #6b7280;">
+                                            <div style="font-size: 13px; color: #475569; font-weight: 500;">
                                                 REG ID: <?php echo htmlspecialchars($student['username']); ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <div style="font-weight: 500; color: #374151; font-size: 14px;">
+                                            <div style="font-weight: 600; color: #1e293b; font-size: 14px;">
                                                 <?php echo htmlspecialchars($student['sub_course_name']); ?>
                                             </div>
-                                            <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                                            <div style="font-size: 13px; color: #475569; margin-top: 2px;">
                                                 <?php echo htmlspecialchars($student['course_name']); ?>
                                             </div>
                                         </td>
@@ -1127,12 +1246,12 @@ if ($enrollment_id) {
                                         <td style="width: 180px;">
                                             <div
                                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                                <span style="font-size: 12px; font-weight: 500; color: #6b7280;">
+                                                <span style="font-size: 13px; font-weight: 500; color: #475569;">
                                                     <?php echo $student['marks_entered']; ?>/<?php echo $student['total_subjects']; ?>
                                                     Units
                                                 </span>
                                                 <span
-                                                    style="font-size: 12px; font-weight: 600; color: #0ea5e9;"><?php echo $progress_pct; ?>%</span>
+                                                    style="font-size: 13px; font-weight: 700; color: #0369a1;"><?php echo $progress_pct; ?>%</span>
                                             </div>
                                             <div
                                                 style="height: 6px; background: #e5e7eb; border-radius: 10px; overflow: hidden;">
@@ -1153,8 +1272,8 @@ if ($enrollment_id) {
                                         <td style="text-align: right;">
                                             <button class="btn-premium btn-p-primary"
                                                 onclick="selectStudent(<?php echo $student['id']; ?>)"
-                                                style="padding: 8px 16px; font-size: 11px; margin-left: auto;">
-                                                Assess <i class="fas fa-arrow-right-long"></i>
+                                                style="padding: 10px 20px; font-size: 13px; margin-left: auto; width: 140px; justify-content: center;">
+                                                Enter Marks <i class="fas fa-edit"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -1182,12 +1301,11 @@ if ($enrollment_id) {
                                         <i class="fas fa-user-edit"></i>
                                     </div>
                                     <div>
-                                        <h2
-                                            style="font-size: 18px; font-weight: 800; color: var(--premium-slate); margin: 0;">
+                                        <h2 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
                                             <?php echo htmlspecialchars($selected_enrollment['student_name']); ?>
                                         </h2>
                                         <p
-                                            style="font-size: 11px; color: #64748b; margin: 2px 0 0 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            style="font-size: 13px; color: #475569; margin: 2px 0 0 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">
                                             Assessment Record & Curriculum Allotment</p>
                                     </div>
                                 </div>
@@ -1195,8 +1313,8 @@ if ($enrollment_id) {
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <?php if (!empty($selected_enrollment['marksheet_no'])): ?>
                                         <div
-                                            style="font-size: 10px; background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; color: #475569; font-weight: 800;">
-                                            <i class="fas fa-shield-halved" style="color: #0ea5e9; margin-right: 6px;"></i> CRD:
+                                            style="font-size: 13px; background: #f1f5f9; padding: 8px 16px; border-radius: 10px; border: 1px solid #cbd5e1; color: #1e293b; font-weight: 700;">
+                                            <i class="fas fa-shield-halved" style="color: #0369a1; margin-right: 6px;"></i> CRD:
                                             <?php echo $selected_enrollment['marksheet_no']; ?>
                                         </div>
                                     <?php endif; ?>
@@ -1286,10 +1404,12 @@ if ($enrollment_id) {
                                                     ?>
                                                     <tr class="subject-row">
                                                         <td>
-                                                            <div class="subj-name" style="font-size: 15px;">
+                                                            <div class="subj-name"
+                                                                style="font-size: 16px; color: #1e293b; font-weight: 600;">
                                                                 <?php echo htmlspecialchars($subject['subject_name']); ?>
                                                             </div>
-                                                            <div class="subj-code" style="font-weight: 700; letter-spacing: 0.5px;">
+                                                            <div class="subj-code"
+                                                                style="font-weight: 700; color: #475569; font-size: 13px; letter-spacing: 0.5px;">
                                                                 <?php echo htmlspecialchars($subject['subject_code']); ?>
                                                             </div>
                                                         </td>
@@ -1302,7 +1422,7 @@ if ($enrollment_id) {
                                                                     max="<?php echo $subject['theory_marks']; ?>" min="0"
                                                                     oninput="updateRowTotal(this, <?php echo $subject['max_marks']; ?>)">
                                                                 <span
-                                                                    style="font-size: 10px; color: #94a3b8; font-weight: 700; text-align: center;">MAX
+                                                                    style="font-size: 11px; color: #475569; font-weight: 700; text-align: center;">MAX
                                                                     <?php echo $subject['theory_marks']; ?></span>
                                                             </div>
                                                         </td>
@@ -1315,13 +1435,14 @@ if ($enrollment_id) {
                                                                     max="<?php echo $subject['practical_marks']; ?>" min="0"
                                                                     oninput="updateRowTotal(this, <?php echo $subject['max_marks']; ?>)">
                                                                 <span
-                                                                    style="font-size: 10px; color: #94a3b8; font-weight: 700; text-align: center;">MAX
+                                                                    style="font-size: 11px; color: #475569; font-weight: 700; text-align: center;">MAX
                                                                     <?php echo $subject['practical_marks']; ?></span>
                                                             </div>
                                                         </td>
                                                         <td style="text-align: center;">
-                                                            <div class="row-total"><?php echo $m ? $m['total_marks'] : '0'; ?></div>
-                                                            <div style="font-size: 10px; color: #94a3b8; font-weight: 700;">UNIT
+                                                            <div class="row-total" style="color: #1e293b;">
+                                                                <?php echo $m ? $m['total_marks'] : '0'; ?></div>
+                                                            <div style="font-size: 11px; color: #475569; font-weight: 700;">UNIT
                                                                 TOTAL <?php echo $subject['max_marks']; ?></div>
                                                         </td>
                                                         <td style="text-align: center;">
@@ -1343,7 +1464,7 @@ if ($enrollment_id) {
                                             style="padding: 32px; background: #fff; border-top: 1px solid var(--premium-border); display: flex; align-items: center; justify-content: space-between;">
                                             <div style="display: flex; align-items: center; gap: 15px;">
                                                 <label
-                                                    style="font-size: 13px; font-weight: 800; color: var(--premium-slate); text-transform: uppercase; letter-spacing: 0.5px;">Verification
+                                                    style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">Verification
                                                     Authority:</label>
                                                 <select name="checked_by" class="m-input"
                                                     style="width: 280px; text-align: left; font-size: 13px; padding-left: 15px;"

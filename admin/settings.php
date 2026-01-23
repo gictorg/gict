@@ -597,6 +597,7 @@ $current_user = getRow("SELECT * FROM users WHERE id = ?", [$user['id']]);
         </main>
     </div>
 
+    <script src="../assets/js/mobile-menu.js"></script>
     <script>
         // Mobile menu toggle
         function toggleMobileMenu() {

@@ -422,6 +422,7 @@ $total_completed_count = $stats['total_completed_count'];
 
 
 
+    <script src="../assets/js/mobile-menu.js"></script>
     <script>
         function toggleSidebar() {
             const sidebar = document.querySelector('.admin-sidebar');

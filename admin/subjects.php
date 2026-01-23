@@ -1310,6 +1310,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit']) && !$needs_setup) {
         </div>
     </div>
 
+    <script src="../assets/js/mobile-menu.js"></script>
     <script>
         // Open modal if editing
         <?php if (isset($edit_subject)): ?>
