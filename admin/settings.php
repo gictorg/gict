@@ -137,8 +137,7 @@ $current_user = getRow("SELECT * FROM users WHERE id = ?", [$user['id']]);
         }
 
         body.admin-dashboard-body {
-            font-family: 'Outfit', sans-serif !important;
-            background: #f8fafc;
+            background: #f3f5f9;
         }
 
         .admin-content {
@@ -353,18 +352,6 @@ $current_user = getRow("SELECT * FROM users WHERE id = ?", [$user['id']]);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-size: 1.2rem;
-        }
-
-        .profile-card-mini {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            border-radius: 16px !important;
-            margin: 15px 0 !important;
-        }
-
-        .profile-card-mini img {
-            border: 2px solid #3b82f6 !important;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
         }
 
         @media (max-width: 768px) {

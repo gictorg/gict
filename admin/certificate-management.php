@@ -363,14 +363,14 @@ function generateMarksheet($data)
         <aside class="admin-sidebar">
             <div class="admin-brand">
                 <img src="../assets/images/logo.png" alt="GICT Logo">
-                <span class="brand-title">GICT Institute</span>
+                <div class="brand-title">GICT CONTROL</div>
             </div>
 
             <div class="profile-card-mini">
                 <img src="<?php echo $user['profile_image'] ?? '../assets/images/default-avatar.png'; ?>" alt="Profile">
                 <div>
-                    <div class="user-name"><?php echo htmlspecialchars($user['full_name']); ?></div>
-                    <div class="user-role">Admin</div>
+                    <div class="name"><?php echo htmlspecialchars(strtoupper($user['full_name'])); ?></div>
+                    <div class="role"><?php echo htmlspecialchars(ucfirst($user['type'])); ?></div>
                 </div>
             </div>
 

@@ -550,158 +550,18 @@ if (isset($_GET['manage_subjects']) && is_numeric($_GET['manage_subjects'])) {
     <link rel="stylesheet" href="../assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .admin-sidebar {
-            width: 260px;
-            background: #1f2d3d;
-            color: #e9eef3;
-            padding: 18px 14px;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 1000;
-        }
-
-        .admin-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .admin-brand img {
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
-            object-fit: cover;
-        }
-
-        .brand-title {
-            font-weight: 700;
-            letter-spacing: 0.3px;
-        }
-
-        .profile-card-mini {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 14px;
-            display: grid;
-            grid-template-columns: 56px 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .profile-card-mini img {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-        }
-
-        .profile-card-mini .name {
-            font-weight: 600;
-        }
-
-        .profile-card-mini .role {
-            color: #cbd5e1;
-            font-size: 12px;
-            margin-top: 2px;
-        }
-
-        .sidebar-nav {
-            list-style: none;
-            padding: 0;
-            margin: 8px 0 0 0;
-        }
-
-        .sidebar-nav li {
-            margin: 4px 0;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            text-decoration: none;
-            color: #e9eef3;
-            border-radius: 8px;
-            transition: background 0.2s ease;
-        }
-
-        .sidebar-nav a i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .sidebar-nav a.active,
-        .sidebar-nav a:hover {
-            background: rgba(255, 255, 255, 0.09);
-        }
-
         .admin-content {
-            flex: 1;
-            margin-left: 260px;
-            margin-top: 60px;
-            padding: 20px;
+            padding: 24px;
         }
 
-        /* Topbar */
-        .admin-topbar {
-            background: #0f6fb1;
-            color: #ffffff;
+        .page-header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0 18px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            position: fixed;
-            top: 0;
-            right: 0;
-            left: 260px;
-            height: 60px;
-            z-index: 999;
-        }
-
-        .topbar-left {
-            display: flex;
             align-items: center;
-            gap: 12px;
+            margin-bottom: 30px;
         }
 
-        .topbar-left .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        .breadcrumbs {
-            font-size: 13px;
-            opacity: 0.9;
-        }
-
-        .topbar-home-link {
-            color: #ffffff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .topbar-home-link i {
-            margin-right: 6px;
-        }
-
-        .topbar-home-link:hover {
-            text-decoration: underline;
-        }
+        /* Topbar and Breadcrumbs are globally handled in admin-dashboard.css */
 
         .page-header {
             display: flex;
@@ -1150,12 +1010,11 @@ if (isset($_GET['manage_subjects']) && is_numeric($_GET['manage_subjects'])) {
         .btn-small {
             text-align: center;
         }
-        }
     </style>
 </head>
 
-<body>
-    <div class="admin-container">
+<body class="admin-dashboard-body">
+    <div class="admin-layout">
         <aside class="admin-sidebar">
             <div class="admin-brand">
                 <img src="../assets/images/logo.png" alt="logo" />

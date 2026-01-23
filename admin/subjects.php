@@ -307,34 +307,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit']) && !$needs_setup) {
             letter-spacing: 0.3px;
         }
 
-        .profile-card-mini {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 14px;
-            display: grid;
-            grid-template-columns: 56px 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .profile-card-mini img {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-        }
-
-        .profile-card-mini .name {
-            font-weight: 600;
-        }
-
-        .profile-card-mini .role {
-            color: #cbd5e1;
-            font-size: 12px;
-            margin-top: 2px;
-        }
+        /* profile-card-mini styles are now globally handled in admin-dashboard.css */
 
         .sidebar-nav {
             list-style: none;

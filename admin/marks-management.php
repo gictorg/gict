@@ -1053,10 +1053,8 @@ if ($enrollment_id) {
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="marks-management.php" class="active"><i class="fas fa-chart-line"></i> Marks Management</a>
-                </li>
-                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a>
-                </li>
+                <li><a href="marks-management.php" class="active"><i class="fas fa-chart-line"></i> Marks Management</a></li>
+                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a></li>
                 <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
                 <li><a href="inquiries.php"><i class="fas fa-question-circle"></i> Course Inquiries</a></li>
                 <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>

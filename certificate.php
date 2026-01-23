@@ -435,7 +435,7 @@ require_once 'includes/qr_helper.php';
                     <div class="form-group">
                         <label for="enrollment_no" class="form-label">Enrollment No / Roll No:*</label>
                         <input type="text" id="enrollment_no" name="enrollment_no" class="form-control" required
-                            placeholder="e.g. SA2026001" style="text-transform: uppercase;"
+                            style="text-transform: uppercase;"
                             value="<?php echo isset($_POST['enrollment_no']) ? htmlspecialchars(strtoupper($_POST['enrollment_no'])) : ''; ?>">
                     </div>
                     <div class="form-group">

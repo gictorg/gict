@@ -252,8 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <form method="POST" action="login.php">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required style="text-transform: uppercase;"
-                    placeholder="e.g. SA2026001">
+                <input type="text" id="username" name="username" required style="text-transform: uppercase;">
             </div>
 
             <div class="form-group">
