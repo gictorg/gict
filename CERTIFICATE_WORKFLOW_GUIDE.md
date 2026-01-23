@@ -15,7 +15,6 @@ This document outlines the complete certificate generation workflow implemented 
 - **Who**: Admin Users
 - **Action**: Admin reviews payment details and verifies payment
 - **Status**: Changes from `payment_pending` to `enrolled` or `rejected`
-- **Location**: `admin/enrollment-approvals.php`
 
 ### 3. **Course Completion**
 - **Who**: Admin Users
@@ -57,7 +56,6 @@ This document outlines the complete certificate generation workflow implemented 
 
 ## Admin Interface Features
 
-### 1. Payment Verification & Enrollment Management (`admin/enrollment-approvals.php`)
 - View all payment_pending enrollments
 - Verify payments and approve enrollments
 - Reject payments and cancel enrollments
@@ -130,7 +128,6 @@ php setup_certificate_workflow.php
 ### For Admin:
 
 1. **Verify Payments & Approve Enrollments**:
-   - Go to `admin/enrollment-approvals.php`
    - Review payment_pending enrollments
    - Check payment details (transaction ID, method, notes)
    - Click "Verify Payment & Approve" or "Reject Payment"
@@ -168,7 +165,6 @@ php setup_certificate_workflow.php
 
 ```
 admin/
-├── enrollment-approvals.php    # Enrollment approval interface
 ├── marks-management.php        # Marks management interface
 ├── certificate-management.php  # Certificate generation interface
 └── dashboard.php               # Updated admin dashboard

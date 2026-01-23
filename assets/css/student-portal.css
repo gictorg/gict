@@ -1,0 +1,324 @@
+/* Student Portal Standardized Theme */
+:root {
+    --student-primary: #667eea;
+    --student-secondary: #764ba2;
+    --student-sidebar-bg: linear-gradient(135deg, #2c3e50 0%, #667eea 100%);
+    --student-sidebar-active: rgba(255, 255, 255, 0.15);
+    --student-bg: #f8fafc;
+    --student-text: #1e293b;
+    --student-muted: #64748b;
+    --student-panel-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+body.student-portal-body {
+    background: var(--student-bg);
+    margin: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--student-text);
+}
+
+.student-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.admin-sidebar {
+    background: var(--student-sidebar-bg);
+    color: white;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.admin-brand {
+    padding: 0 25px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-brand img {
+    width: 32px;
+    height: 32px;
+    filter: brightness(0) invert(1);
+}
+
+.admin-brand .brand-title {
+    font-weight: 800;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+}
+
+/* Profile Card in Sidebar */
+.profile-card-mini {
+    margin: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-card-mini img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-card-mini .name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-card-mini .role {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Sidebar Nav */
+.sidebar-nav {
+    list-style: none;
+    padding: 0 15px;
+    margin-top: 10px;
+}
+
+.sidebar-nav li {
+    margin-bottom: 5px;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.sidebar-nav a i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    transform: translateX(5px);
+}
+
+.sidebar-nav a.active {
+    background: var(--student-sidebar-active);
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-right: 4px solid white;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #1e293b;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--student-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Topbar & Breadcrumbs */
+.admin-topbar {
+    background: var(--student-sidebar-bg);
+    padding: 15px 30px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breadcrumbs {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.breadcrumbs a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.breadcrumbs a:hover {
+    opacity: 1;
+}
+
+.breadcrumbs span {
+    color: white;
+    font-weight: 500;
+}
+
+/* Content Area */
+.admin-content {
+    padding: 30px;
+}
+
+.panel {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--student-panel-shadow);
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.panel-header {
+    padding: 20px 30px;
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.panel-header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.panel-header h1 i {
+    color: var(--student-primary);
+}
+
+.panel-body {
+    padding: 30px;
+}
+
+/* Stats Cards Section */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: var(--student-panel-shadow);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card .stat-number {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--student-primary);
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    color: var(--student-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-secondary) 100%);
+    border: none;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+    .student-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-sidebar {
+        display: none;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .admin-sidebar.mobile-open {
+        display: flex;
+        transform: translateX(0);
+    }
+
+    .menu-toggle {
+        display: block !important;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--student-text);
+        margin-right: 15px;
+    }
+}

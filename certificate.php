@@ -152,7 +152,18 @@ require_once 'includes/qr_helper.php';
             opacity: 0.7;
             filter: sepia(1) hue-rotate(180deg) saturate(2.5) contrast(1.1);
             transform: rotate(-10deg);
+            z-index: 10;
             pointer-events: none;
+        }
+
+        .marksheet-no-top {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #c5a059;
+            font-family: 'Playfair Display', serif;
         }
 
         .seal-content {
@@ -351,11 +362,14 @@ require_once 'includes/qr_helper.php';
                     se.session,
                     se.enrollment_date,
                     se.completion_date,
+                    se.marksheet_no,
+                    cert.certificate_number,
                     sc.name as sub_course_name,
                     sc.duration as course_duration
                 FROM users u
                 JOIN student_enrollments se ON u.id = se.user_id
                 JOIN sub_courses sc ON se.sub_course_id = sc.id
+                LEFT JOIN certificates cert ON se.id = cert.enrollment_id
                 WHERE u.username = ? AND u.user_type_id = 2
                 ORDER BY se.enrollment_date DESC LIMIT 1
             ";
@@ -366,11 +380,12 @@ require_once 'includes/qr_helper.php';
                 if ($submitted_dob && $student['date_of_birth'] === $submitted_dob) {
                     // Fetch marks to calculate overall grade
                     $sql_marks = "SELECT AVG(CASE 
-                        WHEN grade = 'S' THEN 95
+                        WHEN grade IN ('S', 'A+') THEN 95
                         WHEN grade = 'A' THEN 85
-                        WHEN grade = 'B' THEN 75
-                        WHEN grade = 'C' THEN 65
-                        WHEN grade = 'D' THEN 55
+                        WHEN grade = 'B+' THEN 78
+                        WHEN grade = 'B' THEN 72
+                        WHEN grade = 'C' THEN 62
+                        WHEN grade = 'D' THEN 52
                         ELSE 40 END) as avg_score
                         FROM student_marks WHERE enrollment_id = ?";
                     $marks_res = getRow($sql_marks, [$student['enrollment_id']]);
@@ -381,17 +396,19 @@ require_once 'includes/qr_helper.php';
                     } else {
                         $score = $marks_res['avg_score'];
                         if ($score >= 90)
-                            $student['final_grade'] = 'S';
+                            $student['final_grade'] = 'A+';
                         elseif ($score >= 80)
                             $student['final_grade'] = 'A';
                         elseif ($score >= 70)
-                            $student['final_grade'] = 'B';
+                            $student['final_grade'] = 'B+';
                         elseif ($score >= 60)
-                            $student['final_grade'] = 'C';
+                            $student['final_grade'] = 'B';
                         elseif ($score >= 50)
+                            $student['final_grade'] = 'C';
+                        elseif ($score >= 40)
                             $student['final_grade'] = 'D';
                         else
-                            $student['final_grade'] = 'E';
+                            $student['final_grade'] = 'F';
 
                         // Fallback for empty session
                         if (empty($student['session']) && !empty($student['enrollment_date'])) {
@@ -441,6 +458,12 @@ require_once 'includes/qr_helper.php';
                 <div class="certificate-container" id="certificate">
                     <div class="certificate-border"></div>
 
+                    <?php if (!empty($student['certificate_number'])): ?>
+                        <div class="marksheet-no-top">
+                            Certificate No: <?php echo htmlspecialchars($student['certificate_number']); ?>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="cert-header">
                         <img src="logo.png" alt="GICT Logo" class="cert-logo">
                         <h1 class="cert-institute-name">Global Institute of Compute Technology</h1>
@@ -463,7 +486,7 @@ require_once 'includes/qr_helper.php';
                         <div class="cert-course-name">
                             <?php echo htmlspecialchars($student['sub_course_name'] ?? ''); ?>
                         </div>
-                        with merit during the academic session
+                        during the academic session
                         <strong><?php echo htmlspecialchars($student['session'] ?? '2025-26'); ?></strong>.
                     </div>
 
@@ -495,10 +518,6 @@ require_once 'includes/qr_helper.php';
                         </div>
                         <div class="cert-grade-seal-box">
                             <img src="assets/images/logo bgremove.png" class="cert-ink-seal" alt="GICT Seal">
-                            <div class="seal-content">
-                                <span class="seal-grade-label">Grade</span>
-                                <span class="seal-grade-value"><?php echo $student['final_grade'] ?? ''; ?></span>
-                            </div>
                         </div>
                     </div>
 

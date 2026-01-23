@@ -1,5 +1,11 @@
+<?php
+require_once 'auth.php';
+requireLogin();
+requireRole('admin');
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,46 +18,46 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
-        
+
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
         }
-        
+
         .header p {
             font-size: 1.2rem;
             opacity: 0.9;
         }
-        
+
         .nav-tabs {
             display: flex;
             background: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
         }
-        
+
         .nav-tab {
             flex: 1;
             padding: 15px 20px;
@@ -63,97 +69,97 @@
             color: #6c757d;
             transition: all 0.3s ease;
         }
-        
+
         .nav-tab.active {
             background: white;
             color: #2c3e50;
             border-bottom: 3px solid #3498db;
         }
-        
+
         .nav-tab:hover {
             background: #e9ecef;
             color: #2c3e50;
         }
-        
+
         .tab-content {
             display: none;
             padding: 30px;
         }
-        
+
         .tab-content.active {
             display: block;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-        
+
         .stat-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 25px;
             border-radius: 10px;
             text-align: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
-        
+
         .stat-card h3 {
             font-size: 2.5rem;
             margin-bottom: 10px;
         }
-        
+
         .stat-card p {
             font-size: 1.1rem;
             opacity: 0.9;
         }
-        
+
         .chart-container {
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .chart-title {
             font-size: 1.5rem;
             margin-bottom: 20px;
             color: #2c3e50;
             text-align: center;
         }
-        
+
         .requirements-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
-        
+
         .requirement-card {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
             border-left: 4px solid #3498db;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .requirement-card h4 {
             color: #2c3e50;
             margin-bottom: 10px;
         }
-        
+
         .requirement-card p {
             color: #6c757d;
             line-height: 1.6;
         }
-        
+
         .mermaid {
             text-align: center;
             margin: 20px 0;
         }
-        
+
         .user-persona {
             background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
             padding: 25px;
@@ -161,23 +167,23 @@
             margin-bottom: 20px;
             color: #2c3e50;
         }
-        
+
         .user-persona h3 {
             margin-bottom: 15px;
             font-size: 1.5rem;
         }
-        
+
         .user-persona ul {
             list-style: none;
             padding-left: 0;
         }
-        
+
         .user-persona li {
             margin-bottom: 8px;
             padding-left: 20px;
             position: relative;
         }
-        
+
         .user-persona li:before {
             content: "✓";
             position: absolute;
@@ -185,14 +191,14 @@
             color: #27ae60;
             font-weight: bold;
         }
-        
+
         .tech-stack {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin: 20px 0;
         }
-        
+
         .tech-item {
             background: #e8f4fd;
             padding: 15px;
@@ -200,32 +206,32 @@
             text-align: center;
             border: 2px solid #3498db;
         }
-        
+
         .tech-item h4 {
             color: #2c3e50;
             margin-bottom: 5px;
         }
-        
+
         .tech-item p {
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .timeline {
             position: relative;
             padding: 20px 0;
         }
-        
+
         .timeline-item {
             background: white;
             padding: 20px;
             margin: 20px 0;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             position: relative;
             margin-left: 40px;
         }
-        
+
         .timeline-item:before {
             content: "";
             position: absolute;
@@ -236,7 +242,7 @@
             background: #3498db;
             border-radius: 50%;
         }
-        
+
         .timeline-item:after {
             content: "";
             position: absolute;
@@ -246,29 +252,30 @@
             height: calc(100% + 20px);
             background: #3498db;
         }
-        
+
         .timeline-item:last-child:after {
             display: none;
         }
-        
+
         .timeline-item h4 {
             color: #2c3e50;
             margin-bottom: 10px;
         }
-        
+
         .timeline-item p {
             color: #6c757d;
             line-height: 1.6;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
             <h1>GICT Institute</h1>
             <p>Product Requirements Document - Interactive Dashboard</p>
         </div>
-        
+
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showTab('overview')">Overview</button>
             <button class="nav-tab" onclick="showTab('requirements')">Requirements</button>
@@ -276,7 +283,7 @@
             <button class="nav-tab" onclick="showTab('users')">User Personas</button>
             <button class="nav-tab" onclick="showTab('timeline')">Timeline</button>
         </div>
-        
+
         <div id="overview" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card">
@@ -296,89 +303,97 @@
                     <p>Core Features</p>
                 </div>
             </div>
-            
+
             <div class="chart-container">
                 <h3 class="chart-title">Feature Distribution</h3>
                 <canvas id="featureChart"></canvas>
             </div>
-            
+
             <div class="chart-container">
                 <h3 class="chart-title">User Role Distribution</h3>
                 <canvas id="roleChart"></canvas>
             </div>
         </div>
-        
+
         <div id="requirements" class="tab-content">
             <h2>Key Requirements Categories</h2>
             <div class="requirements-grid">
                 <div class="requirement-card">
                     <h4>User Management</h4>
-                    <p>Secure authentication, role-based access control, user profile management, and session handling for all user types.</p>
+                    <p>Secure authentication, role-based access control, user profile management, and session handling
+                        for all user types.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Course Management</h4>
-                    <p>Two-tier course structure, category management, course details, and status tracking for comprehensive course administration.</p>
+                    <p>Two-tier course structure, category management, course details, and status tracking for
+                        comprehensive course administration.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Enrollment System</h4>
-                    <p>Student enrollment workflow, payment processing, verification system, and status tracking for seamless course registration.</p>
+                    <p>Student enrollment workflow, payment processing, verification system, and status tracking for
+                        seamless course registration.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Certificate Generation</h4>
-                    <p>Automatic certificate creation, QR code integration, marksheet generation, and secure document management.</p>
+                    <p>Automatic certificate creation, QR code integration, marksheet generation, and secure document
+                        management.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Payment Processing</h4>
-                    <p>Multiple payment methods, transaction tracking, admin verification, and secure payment handling.</p>
+                    <p>Multiple payment methods, transaction tracking, admin verification, and secure payment handling.
+                    </p>
                 </div>
                 <div class="requirement-card">
                     <h4>Document Management</h4>
-                    <p>Cloudinary integration for file uploads, document categorization (Aadhaar, PAN, etc.), secure file storage, and profile image management separate from documents.</p>
+                    <p>Cloudinary integration for file uploads, document categorization (Aadhaar, PAN, etc.), secure
+                        file storage, and profile image management separate from documents.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Student Detail Management</h4>
-                    <p>Comprehensive student profile pages with enrollment history, certificates, marksheets, payment records, and document management with upload capabilities.</p>
+                    <p>Comprehensive student profile pages with enrollment history, certificates, marksheets, payment
+                        records, and document management with upload capabilities.</p>
                 </div>
                 <div class="requirement-card">
                     <h4>Profile Management</h4>
-                    <p>Profile image updates, student information editing, document upload/replace functionality, and real-time profile synchronization across the system.</p>
+                    <p>Profile image updates, student information editing, document upload/replace functionality, and
+                        real-time profile synchronization across the system.</p>
                 </div>
             </div>
         </div>
-        
+
         <div id="architecture" class="tab-content">
             <h2>System Architecture</h2>
             <div class="mermaid">
                 graph TB
-                    subgraph "Frontend Layer"
-                        A[Homepage] --> B[Login/Registration]
-                        B --> C[Student Dashboard]
-                        B --> D[Faculty Dashboard]
-                        B --> E[Admin Dashboard]
-                    end
-                    
-                    subgraph "Backend Layer"
-                        F[PHP Application] --> G[Session Manager]
-                        F --> H[Database Layer]
-                        F --> I[File Manager]
-                    end
-                    
-                    subgraph "Database Layer"
-                        J[(MySQL Database)]
-                        K[Users Table]
-                        L[Courses Table]
-                        M[Enrollments Table]
-                        N[Payments Table]
-                        O[Certificates Table]
-                    end
-                    
-                    A --> F
-                    C --> F
-                    D --> F
-                    E --> F
-                    F --> J
+                subgraph "Frontend Layer"
+                A[Homepage] --> B[Login/Registration]
+                B --> C[Student Dashboard]
+                B --> D[Faculty Dashboard]
+                B --> E[Admin Dashboard]
+                end
+
+                subgraph "Backend Layer"
+                F[PHP Application] --> G[Session Manager]
+                F --> H[Database Layer]
+                F --> I[File Manager]
+                end
+
+                subgraph "Database Layer"
+                J[(MySQL Database)]
+                K[Users Table]
+                L[Courses Table]
+                M[Enrollments Table]
+                N[Payments Table]
+                O[Certificates Table]
+                end
+
+                A --> F
+                C --> F
+                D --> F
+                E --> F
+                F --> J
             </div>
-            
+
             <h3>Technology Stack</h3>
             <div class="tech-stack">
                 <div class="tech-item">
@@ -399,10 +414,10 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="users" class="tab-content">
             <h2>User Personas</h2>
-            
+
             <div class="user-persona">
                 <h3>👨‍🎓 Student Persona</h3>
                 <ul>
@@ -412,7 +427,7 @@
                     <li>Needs: Easy enrollment, clear course details, accessible certificates</li>
                 </ul>
             </div>
-            
+
             <div class="user-persona">
                 <h3>👨‍🏫 Faculty Persona</h3>
                 <ul>
@@ -422,7 +437,7 @@
                     <li>Needs: Course management tools, student progress tracking</li>
                 </ul>
             </div>
-            
+
             <div class="user-persona">
                 <h3>👨‍💼 Administrator Persona</h3>
                 <ul>
@@ -433,17 +448,19 @@
                 </ul>
             </div>
         </div>
-        
+
         <div id="timeline" class="tab-content">
             <h2>Development Timeline</h2>
             <div class="timeline">
                 <div class="timeline-item">
                     <h4>Phase 1: Core Foundation</h4>
-                    <p>User authentication, basic course management, student enrollment system, and payment processing workflow.</p>
+                    <p>User authentication, basic course management, student enrollment system, and payment processing
+                        workflow.</p>
                 </div>
                 <div class="timeline-item">
                     <h4>Phase 2: Certificate System</h4>
-                    <p>Certificate generation, marksheet creation, QR code integration, and document management system.</p>
+                    <p>Certificate generation, marksheet creation, QR code integration, and document management system.
+                    </p>
                 </div>
                 <div class="timeline-item">
                     <h4>Phase 3: Admin Features</h4>
@@ -451,15 +468,19 @@
                 </div>
                 <div class="timeline-item">
                     <h4>Phase 4: Student Management Enhancement</h4>
-                    <p>Comprehensive student detail pages, profile image management, document upload system with Cloudinary integration, edit student functionality, and enhanced enrollment tracking with fee management.</p>
+                    <p>Comprehensive student detail pages, profile image management, document upload system with
+                        Cloudinary integration, edit student functionality, and enhanced enrollment tracking with fee
+                        management.</p>
                 </div>
                 <div class="timeline-item">
                     <h4>Phase 5: Enhancement & Optimization</h4>
-                    <p>Mobile responsiveness, security improvements, performance optimization, user experience enhancements, and advanced reporting features.</p>
+                    <p>Mobile responsiveness, security improvements, performance optimization, user experience
+                        enhancements, and advanced reporting features.</p>
                 </div>
                 <div class="timeline-item">
                     <h4>Phase 6: Future Features</h4>
-                    <p>Mobile app, advanced analytics dashboard, video integration, multi-language support, and AI-powered course recommendations.</p>
+                    <p>Mobile app, advanced analytics dashboard, video integration, multi-language support, and
+                        AI-powered course recommendations.</p>
                 </div>
             </div>
         </div>
@@ -468,24 +489,24 @@
     <script>
         // Initialize Mermaid
         mermaid.initialize({ startOnLoad: true });
-        
+
         // Tab switching functionality
         function showTab(tabName) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(content => content.classList.remove('active'));
-            
+
             // Remove active class from all tabs
             const tabs = document.querySelectorAll('.nav-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
-            
+
             // Show selected tab content
             document.getElementById(tabName).classList.add('active');
-            
+
             // Add active class to clicked tab
             event.target.classList.add('active');
         }
-        
+
         // Initialize charts when overview tab is shown
         function initCharts() {
             // Feature Distribution Chart
@@ -517,7 +538,7 @@
                     }
                 }
             });
-            
+
             // User Role Distribution Chart
             const roleCtx = document.getElementById('roleChart').getContext('2d');
             new Chart(roleCtx, {
@@ -544,9 +565,10 @@
                 }
             });
         }
-        
+
         // Initialize charts when page loads
         document.addEventListener('DOMContentLoaded', initCharts);
     </script>
 </body>
+
 </html>

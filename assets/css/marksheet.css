@@ -21,6 +21,23 @@
     border-bottom: 2px solid #2c3e50;
     margin-bottom: 20px;
     padding-bottom: 15px;
+    position: relative;
+}
+
+.marksheet-no-top-left {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2c3e50;
+    z-index: 10;
+    font-family: 'Cinzel', serif;
+}
+
+.marksheet-no-top-left span {
+    color: #c5a059;
+    text-transform: uppercase;
 }
 
 .institute-logo {
@@ -186,6 +203,14 @@
     font-weight: 600;
 }
 
+.sig-name {
+    font-size: 12px;
+    color: #2c3e50;
+    margin-top: 2px;
+    font-style: italic;
+    font-weight: 500;
+}
+
 /* Watermark - Fixed to stay centered */
 .marksheet-watermark {
     position: absolute;
@@ -277,6 +302,18 @@
         transform: scale(0.98);
         /* Slightly scale down to guarantee A4 fit */
         transform-origin: top center;
+    }
+
+    .marksheet-no-top-left {
+        font-size: 10px !important;
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #2c3e50 !important;
+    }
+
+    .marksheet-no-top-left span {
+        color: #c5a059 !important;
     }
 
     .marksheet-inner {

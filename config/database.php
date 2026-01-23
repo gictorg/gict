@@ -7,8 +7,8 @@
  */
 
 // Database configuration
-define('DB_HOST', 'mysql.db.svc.cluster.local');
-// define('DB_HOST', '127.0.0.1');
+// define('DB_HOST', 'mysql.db.svc.cluster.local');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'gict_db');
 define('DB_USER', 'root');
 define('DB_PASS', 'test_pass');
@@ -170,5 +170,20 @@ function rollbackTransaction()
         return $pdo->rollBack();
     }
     return false;
+}
+
+/**
+ * Generate a unique 12-digit alphanumeric number
+ * @param int $length
+ * @return string
+ */
+function generateUniqueNumber($length = 12)
+{
+    $chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $res = '';
+    for ($i = 0; $i < $length; $i++) {
+        $res .= $chars[mt_rand(0, strlen($chars) - 1)];
+    }
+    return $res;
 }
 ?>

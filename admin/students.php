@@ -726,6 +726,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $result = updateData($update_sql, [$new_status, $enrollment_id]);
 
                         if ($result) {
+                            if ($new_status === 'completed') {
+                                // Automatically generate certificate entry
+                                $certificate_number = "GICT" . date('Y') . sprintf("%04d", $enrollment_id);
+                                $exists = getRow("SELECT id FROM certificates WHERE enrollment_id = ?", [$enrollment_id]);
+                                if (!$exists) {
+                                    insertData("INSERT INTO certificates (enrollment_id, certificate_number, generated_by, status) VALUES (?, ?, ?, 'generated')", [
+                                        $enrollment_id,
+                                        $certificate_number,
+                                        $user['id']
+                                    ]);
+                                }
+                            }
                             $success_message = "Enrollment status updated to '" . ucfirst(str_replace('_', ' ', $new_status)) . "' successfully!";
                         } else {
                             throw new Exception("Failed to update enrollment status.");
@@ -774,7 +786,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $result = updateData($update_sql, [$enrollment_id]);
 
                         if ($result) {
-                            $success_message = "Course marked as completed for {$enrollment['student_name']} - {$enrollment['sub_course_name']}!";
+                            // Generate Marksheet Number
+                            $marksheet_no = generateUniqueNumber(12);
+                            updateData("UPDATE student_enrollments SET marksheet_no = ? WHERE id = ?", [$marksheet_no, $enrollment_id]);
+
+                            // Generate Certificate Number and record
+                            $certificate_number = generateUniqueNumber(12);
+                            // Check if certificate record exists, if not create one
+                            $existing_cert = getRow("SELECT id FROM certificates WHERE enrollment_id = ?", [$enrollment_id]);
+                            if (!$existing_cert) {
+                                insertData("INSERT INTO certificates (enrollment_id, certificate_number, generated_by, status) VALUES (?, ?, ?, 'pending')", [
+                                    $enrollment_id,
+                                    $certificate_number,
+                                    $user['id'] ?? 1 // Fallback to admin ID 1 if not set
+                                ]);
+                            }
+
+                            $success_message = "Course marked as completed for {$enrollment['student_name']} - {$enrollment['sub_course_name']}! Marksheet No: {$marksheet_no}, Certificate No: {$certificate_number}";
                         } else {
                             throw new Exception("Failed to mark course as completed.");
                         }
@@ -926,32 +954,6 @@ try {
         .add-student-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
-
-        .section-header {
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        .section-header h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #333;
-            margin: 0 0 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .section-header h2 i {
-            color: #667eea;
-        }
-
-        .section-header p {
-            color: #6c757d;
-            font-size: 16px;
-            margin: 0;
         }
 
         /* Search Section Styling */
@@ -2031,6 +2033,97 @@ try {
             margin-right: 5px;
             color: #667eea;
         }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .pagination-controls select {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .pagination-btn {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 5px;
+        }
+
+        .page-numbers .page-btn {
+            min-width: 36px;
+            height: 36px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .page-numbers .page-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .page-numbers .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
     </style>
 </head>
 
@@ -2051,10 +2144,12 @@ try {
             <ul class="sidebar-nav">
                 <li><a href="../index.php"><i class="fas fa-home"></i> Home</a></li>
                 <li><a href="../dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a class="active" href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
+                <li><a href="students.php" class="active"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
+                <li><a href="marks-management.php"><i class="fas fa-chart-line"></i> Marks Management</a></li>
+                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a>
+                </li>
                 <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
                 <li><a href="inquiries.php"><i class="fas fa-question-circle"></i> Course Inquiries</a></li>
                 <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
@@ -2066,8 +2161,11 @@ try {
             <div class="topbar-left">
                 <button class="menu-toggle"><i class="fas fa-bars"></i></button>
                 <div class="breadcrumbs">
-                    <a href="../index.php" class="home-link">Home</a> /
-                    <a href="../dashboard.php">Dashboard</a> / Students
+                    <a href="../index.php" class="topbar-home-link"><i class="fas fa-home"></i> Home</a>
+                    <span style="opacity:.7; margin: 0 6px;">/</span>
+                    <a href="../dashboard.php">Dashboard</a>
+                    <span style="opacity:.7; margin: 0 6px;">/</span>
+                    <span>Students</span>
                 </div>
             </div>
         </header>
@@ -2135,10 +2233,16 @@ try {
                     </button>
                 </div>
                 <div class="search-filters">
-                    <select id="statusFilter" onchange="filterStudents()">
-                        <option value="active">Active Only</option>
-                        <option value="">All Status</option>
-                        <option value="inactive">Inactive Only</option>
+                    <select id="accountStatusFilter" onchange="filterStudents()">
+                        <option value="">All Account Status</option>
+                        <option value="active">Active Accounts</option>
+                        <option value="inactive">Inactive Accounts</option>
+                    </select>
+                    <select id="enrollmentStatusFilter" onchange="filterStudents()">
+                        <option value="">All Enrollment Status</option>
+                        <option value="enrolled">Currently Enrolled</option>
+                        <option value="completed">Course Completed</option>
+                        <option value="payment_pending">Payment Pending</option>
                     </select>
                     <select id="sortBy" onchange="sortStudents()">
                         <option value="created_at">Sort by: Join Date</option>
@@ -2150,11 +2254,6 @@ try {
             </div>
 
             <!-- Students Table -->
-            <div class="section-header">
-                <h2><i class="fas fa-users"></i> All Students</h2>
-                <p>Manage student accounts, view profiles, and track enrollments</p>
-            </div>
-
             <div class="table-responsive">
                 <table class="students-table" id="studentsTable">
                     <thead>
@@ -2169,7 +2268,9 @@ try {
                     </thead>
                     <tbody>
                         <?php foreach ($students as $student): ?>
-                            <tr class="student-row" data-student-id="<?php echo $student['id']; ?>">
+                            <tr class="student-row" data-student-id="<?php echo $student['id']; ?>"
+                                data-account-status="<?php echo htmlspecialchars($student['status']); ?>"
+                                data-enrollment-status="<?php echo htmlspecialchars($student['enrollment_status'] ?? ''); ?>">
                                 <td class="student-info-cell">
                                     <div class="student-avatar">
                                         <?php if (!empty($student['profile_image'])): ?>
@@ -2182,14 +2283,17 @@ try {
                                         <?php endif; ?>
                                     </div>
                                     <div class="student-details">
-                                        <div class="student-name"><?php echo htmlspecialchars($student['full_name']); ?>
+                                        <div class="student-name">
+                                            <?php echo htmlspecialchars($student['full_name']); ?>
                                         </div>
-                                        <div class="student-username">@<?php echo htmlspecialchars($student['username']); ?>
+                                        <div class="student-username">
+                                            @<?php echo htmlspecialchars($student['username']); ?>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="contact-info">
-                                    <div><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($student['email']); ?>
+                                    <div><i class="fas fa-envelope"></i>
+                                        <?php echo htmlspecialchars($student['email']); ?>
                                     </div>
                                     <div><i class="fas fa-phone"></i>
                                         <?php echo htmlspecialchars($student['phone'] ?? 'N/A'); ?></div>
@@ -2246,11 +2350,13 @@ try {
                                             title="View Student Details">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="btn btn-icard"
-                                            onclick="showStudentICard(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>', '<?php echo htmlspecialchars($student['username']); ?>')"
-                                            title="View Student ID Card">
-                                            <i class="fas fa-id-card"></i>
-                                        </button>
+                                        <?php if (!empty($student['course_name'])): ?>
+                                            <button class="btn btn-icard"
+                                                onclick="showStudentICard(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['full_name']); ?>', '<?php echo htmlspecialchars($student['username']); ?>')"
+                                                title="View Student ID Card">
+                                                <i class="fas fa-id-card"></i>
+                                            </button>
+                                        <?php endif; ?>
                                         <button class="btn btn-edit" onclick="editStudent(<?php echo $student['id']; ?>)"
                                             title="Edit Student">
                                             <i class="fas fa-edit"></i>
@@ -2277,6 +2383,28 @@ try {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container" id="paginationContainer">
+                <div class="pagination-info">
+                    <span id="paginationInfo">Showing 0-0 of 0 students</span>
+                </div>
+                <div class="pagination-controls">
+                    <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                        <option value="10">10 per page</option>
+                        <option value="25">25 per page</option>
+                        <option value="50">50 per page</option>
+                        <option value="100">100 per page</option>
+                    </select>
+                    <button class="pagination-btn" id="prevPageBtn" onclick="prevPage()" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="pageNumbers" class="page-numbers"></span>
+                    <button class="pagination-btn" id="nextPageBtn" onclick="nextPage()">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </main>
     </div>
@@ -2324,131 +2452,131 @@ try {
                         <label for="date_of_birth">Date of Birth</label>
                         <input type="date" id="date_of_birth" name="date_of_birth" max="<?php echo date('Y-m-d'); ?>">
                     </div>
-                </div>
 
-                <div class="form-row">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="gender">Gender *</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="qualification">Current Qualification *</label>
+                            <select id="qualification" name="qualification" required>
+                                <option value="">Select Qualification</option>
+                                <option value="10th">10th Standard</option>
+                                <option value="12th">12th Standard</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="M.Tech">M.Tech</option>
+                                <option value="B.Sc">B.Sc</option>
+                                <option value="M.Sc">M.Sc</option>
+                                <option value="B.Com">B.Com</option>
+                                <option value="M.Com">M.Com</option>
+                                <option value="BBA">BBA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="gender">Gender *</label>
-                        <select id="gender" name="gender" required>
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="qualification">Current Qualification *</label>
-                        <select id="qualification" name="qualification" required>
-                            <option value="">Select Qualification</option>
-                            <option value="10th">10th Standard</option>
-                            <option value="12th">12th Standard</option>
-                            <option value="Diploma">Diploma</option>
-                            <option value="B.Tech">B.Tech</option>
-                            <option value="M.Tech">M.Tech</option>
-                            <option value="B.Sc">B.Sc</option>
-                            <option value="M.Sc">M.Sc</option>
-                            <option value="B.Com">B.Com</option>
-                            <option value="M.Com">M.Com</option>
-                            <option value="BBA">BBA</option>
-                            <option value="MBA">MBA</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label for="address">Address</label>
+                        <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" name="address" rows="3" placeholder="Enter complete address"></textarea>
-                </div>
-        </div>
+                <!-- Academic Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
 
-        <!-- Academic Information Section -->
-        <div class="form-section">
-            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="joining_date">Joining Date</label>
-                    <input type="date" id="joining_date" name="joining_date" value="<?php echo date('Y-m-d'); ?>">
-                </div>
-                <div class="form-group">
-                    <label for="previous_institute">Previous Institute (Optional)</label>
-                    <input type="text" id="previous_institute" name="previous_institute"
-                        placeholder="Name of previous institute">
-                </div>
-            </div>
-        </div>
-
-        <!-- Document Upload Section -->
-        <div class="form-section">
-            <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="profile_image">Profile Image *</label>
-                    <div class="file-upload-wrapper">
-                        <input type="file" id="profile_image" name="profile_image" required accept="image/*"
-                            onchange="previewImage(this, 'profile-preview')">
-                        <div class="file-upload-info">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Click to upload or drag & drop</span>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="joining_date">Joining Date</label>
+                            <input type="date" id="joining_date" name="joining_date"
+                                value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label for="previous_institute">Previous Institute (Optional)</label>
+                            <input type="text" id="previous_institute" name="previous_institute"
+                                placeholder="Name of previous institute">
                         </div>
                     </div>
-                    <div id="profile-preview" class="image-preview"></div>
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i>
-                        Max size: 400KB. Formats: JPG, JPEG, PNG
-                    </small>
                 </div>
-            </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="marksheet">Marksheet/Certificate *</label>
-                    <div class="file-upload-wrapper">
-                        <input type="file" id="marksheet" name="marksheet" required accept=".pdf,.jpg,.jpeg,.png"
-                            onchange="previewImage(this, 'marksheet-preview')">
-                        <div class="file-upload-info">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Click to upload or drag & drop</span>
+                <!-- Document Upload Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-file-upload"></i> Document Upload</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="profile_image">Profile Image *</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="profile_image" name="profile_image" required accept="image/*"
+                                    onchange="previewImage(this, 'profile-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="profile-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Max size: 400KB. Formats: JPG, JPEG, PNG
+                            </small>
                         </div>
                     </div>
-                    <div id="marksheet-preview" class="image-preview"></div>
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i>
-                        Max size: 400KB. Formats: PDF, JPG, JPEG, PNG
-                    </small>
-                </div>
-                <div class="form-group">
-                    <label for="aadhaar_card">Aadhaar Card (Optional)</label>
-                    <div class="file-upload-wrapper">
-                        <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*"
-                            onchange="previewImage(this, 'aadhaar-preview')">
-                        <div class="file-upload-info">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Click to upload or drag & drop</span>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="marksheet">Marksheet/Certificate *</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="marksheet" name="marksheet" required
+                                    accept=".pdf,.jpg,.jpeg,.png" onchange="previewImage(this, 'marksheet-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="marksheet-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Max size: 400KB. Formats: PDF, JPG, JPEG, PNG
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="aadhaar_card">Aadhaar Card (Optional)</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="aadhaar_card" name="aadhaar_card" accept="image/*"
+                                    onchange="previewImage(this, 'aadhaar-preview')">
+                                <div class="file-upload-info">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Click to upload or drag & drop</span>
+                                </div>
+                            </div>
+                            <div id="aadhaar-preview" class="image-preview"></div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Max size: 400KB. Formats: JPG, JPEG, PNG
+                            </small>
                         </div>
                     </div>
-                    <div id="aadhaar-preview" class="image-preview"></div>
-                    <small class="form-text text-muted">
-                        <i class="fas fa-info-circle"></i>
-                        Max size: 400KB. Formats: JPG, JPEG, PNG
-                    </small>
                 </div>
-            </div>
-        </div>
 
-        <!-- Form Actions -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">
-                <i class="fas fa-times"></i> Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-user-plus"></i> Add Student
-            </button>
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Student
+                    </button>
+                </div>
+            </form>
         </div>
-        </form>
-    </div>
     </div>
 
 
@@ -2530,93 +2658,94 @@ try {
                         <input type="date" id="edit_date_of_birth" name="date_of_birth"
                             max="<?php echo date('Y-m-d'); ?>">
                     </div>
-                </div>
 
-                <div class="form-row">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_gender">Gender</label>
+                            <select id="edit_gender" name="gender">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_qualification">Current Qualification</label>
+                            <select id="edit_qualification" name="qualification">
+                                <option value="">Select Qualification</option>
+                                <option value="10th">10th Standard</option>
+                                <option value="12th">12th Standard</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="B.Tech">B.Tech</option>
+                                <option value="M.Tech">M.Tech</option>
+                                <option value="B.Sc">B.Sc</option>
+                                <option value="M.Sc">M.Sc</option>
+                                <option value="B.Com">B.Com</option>
+                                <option value="M.Com">M.Com</option>
+                                <option value="BBA">BBA</option>
+                                <option value="MBA">MBA</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="edit_gender">Gender</label>
-                        <select id="edit_gender" name="gender">
-                            <option value="">Select Gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
+                        <label for="edit_address">Address</label>
+                        <textarea id="edit_address" name="address" rows="3"
+                            placeholder="Enter complete address"></textarea>
                     </div>
+                </div>
+
+                <!-- Academic Information Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_joining_date">Joining Date</label>
+                            <input type="date" id="edit_joining_date" name="joining_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_previous_institute">Previous Institute (Optional)</label>
+                            <input type="text" id="edit_previous_institute" name="previous_institute"
+                                placeholder="Name of previous institute">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Image Upload Section -->
+                <div class="form-section">
+                    <h3><i class="fas fa-image"></i> Profile Image</h3>
+
                     <div class="form-group">
-                        <label for="edit_qualification">Current Qualification</label>
-                        <select id="edit_qualification" name="qualification">
-                            <option value="">Select Qualification</option>
-                            <option value="10th">10th Standard</option>
-                            <option value="12th">12th Standard</option>
-                            <option value="Diploma">Diploma</option>
-                            <option value="B.Tech">B.Tech</option>
-                            <option value="M.Tech">M.Tech</option>
-                            <option value="B.Sc">B.Sc</option>
-                            <option value="M.Sc">M.Sc</option>
-                            <option value="B.Com">B.Com</option>
-                            <option value="M.Com">M.Com</option>
-                            <option value="BBA">BBA</option>
-                            <option value="MBA">MBA</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label for="edit_profile_image">Update Profile Image (Optional)</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="edit_profile_image" name="profile_image" accept="image/*"
+                                onchange="previewImage(this, 'edit-profile-preview')">
+                            <div class="file-upload-info">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Click to upload or drag & drop</span>
+                            </div>
+                        </div>
+                        <div id="edit-profile-preview" class="image-preview"></div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Max size: 400KB. Formats: JPG, JPEG, PNG. Leave empty to keep current image.
+                        </small>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="edit_address">Address</label>
-                    <textarea id="edit_address" name="address" rows="3" placeholder="Enter complete address"></textarea>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditStudentModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Student
+                    </button>
                 </div>
+            </form>
         </div>
-
-        <!-- Academic Information Section -->
-        <div class="form-section">
-            <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="edit_joining_date">Joining Date</label>
-                    <input type="date" id="edit_joining_date" name="joining_date">
-                </div>
-                <div class="form-group">
-                    <label for="edit_previous_institute">Previous Institute (Optional)</label>
-                    <input type="text" id="edit_previous_institute" name="previous_institute"
-                        placeholder="Name of previous institute">
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Image Upload Section -->
-        <div class="form-section">
-            <h3><i class="fas fa-image"></i> Profile Image</h3>
-
-            <div class="form-group">
-                <label for="edit_profile_image">Update Profile Image (Optional)</label>
-                <div class="file-upload-wrapper">
-                    <input type="file" id="edit_profile_image" name="profile_image" accept="image/*"
-                        onchange="previewImage(this, 'edit-profile-preview')">
-                    <div class="file-upload-info">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <span>Click to upload or drag & drop</span>
-                    </div>
-                </div>
-                <div id="edit-profile-preview" class="image-preview"></div>
-                <small class="form-text text-muted">
-                    <i class="fas fa-info-circle"></i>
-                    Max size: 400KB. Formats: JPG, JPEG, PNG. Leave empty to keep current image.
-                </small>
-            </div>
-        </div>
-
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeEditStudentModal()">
-                <i class="fas fa-times"></i> Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Update Student
-            </button>
-        </div>
-        </form>
-    </div>
     </div>
 
     <!-- Enroll Student Modal -->
@@ -3103,7 +3232,126 @@ try {
         // Search, Filter, and Sort Functions
         let allStudents = [];
 
+        // Pagination state
+        let currentPage = 1;
+        let rowsPerPage = 10;
 
+        // Pagination functions
+        function applyPagination() {
+            const visibleStudents = allStudents.filter(student =>
+                student.element.style.display !== 'none' || student.element.dataset.filteredOut !== 'true'
+            ).filter(student => !student.element.dataset.filteredOut);
+
+            // Get all students that pass the filter (regardless of current display)
+            const filteredStudents = allStudents.filter(student => {
+                const accountStatusFilter = document.getElementById('accountStatusFilter')?.value.toLowerCase() || '';
+                const enrollmentStatusFilter = document.getElementById('enrollmentStatusFilter')?.value.toLowerCase() || '';
+                const searchTerm = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+
+                let show = true;
+
+                if (accountStatusFilter) {
+                    const accStatus = student.element.getAttribute('data-account-status');
+                    if (accStatus !== accountStatusFilter) show = false;
+                }
+
+                if (show && enrollmentStatusFilter) {
+                    const enrolStatus = student.element.getAttribute('data-enrollment-status');
+                    if (enrolStatus !== enrollmentStatusFilter) show = false;
+                }
+
+                if (searchTerm && show) {
+                    const matchesName = student.name.includes(searchTerm);
+                    const matchesUsername = student.username.includes(searchTerm);
+                    const matchesEmail = student.email.includes(searchTerm);
+                    const matchesPhone = student.phone.includes(searchTerm);
+                    if (!(matchesName || matchesUsername || matchesEmail || matchesPhone)) show = false;
+                }
+
+                return show;
+            });
+
+            const totalFiltered = filteredStudents.length;
+            const totalPages = Math.ceil(totalFiltered / rowsPerPage);
+
+            // Ensure current page is valid
+            if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = Math.min(startIndex + rowsPerPage, totalFiltered);
+
+            // Hide all students first
+            allStudents.forEach(student => {
+                student.element.style.display = 'none';
+            });
+
+            // Show only students for current page
+            filteredStudents.slice(startIndex, endIndex).forEach(student => {
+                student.element.style.display = 'table-row';
+            });
+
+            // Update pagination info
+            const paginationInfo = document.getElementById('paginationInfo');
+            if (paginationInfo) {
+                if (totalFiltered === 0) {
+                    paginationInfo.textContent = 'No students found';
+                } else {
+                    paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${totalFiltered} students`;
+                }
+            }
+
+            // Update pagination buttons
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+            // Update page numbers
+            renderPageNumbers(totalPages);
+        }
+
+        function renderPageNumbers(totalPages) {
+            const pageNumbersContainer = document.getElementById('pageNumbers');
+            if (!pageNumbersContainer) return;
+
+            pageNumbersContainer.innerHTML = '';
+
+            // Show max 5 page buttons
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            startPage = Math.max(1, endPage - 4);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+                btn.textContent = i;
+                btn.onclick = () => goToPage(i);
+                pageNumbersContainer.appendChild(btn);
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            applyPagination();
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                applyPagination();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            applyPagination();
+        }
+
+        function changeRowsPerPage() {
+            rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            currentPage = 1;
+            applyPagination();
+        }
 
         function searchStudents() {
             const searchInput = document.getElementById('studentSearch');
@@ -3144,42 +3392,51 @@ try {
                 return;
             }
 
-            const statusFilterEl = document.getElementById('statusFilter');
+            const accountStatusFilterEl = document.getElementById('accountStatusFilter');
+            const enrollmentStatusFilterEl = document.getElementById('enrollmentStatusFilter');
             const searchInput = document.getElementById('studentSearch');
 
-            const statusFilter = statusFilterEl ? statusFilterEl.value.toLowerCase() : '';
+            const accountStatusFilter = accountStatusFilterEl ? accountStatusFilterEl.value.toLowerCase() : '';
+            const enrollmentStatusFilter = enrollmentStatusFilterEl ? enrollmentStatusFilterEl.value.toLowerCase() : '';
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
             let visibleCount = 0;
 
             allStudents.forEach(student => {
-                if (!student || !student.element) {
-                    return;
-                }
+                if (!student || !student.element) return;
 
                 let show = true;
 
-                // Apply status filter
-                if (statusFilter && student.status !== statusFilter) {
-                    show = false;
+                // Apply Account Status filter
+                if (accountStatusFilter) {
+                    const accStatus = student.element.getAttribute('data-account-status');
+                    if (accStatus !== accountStatusFilter) {
+                        show = false;
+                    }
+                }
+
+                // Apply Enrollment Status filter
+                if (show && enrollmentStatusFilter) {
+                    const enrolStatus = student.element.getAttribute('data-enrollment-status');
+                    if (enrolStatus !== enrollmentStatusFilter) {
+                        show = false;
+                    }
                 }
 
                 // Apply search filter
                 if (searchTerm && show) {
-                    const matchesName = student.name && student.name.includes(searchTerm);
-                    const matchesUsername = student.username && student.username.includes(searchTerm);
-                    const matchesEmail = student.email && student.email.includes(searchTerm);
-                    const matchesPhone = student.phone && student.phone.includes(searchTerm);
+                    const matchesName = student.name.includes(searchTerm);
+                    const matchesUsername = student.username.includes(searchTerm);
+                    const matchesEmail = student.email.includes(searchTerm);
+                    const matchesPhone = student.phone.includes(searchTerm);
 
                     if (!(matchesName || matchesUsername || matchesEmail || matchesPhone)) {
                         show = false;
                     }
                 }
 
-                if (student.element) {
-                    student.element.style.display = show ? 'table-row' : 'none';
-                    if (show) visibleCount++;
-                }
+                student.element.style.display = show ? 'table-row' : 'none';
+                if (show) visibleCount++;
             });
 
             // Close all enrollment rows when filtering to ensure clean state
@@ -3191,16 +3448,10 @@ try {
         // Initialize students data for search/filter
         function initializeStudentsData() {
             const studentRows = document.querySelectorAll('.student-row');
-            if (studentRows.length === 0) {
-                console.warn('No student rows found');
-                return;
-            }
-
             allStudents = Array.from(studentRows).map(row => {
                 const nameEl = row.querySelector('.student-name');
                 const usernameEl = row.querySelector('.student-username');
                 const contactEl = row.querySelector('.contact-info');
-                const statusEl = row.querySelector('.status-badge');
                 const dateEl = row.querySelector('.date-cell');
 
                 return {
@@ -3209,11 +3460,9 @@ try {
                     username: usernameEl ? usernameEl.textContent.toLowerCase().replace('@', '') : '',
                     email: contactEl ? contactEl.textContent.toLowerCase() : '',
                     phone: contactEl ? contactEl.textContent.toLowerCase() : '',
-                    status: statusEl ? statusEl.textContent.toLowerCase().trim() : '',
                     created_at: dateEl ? new Date(dateEl.textContent.trim()) : new Date()
                 };
             });
-
         }
 
         // Apply default filter on page load
@@ -3396,9 +3645,7 @@ try {
                 student.element.style.display !== 'none'
             ).length;
 
-            const totalCount = allStudents.length;
-            const sectionHeader = document.querySelector('.section-header h2');
-            sectionHeader.innerHTML = `<i class="fas fa-users"></i> Students (${visibleCount}/${totalCount})`;
+            applyPagination();
         }
 
         // Add Student Modal Functions
@@ -3602,52 +3849,26 @@ try {
 
 
         function loadStudentIDCard(studentId, fullName, username) {
-            // Create form data - only send student ID (same as student dashboard)
             const formData = new FormData();
             formData.append('student_id', studentId);
 
-            // Fetch the content from id.php (same as student dashboard)
             fetch('../id.php', {
                 method: 'POST',
                 body: formData
             })
                 .then(response => response.text())
                 .then(html => {
-                    // Create a temporary div to parse the HTML
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
-
-                    // Find the ID card element
                     const idCard = tempDiv.querySelector('#idCard');
 
                     if (idCard) {
-                        // Create the styled ID card (same as student dashboard)
-                        const styledCard = `
-                        <div id="idCard" style="width: 340px; background: #fff; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; padding-bottom: 1rem; margin: 0 auto;">
-                            <div class="id-card-header" style="display: flex; align-items: center; background: #1d4ed8; color: #fff; padding: 1rem 1.5rem; border-radius: 8px 8px 0 0;">
-                                <img src="../assets/images/logo.png" alt="Institute Logo" class="id-card-logo" style="height: 60px; width: 60px; border-radius: 50%; object-fit: cover; background: white; margin-right: 1rem; border: 2px solid #fff;" onerror="this.style.display='none'">
-                                <div class="id-card-header-text">
-                                    <h2 style="font-size: 1.4rem; margin: 0; font-weight: 700; line-height: 1.2;">GICT COMPUTER INSTITUTE</h2>
-                                    <p style="font-size: 0.9rem; margin: 0.2rem 0 0; opacity: 0.9;">Student Identification Card</p>
-                                </div>
-                            </div>
-                            <div class="id-card-body" style="padding: 1rem; text-align: center;">
-                                <img src="${idCard.querySelector('.id-card-photo')?.src || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzY2N2VlYSIvPjx0ZXh0IHg9IjYwIiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQ4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+RqDwvdGV4dD48L3N2Zz4='}" class="id-card-photo" alt="Student Photo" style="width: 120px; height: auto; border-radius: 2px; object-fit: cover; margin-bottom: 0.5rem; border: 3px solid #1d4ed8;">
-                                <p class="id-card-name" style="font-size: 1.2rem; font-weight: 700; margin: 0.3rem 0;">${idCard.querySelector('.id-card-name')?.textContent || fullName}</p>
-                                <p class="id-card-studentid" style="font-size: 0.9rem; color: #374151; margin-bottom: 1rem;">STUDENT ID: ${idCard.querySelector('.id-card-studentid')?.textContent?.replace('STUDENT ID: ', '') || username}</p>
-                                <div class="id-card-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0.8rem;">
-                                    <div class="id-card-info" style="text-align: left; font-size: 0.9rem;">
-                                        <p style="margin: 0.4rem 0;"><span class="label" style="font-weight: 600; color: #1f2937;">Batch:</span> ${idCard.querySelector('.id-card-info .label')?.nextSibling?.textContent?.trim() || new Date().getFullYear()}</p>
-                                        <p style="margin: 0.4rem 0;"><span class="label" style="font-weight: 600; color: #1f2937;">Expires:</span> ${idCard.querySelector('.id-card-info .label:last-child')?.nextSibling?.textContent?.trim() || new Date().getFullYear() + 1}</p>
-                                    </div>
-                                    <img src="${idCard.querySelector('.id-card-qr')?.src || ''}" class="id-card-qr" alt="QR Code" style="width: 90px; height: 90px;">
-                                </div>
-                            </div>
-                            <div class="id-card-footer" style="margin-top: 1rem; font-size: 0.75rem; text-align: center; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 0.5rem;">If found, please return to the university admin office.</div>
-                        </div>
-                    `;
+                        // Reset some styles for modal display
+                        idCard.style.margin = '0 auto';
+                        idCard.style.boxShadow = 'none';
+                        idCard.style.border = '1px solid #e5e7eb';
 
-                        document.getElementById('idCardContainer').innerHTML = styledCard;
+                        document.getElementById('idCardContainer').innerHTML = idCard.outerHTML;
                     } else {
                         document.getElementById('idCardContainer').innerHTML = '<p style="text-align: center; color: #666;">Error loading ID card</p>';
                     }

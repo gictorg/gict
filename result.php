@@ -31,6 +31,7 @@ require_once 'header.php';
                     u.profile_image,
                     se.id as enrollment_id,
                     se.enrollment_date,
+                    se.marksheet_no,
                     sc.name as sub_course_name,
                     sc.duration as course_duration
                 FROM users u
@@ -82,22 +83,45 @@ require_once 'header.php';
                     $student['institute_name'] = 'G.I.C.T COMPUTER COLLEGE OF IT & MANAGEMENT JAUNPUR';
                     $student['institute_address'] = 'MADARDIH, RAIPUR, JAUNPUR (U.P.)';
 
-                    // 2. Fetch Marks
+                    // 2. Fetch Marks Join with Subjects and Faculty
                     $sql_marks = "
                         SELECT 
-                            subject_name,
-                            max_marks,
-                            marks_obtained,
-                            grade
-                        FROM student_marks 
-                        WHERE enrollment_id = ?
+                            cs.subject_name,
+                            cs.semester,
+                            cs.max_marks,
+                            sm.theory_marks,
+                            sm.practical_marks,
+                            sm.total_marks,
+                            sm.grade,
+                            u.full_name as checked_by_name
+                        FROM course_subjects cs
+                        LEFT JOIN student_marks sm ON cs.id = sm.subject_id AND sm.enrollment_id = ?
+                        LEFT JOIN users u ON sm.checked_by = u.id
+                        WHERE cs.sub_course_id = ?
+                        ORDER BY cs.semester, cs.subject_name
                     ";
-                    $marks = getRows($sql_marks, [$student['enrollment_id']]);
+                    $marks = getRows($sql_marks, [$student['enrollment_id'], $student['sub_course_id']]);
 
-                    if (empty($marks)) {
+                    $has_some_marks = false;
+                    foreach ($marks as $m) {
+                        if ($m['total_marks'] !== null) {
+                            $has_some_marks = true;
+                            break;
+                        }
+                    }
+
+                    if (!$has_some_marks) {
                         $error = "Marks for this enrollment have not been uploaded yet.";
                         $student = null;
                     } else {
+                        // Extract checked_by name from first record that has it
+                        $student['checked_by'] = '';
+                        foreach ($marks as $m) {
+                            if (!empty($m['checked_by_name'])) {
+                                $student['checked_by'] = $m['checked_by_name'];
+                                break;
+                            }
+                        }
                         $show_form = false;
                     }
                 } else {
@@ -139,6 +163,11 @@ require_once 'header.php';
             <!-- Professional Marksheet View -->
             <div class="marksheet-container">
                 <div class="marksheet-inner">
+                    <?php if (!empty($student['marksheet_no'])): ?>
+                        <div class="marksheet-no-top-left">
+                            Certificate No.: <span><?php echo htmlspecialchars($student['marksheet_no']); ?></span>
+                        </div>
+                    <?php endif; ?>
                     <!-- Watermark -->
                     <img src="assets/images/logo bgremove.png" class="marksheet-watermark" alt="">
                     <div class="watermark-text"></div>
@@ -194,46 +223,76 @@ require_once 'header.php';
                         </div>
                     </div>
 
-                    <table class="marks-table">
-                        <thead>
-                            <tr>
-                                <th class="subject-name">Subject / Module Name</th>
-                                <th>Max Marks</th>
-                                <th>Min Marks</th>
-                                <th>Marks Obtained</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $total_max = 0;
-                            $total_obtained = 0;
-                            foreach ($marks as $mark):
-                                $obt = $mark['marks_obtained'] !== null ? $mark['marks_obtained'] : 0;
-                                $total_max += $mark['max_marks'];
-                                $total_obtained += $obt;
-                                ?>
+                    <?php
+                    $semesters = [];
+                    foreach ($marks as $mark) {
+                        $sem = $mark['semester'] ?: 1;
+                        $semesters[$sem][] = $mark;
+                    }
+                    ksort($semesters);
+
+                    $total_max = 0;
+                    $total_obtained = 0;
+
+                    foreach ($semesters as $sem_num => $sem_marks):
+                        $has_sem_marks = false;
+                        foreach ($sem_marks as $m) {
+                            if ($m['total_marks'] !== null) {
+                                $has_sem_marks = true;
+                                break;
+                            }
+                        }
+                        if (!$has_sem_marks)
+                            continue;
+
+                        $sem_label = is_numeric($sem_num) ? "Semester " . $sem_num : $sem_num;
+                        ?>
+                        <div class="semester-divider"
+                            style="text-align: left; margin: 20px 0 10px; font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #c5a059; display: inline-block;">
+                            <?php echo htmlspecialchars($sem_label); ?>
+                        </div>
+                        <table class="marks-table">
+                            <thead>
                                 <tr>
-                                    <td class="subject-name"><?php echo htmlspecialchars($mark['subject_name']); ?></td>
-                                    <td><?php echo $mark['max_marks']; ?></td>
-                                    <td><?php echo round($mark['max_marks'] * 0.33); ?></td>
-                                    <td><?php echo $mark['marks_obtained'] !== null ? $mark['marks_obtained'] : 'N/A'; ?></td>
+                                    <th class="subject-name">Subject / Module Name</th>
+                                    <th>Max Marks</th>
+                                    <th>Min Marks</th>
+                                    <th>Marks Obtained</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($sem_marks as $mark):
+                                    if ($mark['total_marks'] !== null):
+                                        $obt = (int) $mark['total_marks'];
+                                        $total_max += $mark['max_marks'];
+                                        $total_obtained += $obt;
+                                        ?>
+                                        <tr>
+                                            <td class="subject-name"><?php echo htmlspecialchars($mark['subject_name']); ?></td>
+                                            <td><?php echo $mark['max_marks']; ?></td>
+                                            <td><?php echo round($mark['max_marks'] * 0.33); ?></td>
+                                            <td><?php echo $mark['total_marks']; ?></td>
+                                        </tr>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endforeach; ?>
 
                     <?php
                     $percentage = ($total_max > 0) ? ($total_obtained / $total_max) * 100 : 0;
                     $grade = '';
-                    if ($percentage >= 85)
-                        $grade = 'S';
-                    elseif ($percentage >= 75)
+                    if ($percentage >= 90)
+                        $grade = 'A+';
+                    elseif ($percentage >= 80)
                         $grade = 'A';
-                    elseif ($percentage >= 65)
+                    elseif ($percentage >= 70)
+                        $grade = 'B+';
+                    elseif ($percentage >= 60)
                         $grade = 'B';
-                    elseif ($percentage >= 55)
-                        $grade = 'C';
                     elseif ($percentage >= 50)
+                        $grade = 'C';
+                    elseif ($percentage >= 40)
                         $grade = 'D';
                     else
                         $grade = 'F';
@@ -272,6 +331,7 @@ require_once 'header.php';
                         <div class="signature-box">
                             <div class="sig-line"></div>
                             <span class="sig-label">Checked By</span>
+                            <div class="sig-name"><?php echo htmlspecialchars($student['checked_by'] ?: 'Faculty'); ?></div>
                         </div>
                         <div class="signature-box">
                             <div class="sig-line"></div>

@@ -297,6 +297,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $success_message = "Sub-course status updated successfully!";
                 break;
+
+            case 'add_subject':
+                $sub_course_id = intval($_POST['sub_course_id']);
+                $semester = intval($_POST['semester']);
+                $subject_name = trim($_POST['subject_name']);
+                $subject_code = trim($_POST['subject_code'] ?? '');
+                $max_marks = intval($_POST['max_marks']);
+                $theory_marks = intval($_POST['theory_marks'] ?? $max_marks);
+                $practical_marks = intval($_POST['practical_marks'] ?? 0);
+                $is_compulsory = isset($_POST['is_compulsory']) ? 1 : 0;
+
+                if (empty($subject_name) || $sub_course_id <= 0 || $semester <= 0) {
+                    throw new Exception("Please fill all required fields correctly.");
+                }
+
+                // Verify sub-course exists
+                $sub_course_check = getRow("SELECT id, name FROM sub_courses WHERE id = ?", [$sub_course_id]);
+                if (!$sub_course_check) {
+                    throw new Exception("Invalid sub-course selected.");
+                }
+
+                // Check for duplicate subject in same semester
+                $duplicate_check = getRow(
+                    "SELECT id FROM course_subjects WHERE sub_course_id = ? AND semester = ? AND subject_name = ?",
+                    [$sub_course_id, $semester, $subject_name]
+                );
+                if ($duplicate_check) {
+                    throw new Exception("A subject with this name already exists in semester $semester.");
+                }
+
+                $sql = "INSERT INTO course_subjects (sub_course_id, semester, subject_name, subject_code, max_marks, theory_marks, practical_marks, is_compulsory, created_at) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $result = insertData($sql, [$sub_course_id, $semester, $subject_name, $subject_code, $max_marks, $theory_marks, $practical_marks, $is_compulsory]);
+
+                if ($result === false) {
+                    throw new Exception("Failed to add subject. Please try again.");
+                }
+
+                $_SESSION['success_message'] = "Subject '$subject_name' added successfully to {$sub_course_check['name']} (Semester $semester)!";
+                header('Location: courses.php?manage_subjects=' . $sub_course_id);
+                exit;
+
+            case 'update_subject':
+                $subject_id = intval($_POST['subject_id']);
+                $sub_course_id = intval($_POST['sub_course_id']);
+                $semester = intval($_POST['semester']);
+                $subject_name = trim($_POST['subject_name']);
+                $subject_code = trim($_POST['subject_code'] ?? '');
+                $max_marks = intval($_POST['max_marks']);
+                $theory_marks = intval($_POST['theory_marks'] ?? $max_marks);
+                $practical_marks = intval($_POST['practical_marks'] ?? 0);
+                $is_compulsory = isset($_POST['is_compulsory']) ? 1 : 0;
+
+                if (empty($subject_name) || $semester <= 0) {
+                    throw new Exception("Please fill all required fields correctly.");
+                }
+
+                // Verify subject exists
+                $subject_check = getRow("SELECT id FROM course_subjects WHERE id = ?", [$subject_id]);
+                if (!$subject_check) {
+                    throw new Exception("Invalid subject selected.");
+                }
+
+                $sql = "UPDATE course_subjects SET semester = ?, subject_name = ?, subject_code = ?, max_marks = ?, 
+                        theory_marks = ?, practical_marks = ?, is_compulsory = ?, updated_at = NOW() 
+                        WHERE id = ?";
+                $result = updateData($sql, [$semester, $subject_name, $subject_code, $max_marks, $theory_marks, $practical_marks, $is_compulsory, $subject_id]);
+
+                if ($result === false) {
+                    throw new Exception("Failed to update subject. Please try again.");
+                }
+
+                $_SESSION['success_message'] = "Subject '$subject_name' updated successfully!";
+                header('Location: courses.php?manage_subjects=' . $sub_course_id);
+                exit;
+
+            case 'delete_subject':
+                $subject_id = intval($_POST['subject_id']);
+                $sub_course_id = intval($_POST['sub_course_id']);
+
+                // Check if subject has marks entered
+                $marks_check = getRow("SELECT COUNT(*) as count FROM student_marks WHERE subject_id = ?", [$subject_id]);
+                if ($marks_check && $marks_check['count'] > 0) {
+                    throw new Exception("Cannot delete subject. It has {$marks_check['count']} marks entries.");
+                }
+
+                // Verify subject exists
+                $subject_check = getRow("SELECT id, subject_name FROM course_subjects WHERE id = ?", [$subject_id]);
+                if (!$subject_check) {
+                    throw new Exception("Invalid subject selected.");
+                }
+
+                $sql = "DELETE FROM course_subjects WHERE id = ?";
+                $result = deleteData($sql, [$subject_id]);
+
+                if ($result === false) {
+                    throw new Exception("Failed to delete subject. Please try again.");
+                }
+
+                $_SESSION['success_message'] = "Subject '{$subject_check['subject_name']}' deleted successfully!";
+                header('Location: courses.php?manage_subjects=' . $sub_course_id);
+                exit;
         }
     } catch (Exception $e) {
         $error_message = $e->getMessage();
@@ -369,6 +471,68 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
         }
     } catch (Exception $e) {
         $error_message = "Error loading sub-course: " . $e->getMessage();
+    }
+}
+
+// Get subjects for a sub-course (manage subjects mode)
+$manage_subjects_sub_course = null;
+$subjects_by_semester = [];
+$max_semesters = 1;
+$edit_subject = null;
+
+if (isset($_GET['manage_subjects']) && is_numeric($_GET['manage_subjects'])) {
+    $manage_sub_course_id = intval($_GET['manage_subjects']);
+
+    $manage_subjects_sub_course = getRow("
+        SELECT sc.*, c.name as course_name 
+        FROM sub_courses sc 
+        JOIN courses c ON sc.course_id = c.id 
+        WHERE sc.id = ?
+    ", [$manage_sub_course_id]);
+
+    if ($manage_subjects_sub_course) {
+        // Check if course_subjects table exists
+        $table_exists = getRow("SHOW TABLES LIKE 'course_subjects'");
+
+        if ($table_exists) {
+            // Get subjects grouped by semester
+            $subjects = getRows("
+                SELECT * FROM course_subjects 
+                WHERE sub_course_id = ? 
+                ORDER BY semester, id
+            ", [$manage_sub_course_id]);
+
+            foreach ($subjects as $subject) {
+                $sem = $subject['semester'] ?? 1;
+                if (!isset($subjects_by_semester[$sem])) {
+                    $subjects_by_semester[$sem] = [];
+                }
+                $subjects_by_semester[$sem][] = $subject;
+                if ($sem > $max_semesters) {
+                    $max_semesters = $sem;
+                }
+            }
+
+            // Estimate semesters based on duration if no subjects yet
+            if (empty($subjects_by_semester)) {
+                $duration = strtolower($manage_subjects_sub_course['duration']);
+                if (strpos($duration, '12') !== false || strpos($duration, 'year') !== false) {
+                    $max_semesters = 4;
+                } elseif (strpos($duration, '6') !== false) {
+                    $max_semesters = 2;
+                } elseif (strpos($duration, '9') !== false) {
+                    $max_semesters = 3;
+                } else {
+                    $max_semesters = 1;
+                }
+            }
+        }
+    }
+
+    // Get subject for editing
+    if (isset($_GET['edit_subject']) && is_numeric($_GET['edit_subject'])) {
+        $subject_id = intval($_GET['edit_subject']);
+        $edit_subject = getRow("SELECT * FROM course_subjects WHERE id = ?", [$subject_id]);
     }
 }
 ?>
@@ -1009,8 +1173,9 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                 <li><a href="../dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
-                <li><a class="active" href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="pending-approvals.php"><i class="fas fa-clock"></i> Pending Approvals</a></li>
+                <li><a href="courses.php" class="active"><i class="fas fa-graduation-cap"></i> Courses</a></li>
+                <li><a href="marks-management.php"><i class="fas fa-chart-line"></i> Marks Management</a></li>
+                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a></li>
                 <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
                 <li><a href="inquiries.php"><i class="fas fa-question-circle"></i> Course Inquiries</a></li>
                 <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
@@ -1069,7 +1234,8 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                     <h3>Active Courses</h3>
                     <div class="value">
                         <?php echo count(array_filter($courses, function ($c) {
-                            return $c['status'] === 'active'; })); ?>
+                            return $c['status'] === 'active';
+                        })); ?>
                     </div>
                     <div class="label">Currently Running</div>
                 </div>
@@ -1211,6 +1377,11 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                                         </td>
                                         <td>
                                             <div class="action-buttons">
+                                                <button class="btn-small btn-subjects"
+                                                    onclick="manageSubjects(<?php echo $sub_course['id']; ?>, '<?php echo htmlspecialchars(addslashes($sub_course['name'])); ?>')"
+                                                    style="background: #28a745; color: white;">
+                                                    <i class="fas fa-book"></i> Subjects
+                                                </button>
                                                 <button class="btn-small btn-edit"
                                                     onclick="editSubCourse(<?php echo $sub_course['id']; ?>)">
                                                     <i class="fas fa-edit"></i> Edit
@@ -1399,6 +1570,203 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
             </form>
         </div>
     </div>
+
+    <!-- Subjects Management Modal -->
+    <?php if ($manage_subjects_sub_course): ?>
+    <div id="subjectsManagementModal" class="modal" style="display: block;">
+        <div class="modal-content" style="max-width: 900px; margin: 2% auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <h2>
+                    <i class="fas fa-book"></i>
+                    Manage Subjects - <?php echo htmlspecialchars($manage_subjects_sub_course['name']); ?>
+                </h2>
+                <span class="close" onclick="closeSubjectsManagement()">&times;</span>
+            </div>
+            
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <p style="margin: 0; color: #666;">
+                            <strong><?php echo htmlspecialchars($manage_subjects_sub_course['course_name']); ?></strong> • 
+                            <?php echo htmlspecialchars($manage_subjects_sub_course['duration']); ?>
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddSubjectForm()" style="background: #28a745;">
+                        <i class="fas fa-plus"></i> Add Subject
+                    </button>
+                </div>
+
+                <!-- Semester Tabs -->
+                <div style="display: flex; border-bottom: 2px solid #e9ecef; margin-bottom: 20px; overflow-x: auto;">
+                    <?php for ($i = 1; $i <= max($max_semesters, 1); $i++): ?>
+                        <button class="semester-tab-btn <?php echo $i === 1 ? 'active' : ''; ?>" 
+                                onclick="switchSemesterTab(<?php echo $i; ?>)" 
+                                data-semester="<?php echo $i; ?>"
+                                style="padding: 12px 24px; border: none; background: <?php echo $i === 1 ? '#28a745' : 'transparent'; ?>; 
+                                       color: <?php echo $i === 1 ? 'white' : '#666'; ?>; cursor: pointer; font-weight: 600;
+                                       border-radius: 8px 8px 0 0; margin-right: 5px; white-space: nowrap;">
+                            Semester <?php echo $i; ?>
+                            <?php if (isset($subjects_by_semester[$i])): ?>
+                                <span style="background: <?php echo $i === 1 ? 'white' : '#28a745'; ?>; 
+                                             color: <?php echo $i === 1 ? '#28a745' : 'white'; ?>; 
+                                             padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;">
+                                    <?php echo count($subjects_by_semester[$i]); ?>
+                                </span>
+                            <?php endif; ?>
+                        </button>
+                    <?php endfor; ?>
+                </div>
+
+                <!-- Subjects Content by Semester -->
+                <?php for ($i = 1; $i <= max($max_semesters, 1); $i++): ?>
+                    <div class="semester-content-panel" id="semester-panel-<?php echo $i; ?>" 
+                         style="display: <?php echo $i === 1 ? 'block' : 'none'; ?>;">
+                        <?php if (empty($subjects_by_semester[$i])): ?>
+                            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                                <i class="fas fa-book" style="font-size: 48px; color: #dee2e6; margin-bottom: 15px;"></i>
+                                <h4 style="margin: 0 0 10px 0;">No subjects in Semester <?php echo $i; ?></h4>
+                                <p style="margin: 0;">Click "Add Subject" to add subjects to this semester.</p>
+                            </div>
+                        <?php else: ?>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e9ecef;">Code</th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e9ecef;">Subject Name</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e9ecef;">Max Marks</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e9ecef;">Theory/Practical</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e9ecef;">Type</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e9ecef;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($subjects_by_semester[$i] as $subject): ?>
+                                        <tr style="border-bottom: 1px solid #e9ecef;">
+                                            <td style="padding: 12px; color: #28a745; font-weight: 600;">
+                                                <?php echo htmlspecialchars($subject['subject_code'] ?? '-'); ?>
+                                            </td>
+                                            <td style="padding: 12px; font-weight: 500;">
+                                                <?php echo htmlspecialchars($subject['subject_name']); ?>
+                                            </td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <?php echo $subject['max_marks']; ?>
+                                            </td>
+                                            <td style="padding: 12px; text-align: center; font-size: 13px; color: #666;">
+                                                <?php echo ($subject['theory_marks'] ?? 0); ?> / <?php echo ($subject['practical_marks'] ?? 0); ?>
+                                            </td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <?php if ($subject['is_compulsory']): ?>
+                                                    <span style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 15px; font-size: 12px;">
+                                                        Compulsory
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span style="background: #e9ecef; color: #6c757d; padding: 4px 10px; border-radius: 15px; font-size: 12px;">
+                                                        Elective
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="padding: 12px; text-align: center;">
+                                                <button onclick="editSubjectInline(<?php echo $subject['id']; ?>)" 
+                                                        style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button onclick="deleteSubjectConfirm(<?php echo $subject['id']; ?>, '<?php echo htmlspecialchars(addslashes($subject['subject_name'])); ?>')" 
+                                                        style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </div>
+                <?php endfor; ?>
+
+                <!-- Add/Edit Subject Form (Hidden by default) -->
+                <div id="addSubjectForm" style="display: <?php echo $edit_subject ? 'block' : 'none'; ?>; 
+                     margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 2px solid #28a745;">
+                    <h4 style="margin: 0 0 20px 0; color: #28a745;">
+                        <i class="fas fa-<?php echo $edit_subject ? 'edit' : 'plus'; ?>"></i> 
+                        <?php echo $edit_subject ? 'Edit Subject' : 'Add New Subject'; ?>
+                    </h4>
+                    <form method="POST" action="courses.php">
+                        <input type="hidden" name="action" value="<?php echo $edit_subject ? 'update_subject' : 'add_subject'; ?>">
+                        <input type="hidden" name="sub_course_id" value="<?php echo $manage_subjects_sub_course['id']; ?>">
+                        <?php if ($edit_subject): ?>
+                            <input type="hidden" name="subject_id" value="<?php echo $edit_subject['id']; ?>">
+                        <?php endif; ?>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Subject Name *</label>
+                                <input type="text" name="subject_name" required 
+                                       value="<?php echo $edit_subject ? htmlspecialchars($edit_subject['subject_name']) : ''; ?>"
+                                       placeholder="e.g., Computer Fundamentals"
+                                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Subject Code</label>
+                                <input type="text" name="subject_code" 
+                                       value="<?php echo $edit_subject ? htmlspecialchars($edit_subject['subject_code'] ?? '') : ''; ?>"
+                                       placeholder="e.g., CS101"
+                                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Semester *</label>
+                                <select name="semester" required style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                                    <?php for ($s = 1; $s <= 8; $s++): ?>
+                                        <option value="<?php echo $s; ?>" <?php echo ($edit_subject && $edit_subject['semester'] == $s) ? 'selected' : ''; ?>>
+                                            Semester <?php echo $s; ?>
+                                        </option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Maximum Marks *</label>
+                                <input type="number" name="max_marks" required min="1" 
+                                       value="<?php echo $edit_subject ? $edit_subject['max_marks'] : '100'; ?>"
+                                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Theory Marks</label>
+                                <input type="number" name="theory_marks" min="0" 
+                                       value="<?php echo $edit_subject ? ($edit_subject['theory_marks'] ?? 70) : '70'; ?>"
+                                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Practical Marks</label>
+                                <input type="number" name="practical_marks" min="0" 
+                                       value="<?php echo $edit_subject ? ($edit_subject['practical_marks'] ?? 30) : '30'; ?>"
+                                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="is_compulsory" 
+                                       <?php echo (!$edit_subject || $edit_subject['is_compulsory']) ? 'checked' : ''; ?>>
+                                <span style="font-weight: 600;">Compulsory Subject</span>
+                            </label>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                            <button type="button" onclick="hideAddSubjectForm()" 
+                                    style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-<?php echo $edit_subject ? 'save' : 'plus'; ?>"></i>
+                                <?php echo $edit_subject ? 'Update Subject' : 'Add Subject'; ?>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Mobile Menu JavaScript -->
     <!-- <script src="../assets/js/mobile-menu.js"></script> -->
@@ -1626,6 +1994,110 @@ if (isset($_GET['edit_sub']) && is_numeric($_GET['edit_sub'])) {
                     errorAlert.remove();
                 }, 500);
             }, 5000);
+        }
+
+        // Subject Management Functions
+        function manageSubjects(subCourseId, subCourseName) {
+            window.location.href = `courses.php?manage_subjects=${subCourseId}`;
+        }
+
+        function closeSubjectsManagement() {
+            window.location.href = 'courses.php';
+        }
+
+        function switchSemesterTab(semester) {
+            // Update tab buttons
+            document.querySelectorAll('.semester-tab-btn').forEach(btn => {
+                if (parseInt(btn.dataset.semester) === semester) {
+                    btn.style.background = '#28a745';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = '#666';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update content panels
+            document.querySelectorAll('.semester-content-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+            const activePanel = document.getElementById(`semester-panel-${semester}`);
+            if (activePanel) {
+                activePanel.style.display = 'block';
+            }
+        }
+
+        function openAddSubjectForm() {
+            document.getElementById('addSubjectForm').style.display = 'block';
+            // Reset form for adding new subject
+            const form = document.querySelector('#addSubjectForm form');
+            if (form) {
+                form.querySelector('[name="action"]').value = 'add_subject';
+                form.querySelector('[name="subject_name"]').value = '';
+                form.querySelector('[name="subject_code"]').value = '';
+                form.querySelector('[name="max_marks"]').value = '100';
+                form.querySelector('[name="theory_marks"]').value = '70';
+                form.querySelector('[name="practical_marks"]').value = '30';
+                form.querySelector('[name="is_compulsory"]').checked = true;
+                
+                // Remove subject_id hidden input if it exists
+                const subjectIdInput = form.querySelector('[name="subject_id"]');
+                if (subjectIdInput) {
+                    subjectIdInput.remove();
+                }
+            }
+            // Scroll to form
+            document.getElementById('addSubjectForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideAddSubjectForm() {
+            document.getElementById('addSubjectForm').style.display = 'none';
+        }
+
+        function editSubjectInline(subjectId) {
+            const currentUrl = new URL(window.location.href);
+            const manageSubjectsId = currentUrl.searchParams.get('manage_subjects');
+            window.location.href = `courses.php?manage_subjects=${manageSubjectsId}&edit_subject=${subjectId}`;
+        }
+
+        function deleteSubjectConfirm(subjectId, subjectName) {
+            if (confirm(`Are you sure you want to delete subject "${subjectName}"? This action cannot be undone.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'courses.php';
+
+                const currentUrl = new URL(window.location.href);
+                const subCourseId = currentUrl.searchParams.get('manage_subjects');
+
+                const inputs = [
+                    { name: 'action', value: 'delete_subject' },
+                    { name: 'subject_id', value: subjectId },
+                    { name: 'sub_course_id', value: subCourseId }
+                ];
+
+                inputs.forEach(input => {
+                    const el = document.createElement('input');
+                    el.type = 'hidden';
+                    el.name = input.name;
+                    el.value = input.value;
+                    form.appendChild(el);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Handle subjects management modal closing with click outside
+        const subjectsModal = document.getElementById('subjectsManagementModal');
+        if (subjectsModal) {
+            subjectsModal.addEventListener('click', function(event) {
+                if (event.target === subjectsModal) {
+                    closeSubjectsManagement();
+                }
+            });
         }
     </script>
 </body>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GICT Authorization Certificate</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .certificate {
+            width: 900px;
+            min-height: 650px;
+            background: linear-gradient(135deg, #fffef8 0%, #f8f6f0 100%);
+            position: relative;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Outer decorative border */
+        .certificate::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border: 3px solid #1a365d;
+            pointer-events: none;
+        }
+
+        /* Inner decorative border */
+        .certificate::after {
+            content: '';
+            position: absolute;
+            top: 22px;
+            left: 22px;
+            right: 22px;
+            bottom: 22px;
+            border: 1px solid #c9a227;
+            pointer-events: none;
+        }
+
+        .certificate-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        /* Corner decorations */
+        .corner {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            z-index: 2;
+        }
+
+        .corner-tl {
+            top: 30px;
+            left: 30px;
+        }
+
+        .corner-tr {
+            top: 30px;
+            right: 30px;
+            transform: rotate(90deg);
+        }
+
+        .corner-bl {
+            bottom: 30px;
+            left: 30px;
+            transform: rotate(-90deg);
+        }
+
+        .corner-br {
+            bottom: 30px;
+            right: 30px;
+            transform: rotate(180deg);
+        }
+
+        .corner svg {
+            width: 100%;
+            height: 100%;
+            fill: #c9a227;
+        }
+
+        .header-emblem {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid #c9a227;
+            box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3);
+        }
+
+        .header-emblem span {
+            color: #c9a227;
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .organization-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: #1a365d;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .organization-full {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            color: #4a5568;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .certificate-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 52px;
+            color: #c9a227;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .decorative-line {
+            width: 400px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #c9a227, transparent);
+            margin: 20px auto;
+        }
+
+        .purpose-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: #2d3748;
+            margin: 25px 0;
+            line-height: 1.8;
+        }
+
+        .institute-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a365d;
+            margin: 15px 0;
+            padding: 10px 30px;
+            display: inline-block;
+            border-bottom: 2px solid #c9a227;
+        }
+
+        .authorization-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            color: #4a5568;
+            line-height: 1.8;
+            max-width: 700px;
+            margin: 20px auto;
+            text-align: justify;
+        }
+
+        .certificate-number {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #718096;
+            margin: 25px 0 15px;
+            letter-spacing: 2px;
+        }
+
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding: 0 50px;
+        }
+
+        .signature-block {
+            text-align: center;
+            width: 200px;
+        }
+
+        .signature-line {
+            width: 150px;
+            height: 1px;
+            background: #1a365d;
+            margin: 0 auto 8px;
+        }
+
+        .signature-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a365d;
+        }
+
+        .signature-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .seal {
+            position: absolute;
+            bottom: 80px;
+            right: 80px;
+            width: 100px;
+            height: 100px;
+            border: 3px solid #c9a227;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 254, 248, 0.9);
+            transform: rotate(-15deg);
+        }
+
+        .seal-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 10px;
+            color: #1a365d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .seal-year {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #c9a227;
+        }
+
+        .validity-badge {
+            position: absolute;
+            top: 60px;
+            right: 60px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: 'Playfair Display', serif;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(72, 187, 120, 0.3);
+        }
+
+        .footer-info {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 11px;
+            color: #a0aec0;
+            letter-spacing: 1px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .certificate {
+                box-shadow: none;
+            }
+        }
+
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 54, 93, 0.4);
+        }
+
+        @media print {
+            .print-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="print-btn" onclick="window.print()">
+        <i class="fas fa-print"></i> Print Certificate
+    </button>
+
+    <div class="certificate">
+        <!-- Corner Decorations -->
+        <div class="corner corner-tl">
+            <svg viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 Q50,0 50,10 L50,50 Q50,60 40,60 L10,60 Q0,60 0,50 L0,0 Z" opacity="0.3" />
+                <path d="M5,5 L35,5 Q42,5 42,12 L42,42 Q42,50 35,50 L12,50 Q5,50 5,42 L5,5 Z" fill="none"
+                    stroke="#c9a227" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="corner corner-tr">
+            <svg viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 Q50,0 50,10 L50,50 Q50,60 40,60 L10,60 Q0,60 0,50 L0,0 Z" opacity="0.3" />
+                <path d="M5,5 L35,5 Q42,5 42,12 L42,42 Q42,50 35,50 L12,50 Q5,50 5,42 L5,5 Z" fill="none"
+                    stroke="#c9a227" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="corner corner-bl">
+            <svg viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 Q50,0 50,10 L50,50 Q50,60 40,60 L10,60 Q0,60 0,50 L0,0 Z" opacity="0.3" />
+                <path d="M5,5 L35,5 Q42,5 42,12 L42,42 Q42,50 35,50 L12,50 Q5,50 5,42 L5,5 Z" fill="none"
+                    stroke="#c9a227" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="corner corner-br">
+            <svg viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 Q50,0 50,10 L50,50 Q50,60 40,60 L10,60 Q0,60 0,50 L0,0 Z" opacity="0.3" />
+                <path d="M5,5 L35,5 Q42,5 42,12 L42,42 Q42,50 35,50 L12,50 Q5,50 5,42 L5,5 Z" fill="none"
+                    stroke="#c9a227" stroke-width="1" />
+            </svg>
+        </div>
+
+        <div class="validity-badge">✓ Valid & Active</div>
+
+        <div class="certificate-content">
+            <div class="header-emblem">
+                <span>GICT</span>
+            </div>
+
+            <div class="organization-name">GICT</div>
+            <div class="organization-full">Global Institute of Computer Technology</div>
+
+            <div class="certificate-title">Certificate of Authorization</div>
+
+            <div class="decorative-line"></div>
+
+            <div class="purpose-text">This is to certify that</div>
+
+            <div class="institute-name">GICT Computer Education Center</div>
+
+            <div class="authorization-text">
+                is hereby authorized and recognized as an official training and certification center
+                under the Global Institute of Computer Technology (GICT). This institution is empowered
+                to conduct professional computer education courses, issue certifications, and award
+                diplomas in accordance with the standards and guidelines established by GICT.
+                The center maintains compliance with all quality standards for technical education
+                and is authorized to operate until the validity period mentioned herein.
+            </div>
+
+            <div class="certificate-number">Certificate No: GICT/AUTH/2024/001247</div>
+
+            <div class="decorative-line"></div>
+
+            <div class="signature-section">
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Dr. Rajesh Kumar</div>
+                    <div class="signature-title">Director General</div>
+                </div>
+
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Issued: January 2024</div>
+                    <div class="signature-title">Valid Until: December 2029</div>
+                </div>
+
+                <div class="signature-block">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">Amit Sharma</div>
+                    <div class="signature-title">Registrar</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="seal">
+            <div class="seal-text">Official</div>
+            <div class="seal-year">2024</div>
+            <div class="seal-text">Seal</div>
+        </div>
+
+        <div class="footer-info">
+            Registered Office: New Delhi, India | www.gict.edu | contact@gict.edu
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</body>
+
+</html>
