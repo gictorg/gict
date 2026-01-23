@@ -147,7 +147,7 @@ class QRinputItem
     {
         try {
 
-            $bs = new QRbitrtream();
+            $bs = new QRbitstream();
 
             $bs->appendNum(4, 0x8);
             $bs->appendNum(QRspec::lengthIndicator(QR_MODE_KANJI, $version), (int) ($this->size / 2));
@@ -381,7 +381,7 @@ class QRinput
         $buf = array($size, $index, $parity);
 
         try {
-            $entry = new QRinputItem(QR_MODE_STRUCTURE, 3, buf);
+            $entry = new QRinputItem(QR_MODE_STRUCTURE, 3, $buf);
             array_unshift($this->items, $entry);
             return 0;
         } catch (Exception $e) {
@@ -607,7 +607,7 @@ class QRinput
     }
 
     //----------------------------------------------------------------------
-    public function estimateBitsModeKanji($size)
+    public static function estimateBitsModeKanji($size)
     {
         return (int) (($size / 2) * 13);
     }

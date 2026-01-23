@@ -134,7 +134,7 @@ class QRrawcode
     //----------------------------------------------------------------------
     public function getCode()
     {
-        $ret;
+
 
         if ($this->count < $this->dataLength) {
             $row = $this->count % $this->blocks;
@@ -249,7 +249,7 @@ class QRcode
     //----------------------------------------------------------------------
     public function encodeString8bit($string, $version, $level)
     {
-        if (string == NULL) {
+        if ($string == NULL) {
             throw new Exception('empty string!');
             return NULL;
         }
@@ -258,7 +258,7 @@ class QRcode
         if ($input == NULL)
             return NULL;
 
-        $ret = $input->append($input, QR_MODE_8, strlen($string), str_split($string));
+        $ret = $input->append(QR_MODE_8, strlen($string), str_split($string));
         if ($ret < 0) {
             unset($input);
             return NULL;

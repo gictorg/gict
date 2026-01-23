@@ -162,7 +162,7 @@ require_once 'includes/qr_helper.php';
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #1a2a6c;
+            color: #566293ff;
         }
 
         .seal-grade-label {
