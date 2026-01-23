@@ -94,7 +94,7 @@ $documents = getRows("SELECT * FROM student_documents WHERE user_id = ? ORDER BY
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documents - Student Portal</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -103,10 +103,13 @@ $documents = getRows("SELECT * FROM student_documents WHERE user_id = ? ORDER BY
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="breadcrumbs">
                         <a href="dashboard.php">Dashboard</a> / <span>Documents</span>
                     </div>
@@ -114,7 +117,7 @@ $documents = getRows("SELECT * FROM student_documents WHERE user_id = ? ORDER BY
             </header>
 
             <main class="admin-content">
-                <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 30px;">
+                <div class="dashboard-grid-alt">
                     <!-- Upload Section -->
                     <div class="panel">
                         <div class="panel-header">
@@ -216,9 +219,6 @@ $documents = getRows("SELECT * FROM student_documents WHERE user_id = ? ORDER BY
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
     </script>
 </body>
 

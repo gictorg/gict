@@ -1053,8 +1053,10 @@ if ($enrollment_id) {
                 <li><a href="students.php"><i class="fas fa-user-graduate"></i> Students</a></li>
                 <li><a href="staff.php"><i class="fas fa-user-tie"></i> Staff</a></li>
                 <li><a href="courses.php"><i class="fas fa-graduation-cap"></i> Courses</a></li>
-                <li><a href="marks-management.php" class="active"><i class="fas fa-chart-line"></i> Marks Management</a></li>
-                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a></li>
+                <li><a href="marks-management.php" class="active"><i class="fas fa-chart-line"></i> Marks Management</a>
+                </li>
+                <li><a href="certificate-management.php"><i class="fas fa-certificate"></i> Certificate Management</a>
+                </li>
                 <li><a href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
                 <li><a href="inquiries.php"><i class="fas fa-question-circle"></i> Course Inquiries</a></li>
                 <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
@@ -1191,12 +1193,12 @@ if ($enrollment_id) {
                         <table class="custom-table">
                             <thead>
                                 <tr>
-                                    <th>Candidate Details</th>
-                                    <th>Academic Program</th>
-                                    <th>Credential ID</th>
-                                    <th>Learning Progress</th>
-                                    <th>Verification</th>
-                                    <th style="text-align: right;">Interact</th>
+                                    <th>CANDIDATE DETAILS</th>
+                                    <th>ACADEMIC PROGRAM</th>
+                                    <th>CREDENTIAL ID</th>
+                                    <th>LEARNING PROGRESS</th>
+                                    <th>VERIFICATION</th>
+                                    <th style="text-align: right;">INTERACT</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1211,8 +1213,8 @@ if ($enrollment_id) {
                                         data-course="<?php echo strtolower($student['course_name']); ?>"
                                         data-status="<?php echo $status_code; ?>">
                                         <td>
-                                            <div style="font-weight: 600; color: #1e293b; font-size: 15px;">
-                                                <?php echo htmlspecialchars($student['student_name']); ?>
+                                            <div style="font-weight: 700; color: #1e293b; font-size: 15px;">
+                                                <?php echo htmlspecialchars(strtoupper($student['student_name'])); ?>
                                             </div>
                                             <div style="font-size: 13px; color: #475569; font-weight: 500;">
                                                 REG ID: <?php echo htmlspecialchars($student['username']); ?>
@@ -1228,17 +1230,18 @@ if ($enrollment_id) {
                                         </td>
                                         <td>
                                             <?php if (!empty($student['marksheet_no'])): ?>
-                                                <div style="display: flex; align-items: center; gap: 6px;">
-                                                    <i class="fas fa-certificate" style="color: #0ea5e9;"></i>
-                                                    <span style="font-weight: 500; color: #0ea5e9; font-size: 13px;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <i class="fas fa-certificate" style="color: #0ea5e9; font-size: 14px;"></i>
+                                                    <span
+                                                        style="font-weight: 700; color: #0ea5e9; font-size: 13px; letter-spacing: 0.5px;">
                                                         <?php echo $student['marksheet_no']; ?>
                                                     </span>
                                                 </div>
                                             <?php else: ?>
-                                                <span style="font-size: 12px; color: #9ca3af;">
-                                                    <i class="fas fa-minus-circle" style="margin-right: 4px;"></i>Not
-                                                    Credentialed
-                                                </span>
+                                                <div style="display: flex; align-items: center; gap: 8px; color: #94a3b8;">
+                                                    <i class="fas fa-circle-minus" style="font-size: 14px;"></i>
+                                                    <span style="font-size: 13px; font-weight: 500;">Not Credentialed</span>
+                                                </div>
                                             <?php endif; ?>
                                         </td>
                                         <td style="width: 180px;">
@@ -1259,13 +1262,24 @@ if ($enrollment_id) {
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge-premium <?php echo $badge_class; ?>">
-                                                <?php if ($progress_pct == 100): ?><i class="fas fa-check-circle"
-                                                        style="margin-right: 4px;"></i><?php elseif ($progress_pct > 0): ?><i
-                                                        class="fas fa-spinner" style="margin-right: 4px;"></i><?php else: ?><i
-                                                        class="fas fa-clock"
-                                                        style="margin-right: 4px;"></i><?php endif; ?><?php echo $status_label; ?>
-                                            </span>
+                                            <div class="badge-premium <?php echo $badge_class; ?>"
+                                                style="display: inline-flex; align-items: center; gap: 10px; padding: <?php echo ($status_label === 'NOT STARTED') ? '8px 12px' : '6px 14px'; ?>; border-radius: 12px;">
+                                                <?php if ($status_label === 'NOT STARTED'): ?>
+                                                    <i class="fas fa-clock" style="font-size: 16px;"></i>
+                                                    <div
+                                                        style="display: flex; flex-direction: column; line-height: 1; text-align: left;">
+                                                        <span
+                                                            style="font-size: 10px; font-weight: 800; opacity: 0.9;">NOT</span>
+                                                        <span style="font-size: 12px; font-weight: 800;">STARTED</span>
+                                                    </div>
+                                                <?php elseif ($status_label === 'CERTIFIED'): ?>
+                                                    <i class="fas fa-check-circle" style="font-size: 14px;"></i>
+                                                    <span>CERTIFIED</span>
+                                                <?php else: ?>
+                                                    <i class="fas fa-spinner fa-spin" style="font-size: 14px;"></i>
+                                                    <span><?php echo $status_label; ?></span>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td style="text-align: right;">
                                             <button class="btn-premium btn-p-primary"
@@ -1439,7 +1453,8 @@ if ($enrollment_id) {
                                                         </td>
                                                         <td style="text-align: center;">
                                                             <div class="row-total" style="color: #1e293b;">
-                                                                <?php echo $m ? $m['total_marks'] : '0'; ?></div>
+                                                                <?php echo $m ? $m['total_marks'] : '0'; ?>
+                                                            </div>
                                                             <div style="font-size: 11px; color: #475569; font-weight: 700;">UNIT
                                                                 TOTAL <?php echo $subject['max_marks']; ?></div>
                                                         </td>

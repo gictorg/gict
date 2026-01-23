@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Student Portal</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -89,10 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="breadcrumbs">
                         <a href="dashboard.php">Dashboard</a> / <span>Profile</span>
                     </div>
@@ -107,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+                <div class="dashboard-grid-alt">
                     <!-- LEFT COLUMN: Profile Summary -->
                     <div>
                         <div class="panel" style="text-align: center; padding: 40px 20px;">
@@ -157,8 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="panel-body">
                                 <form method="POST">
                                     <input type="hidden" name="action" value="update_profile">
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                                         <div>
                                             <label
                                                 style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Full
@@ -175,8 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                 style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
                                         </div>
                                     </div>
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                                         <div>
                                             <label
                                                 style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Phone
@@ -213,8 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="password" name="current_password" required
                                             style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
                                     </div>
-                                    <div
-                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                                         <div>
                                             <label
                                                 style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">New
@@ -242,9 +242,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
     </script>
 </body>
 

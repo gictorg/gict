@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit - Student Portal</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
@@ -106,9 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <main class="admin-content">
                 <div class="panel" style="max-width: 800px; margin: 0 auto;">
                     <div class="panel-header"
-                        style="display: flex; justify-content: space-between; align-items: center;">
+                         >
                         <h1><i class="fas fa-file-upload"></i> Submitting:
-                            <?php echo htmlspecialchars($assignment['title']); ?></h1>
+                            <?php echo htmlspecialchars($assignment['title']); ?>
+                        </h1>
                     </div>
                     <div class="panel-body">
                         <?php if ($success_message): ?>
@@ -151,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         DOCX, ZIP, JPG, PNG (Max 5MB)</p>
                                 </div>
 
-                                <div style="display: flex; gap: 15px;">
+                                <div class="btn-grid" style="display: flex; gap: 15px;">
                                     <button type="submit" class="btn-primary"
                                         style="flex: 1; justify-content: center; height: 50px;">Finalize Submission</button>
                                     <a href="assignments.php" class="btn-primary"
@@ -166,9 +167,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
     </script>
 </body>
 

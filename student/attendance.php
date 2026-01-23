@@ -59,7 +59,7 @@ if ($selected_enrollment_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Attendance - Student Portal</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -68,10 +68,13 @@ if ($selected_enrollment_id) {
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="breadcrumbs">
                         <a href="dashboard.php">Dashboard</a> / <span>Attendance</span>
                     </div>
@@ -80,8 +83,7 @@ if ($selected_enrollment_id) {
 
             <main class="admin-content">
                 <div class="panel">
-                    <div class="panel-header"
-                        style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="panel-header">
                         <h1><i class="fas fa-calendar-check"></i> Attendance Record</h1>
                         <select onchange="window.location.href='?enrollment_id='+this.value"
                             style="padding: 10px 15px; border-radius: 10px; border: 1px solid #f1f5f9; font-weight: 600; color: #1e293b; background: #f8fafc;">
@@ -103,7 +105,7 @@ if ($selected_enrollment_id) {
                         <?php else:
                             $present_perc = round(($stats['present_days'] + ($stats['late_days'] * 0.5)) / $stats['total_days'] * 100);
                             ?>
-                            <div
+                            <div class="attendance-header-wrapper"
                                 style="display: flex; gap: 40px; align-items: center; background: #f8fafc; padding: 40px; border-radius: 20px; margin-bottom: 30px;">
                                 <div
                                     style="width: 150px; height: 150px; border-radius: 50%; background: white; border: 8px solid #667eea; display: flex; align-items: center; justify-content: center; flex-direction: column; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);">
@@ -112,7 +114,8 @@ if ($selected_enrollment_id) {
                                     <span
                                         style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Overall</span>
                                 </div>
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; flex: 1;">
+                                <div class="attendance-stats-grid"
+                                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; flex: 1;">
                                     <div
                                         style="background: white; padding: 15px 25px; border-radius: 15px; border-left: 4px solid #6366f1;">
                                         <div style="font-size: 1.5rem; font-weight: 700; color: #1e293b;">
@@ -196,9 +199,6 @@ if ($selected_enrollment_id) {
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
     </script>
 </body>
 

@@ -80,12 +80,8 @@ unset($course);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - GICT Institute</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- html2canvas and jsPDF for PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body class="student-portal-body">
@@ -93,10 +89,13 @@ unset($course);
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="breadcrumbs">
                         <a href="dashboard.php">Dashboard</a> / <span>Overview</span>
                     </div>
@@ -163,7 +162,7 @@ unset($course);
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 30px;">
+                <div class="dashboard-grid">
                     <!-- Enrolled Courses -->
                     <div class="panel">
                         <div class="panel-header">
@@ -177,7 +176,7 @@ unset($course);
                                     <?php foreach ($enrolled_courses as $course): ?>
                                         <div
                                             style="padding: 20px; border: 1px solid #f1f5f9; border-radius: 15px; display: flex; flex-direction: column; gap: 15px;">
-                                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
                                                 <div>
                                                     <h4 style="margin: 0; color: #1e293b;">
                                                         <?php echo htmlspecialchars($course['sub_course_name']); ?>
@@ -189,22 +188,22 @@ unset($course);
                                                 <div style="text-align: right;">
                                                     <span
                                                         style="padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; background: <?php echo $course['enrollment_status'] === 'enrolled' ? '#dcfce7' : '#dbeafe'; ?>; color: <?php echo $course['enrollment_status'] === 'enrolled' ? '#166534' : '#1e40af'; ?>;">
-                                                        <?php echo ucfirst($course['enrollment_status']); ?>
+                                                        <?php echo ucfirst($course['enrollment_status'] ?? 'enrolled'); ?>
                                                     </span>
                                                 </div>
                                             </div>
 
                                             <?php if ($course['has_marks']): ?>
                                                 <div
-                                                    style="display: flex; gap: 10px; border-top: 1px solid #f1f5f9; pt: 15px; padding-top: 15px;">
-                                                    <a href="<?php echo $course['result_url']; ?>" target="_blank"
+                                                    style="display: flex; gap: 10px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                                                    <a href="<?php echo htmlspecialchars($course['result_url']); ?>" target="_blank"
                                                         class="btn-primary"
                                                         style="flex: 1; font-size: 0.75rem; padding: 8px 12px; background: #3498db; justify-content: center;">
-                                                        <i class="fas fa-file-invoice"></i> View Marksheet
+                                                        <i class="fas fa-file-invoice"></i> Marksheet
                                                     </a>
-                                                    <a href="<?php echo $course['cert_url']; ?>" target="_blank" class="btn-primary"
+                                                    <a href="<?php echo htmlspecialchars($course['cert_url']); ?>" target="_blank" class="btn-primary"
                                                         style="flex: 1; font-size: 0.75rem; padding: 8px 12px; background: #c5a059; justify-content: center;">
-                                                        <i class="fas fa-certificate"></i> View Certificate
+                                                        <i class="fas fa-certificate"></i> Certificate
                                                     </a>
                                                 </div>
                                             <?php endif; ?>
@@ -257,20 +256,20 @@ unset($course);
                                                 <i class="fas fa-certificate"></i>
                                             </div>
                                             <div>
-                                                <h5 style="margin: 0;"><?php echo htmlspecialchars($cert['sub_course_name']); ?>
+                                                <h5 style="margin: 0;"><?php echo htmlspecialchars($cert['sub_course_name'] ?? 'Course'); ?>
                                                 </h5>
                                                 <small style="color: #64748b;">Issued on
-                                                    <?php echo date('M d, Y', strtotime($cert['generated_at'])); ?></small>
+                                                    <?php echo date('M d, Y', strtotime($cert['generated_at'] ?? 'now')); ?></small>
                                             </div>
                                         </div>
                                         <div style="display: flex; gap: 10px;">
-                                            <a href="../<?php echo $cert['certificate_url']; ?>" target="_blank"
-                                                class="btn-primary" style="flex: 1; font-size: 0.8rem; padding: 10px;">
+                                            <a href="../<?php echo !empty($cert['certificate_url']) ? htmlspecialchars($cert['certificate_url']) : '#'; ?>" target="_blank"
+                                                class="btn-primary" style="flex: 1; font-size: 0.8rem; padding: 10px; justify-content: center;">
                                                 Certificate
                                             </a>
-                                            <a href="../<?php echo $cert['marksheet_url']; ?>" target="_blank"
+                                            <a href="../<?php echo !empty($cert['marksheet_url']) ? htmlspecialchars($cert['marksheet_url']) : '#'; ?>" target="_blank"
                                                 class="btn-primary"
-                                                style="flex: 1; font-size: 0.8rem; padding: 10px; background: #64748b;">
+                                                style="flex: 1; font-size: 0.8rem; padding: 10px; background: #64748b; justify-content: center;">
                                                 Marksheet
                                             </a>
                                         </div>
@@ -284,106 +283,10 @@ unset($course);
         </div>
     </div>
 
-    <!-- ID Card Modal -->
-    <div id="idCardModal" class="modal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-        <div class="modal-content"
-            style="background: white; border-radius: 20px; width: 90%; max-width: 500px; overflow: hidden; animation: slideUp 0.3s ease-out;">
-            <div class="modal-header"
-                style="padding: 20px; background: var(--student-sidebar-bg); color: white; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0;">Identity Card</h3>
-                <button onclick="closeModal()"
-                    style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
-            </div>
-            <div class="modal-body" id="idCardContainer" style="padding: 30px;">
-                <!-- Content loaded via viewID() -->
-            </div>
-            <div class="modal-actions" style="padding: 20px; border-top: 1px solid #f1f5f9; text-align: center;">
-                <button id="modalDownloadBtn" onclick="downloadFromModal()" class="btn-primary">
-                    <i class="fas fa-download"></i> Download PDF
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal {
-            display: none;
-        }
-
-        .modal.show {
-            display: flex !important;
-        }
-    </style>
+    <!-- Redundant Modal Removed -->
 
     <script>
-        function viewID() {
-            const modal = document.getElementById('idCardModal');
-            const container = document.getElementById('idCardContainer');
-            modal.classList.add('show');
-            container.innerHTML = '<div style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-
-            const formData = new FormData();
-            formData.append('student_id', '<?php echo $student['id']; ?>');
-
-            fetch('../id.php', { method: 'POST', body: formData })
-                .then(response => response.text())
-                .then(html => {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    const idCard = tempDiv.querySelector('#idCard');
-                    if (idCard) {
-                        idCard.style.margin = '0 auto';
-                        idCard.style.boxShadow = 'none';
-                        container.innerHTML = idCard.outerHTML;
-                    } else {
-                        container.innerHTML = 'Error loading ID card.';
-                    }
-                });
-        }
-
-        function closeModal() {
-            document.getElementById('idCardModal').classList.remove('show');
-        }
-
-        function downloadFromModal() {
-            const idCardElement = document.querySelector('#idCardContainer #idCard');
-            if (!idCardElement) return;
-
-            const downloadBtn = document.querySelector('#modalDownloadBtn');
-            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-            downloadBtn.disabled = true;
-
-            html2canvas(idCardElement, { scale: 3, useCORS: true }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'px',
-                    format: [idCardElement.offsetWidth, idCardElement.offsetHeight]
-                });
-                pdf.addImage(imgData, 'PNG', 0, 0, idCardElement.offsetWidth, idCardElement.offsetHeight);
-                pdf.save('student-id-card.pdf');
-                downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download PDF';
-                downloadBtn.disabled = false;
-            });
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
+        // Use central toggleSidebar from sidebar.php
     </script>
 </body>
 

@@ -54,7 +54,7 @@ if (!empty($sub_course_ids)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Assignments - Student Portal</title>
     <link rel="icon" type="image/png" href="../logo.png">
-    <link rel="stylesheet" href="../assets/css/student-portal.css">
+    <link rel="stylesheet" href="../assets/css/student-portal.css?v=1769203382">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -63,10 +63,13 @@ if (!empty($sub_course_ids)) {
         <!-- Sidebar -->
         <?php include 'includes/sidebar.php'; ?>
 
-        <div class="main-container" style="width: 100%; overflow: auto;">
+        <div class="main-container">
             <!-- Topbar -->
             <header class="admin-topbar">
                 <div class="topbar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <div class="breadcrumbs">
                         <a href="dashboard.php">Dashboard</a> / <span>Assignments</span>
                     </div>
@@ -161,9 +164,6 @@ if (!empty($sub_course_ids)) {
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('mobile-open');
-        }
     </script>
 </body>
 
