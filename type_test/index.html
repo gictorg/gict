@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Type Practice</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">type</div>
+        <div class="subtitle">practice touch typing</div>
+      </header>
+
+      <section class="stats">
+        <div class="stat">
+          <div class="stat-label">wpm</div>
+          <div class="stat-value" id="wpm">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">accuracy</div>
+          <div class="stat-value" id="accuracy">100%</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">words</div>
+          <div class="stat-value" id="progress">0/0</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="words" id="words" aria-live="polite"></div>
+        <input
+          id="input"
+          class="input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="start typing..."
+        />
+      </section>
+
+      <section class="actions">
+        <button class="button" id="restart">restart</button>
+        <div class="hint">press space or enter to submit a word</div>
+      </section>
+    </main>
+  </body>
+</html>
