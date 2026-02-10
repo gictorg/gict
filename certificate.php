@@ -41,7 +41,7 @@ require_once 'includes/qr_helper.php';
             /* Exact width of your template jpg */
             height: 842px;
             /* Exact height of your template jpg */
-            background-image: url('assets/certificates/gict_cert_template.jpg');
+            background-image: url('secure_template.php<?php echo isset($_SESSION['cert_image_token']) ? "?t=" . $_SESSION['cert_image_token'] : ""; ?>');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -378,7 +378,7 @@ require_once 'includes/qr_helper.php';
             }
         }
 
-        /* Consolidated Print Styles - Fixed Alignment for A4 - Moved to end to avoid overrides */
+        /* Consolidated Print Styles - Fixed Alignment for A4 - Aggressive Hide */
         @media print {
             @page {
                 size: A4 portrait;
@@ -396,23 +396,26 @@ require_once 'includes/qr_helper.php';
             .action-container *,
             .page-header,
             .main-content>*:not(.student-corner-container),
-            .student-corner-title {
+            .student-corner-title,
+            .btn-verify {
                 display: none !important;
                 visibility: hidden !important;
                 opacity: 0 !important;
                 height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
+                width: 0 !important;
+                position: absolute !important;
+                pointer-events: none !important;
             }
 
             body,
             html {
-                height: 100% !important;
+                height: auto !important;
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
                 overflow: visible !important;
+                position: static !important;
             }
 
             .main-content,
@@ -430,31 +433,25 @@ require_once 'includes/qr_helper.php';
                 margin: 0 !important;
                 background: white !important;
                 width: 100% !important;
-                display: flex !important;
-                justify-content: center !important;
+                display: block !important;
                 overflow: visible !important;
+                height: calc(842px * 1.33) !important;
+                /* Ensure space for scaled content */
             }
 
             .certificate-container.gict-official-cert {
                 margin: 0 auto !important;
                 box-shadow: none !important;
                 border: none !important;
-                /* Keep original proportions for pixel-perfect overlays */
                 width: 596px !important;
                 height: 842px !important;
-                /* Scale to fit A4 (roughly 1.33x) */
                 transform: scale(1.33) !important;
                 transform-origin: top center !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-
-                /* High Quality Print Rendering */
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
             }
 
             .cert-overlay {
-                /* Ensure absolute vector sharpness for print */
                 -webkit-font-smoothing: subpixel-antialiased !important;
                 text-rendering: geometricPrecision !important;
                 color: #1a2a6c !important;
@@ -561,6 +558,16 @@ require_once 'includes/qr_helper.php';
                         }
 
                         $show_form = false;
+
+                        // Authorize secure template access for this session
+                        if (session_status() === PHP_SESSION_NONE)
+                            session_start();
+                        $_SESSION['viewing_certificate'] = true;
+                        $img_token = bin2hex(random_bytes(16));
+                        $_SESSION['cert_image_token'] = $img_token;
+                        if (!isset($_SESSION['cert_image_tokens']))
+                            $_SESSION['cert_image_tokens'] = [];
+                        $_SESSION['cert_image_tokens'][$img_token] = time() + 300; // 5 min expiry
                     }
                 } else {
                     $error = "Invalid Date of Birth for the provided Enrollment No.";
