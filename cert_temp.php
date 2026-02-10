@@ -9,21 +9,6 @@ require_once 'includes/qr_helper.php';
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Great+Vibes&display=swap');
 
-        *,
-        *:before,
-        *:after {
-            box-sizing: border-box;
-        }
-
-        .student-corner-container {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            width: 100% !important;
-            max-width: none !important;
-            padding: 40px 20px !important;
-        }
-
         .certificate-wrapper {
             width: 100%;
             display: flex;
@@ -31,8 +16,6 @@ require_once 'includes/qr_helper.php';
             align-items: center;
             padding: 40px 0;
             background: #f0f2f5;
-            order: 1;
-            /* Ensure certificate is first */
         }
 
         /* Certificate Container - Fixed Pixel Size to match Template Image */
@@ -61,13 +44,6 @@ require_once 'includes/qr_helper.php';
             display: flex;
             align-items: center;
             justify-content: center;
-
-            /* Text Quality Enhancements */
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-            font-feature-settings: "kern" 1;
-            font-kerning: normal;
         }
 
         /* ATC Code area */
@@ -201,188 +177,60 @@ require_once 'includes/qr_helper.php';
             color: #333;
         }
 
-        /* Consolidated Print Styles - Fixed Alignment for A4 */
         @media print {
             @page {
-                size: A4 portrait;
+                size: portrait;
                 margin: 0;
+            }
+
+            body {
+                background: white;
             }
 
             header,
             footer,
             nav,
-            .header-container,
-            .top-links,
-            .logo-section,
             .no-print,
             .action-container,
-            .page-header,
-            .main-content \u003e *:not(.student-corner-container),
-            .student-corner-title {
+            .page-header {
                 display: none !important;
             }
 
-            body,
-            html {
-                height: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                overflow: visible !important;
-            }
-
-            .main-content,
-            .container,
-            .student-corner-container {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                max-width: none !important;
-            }
-
             .certificate-wrapper {
-                padding: 0 !important;
-                margin: 0 !important;
-                background: white !important;
-                width: 100% !important;
-                display: flex !important;
-                justify-content: center !important;
+                padding: 0;
+                background: white;
             }
 
             .certificate-container.gict-official-cert {
+                box-shadow: none;
                 margin: 0;
-                box-shadow: none !important;
-                border: none !important;
-                /* Keep original proportions for pixel-perfect overlays */
-                width: 596px !important;
-                height: 842px !important;
-                /* Scale to fit A4 (roughly 1.33x) */
-                transform: scale(1.33) !important;
-                transform-origin: top center !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-
-                /* High Quality Print Rendering */
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
+                width: 210mm;
+                height: 297mm;
             }
 
+            /* Adjust print positions to scale from 723px to A4 width */
             .cert-overlay {
-                /* Ensure absolute vector sharpness for print */
-                -webkit-font-smoothing: subpixel-antialiased !important;
-                text-rendering: geometricPrecision !important;
-                color: #000 !important;
-                /* Pure black for maximum contrast if needed, or keep your blue */
+                font-size: 1.25em;
             }
         }
 
-        /* Adjustments for tablets */
-        @media screen and (min-width: 621px) and (max-width: 850px) {
+        /* Responsive scaling for mobile view */
+        @media screen and (max-width: 750px) {
             .certificate-container.gict-official-cert {
-                transform: scale(0.85) !important;
+                transform: scale(calc(100vw / 620));
                 transform-origin: top center;
             }
 
             .certificate-wrapper {
-                height: calc(842px * 0.85);
+                padding: 10px 0;
+                height: calc(842px * (100vw / 620));
             }
         }
 
-        /* Action Buttons Styling */
-        .action-container {
-            display: flex !important;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin: 30px auto;
-            width: 100%;
-            max-width: 596px;
-            padding: 0 20px;
-            box-sizing: border-box;
-            order: 2;
-            /* Ensure buttons are second */
-        }
-
-        .action-container .btn-verify {
-            margin: 0 !important;
-            min-width: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        /* Horizontal Scroll for Certificate on Mobile */
-        @media screen and (max-width: 620px) {
-
-            html,
-            body {
-                width: 100% !important;
-                overflow-x: hidden !important;
-                position: relative;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .main-content {
-                width: 100% !important;
-                overflow-x: hidden !important;
-            }
-
-            .certificate-wrapper {
-                padding: 20px 0 !important;
-                width: 100% !important;
-                overflow-x: auto !important;
-                overflow-y: hidden !important;
-                display: block !important;
-                background: #f0f2f5;
-                -webkit-overflow-scrolling: touch;
-                box-sizing: border-box;
-            }
-
-            .certificate-container.gict-official-cert {
-                transform: none !important;
-                margin: 0 auto !important;
-                width: 596px !important;
-                height: 842px !important;
-                flex-shrink: 0;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            }
-
-            .action-container {
-                flex-direction: column !important;
-                width: 100% !important;
-                gap: 12px !important;
-                padding: 0 20px !important;
-                margin: 20px auto !important;
-                max-width: 100% !important;
-                display: flex !important;
-                align-items: center !important;
-            }
-
-            .action-container .btn-verify {
-                width: 100% !important;
-                padding: 15px !important;
-                margin: 0 !important;
-                box-sizing: border-box;
-            }
-
-            .certificate-wrapper::-webkit-scrollbar {
-                height: 4px;
-            }
-
-            .certificate-wrapper::-webkit-scrollbar-thumb {
-                background: #1a2a6c;
-                border-radius: 4px;
-            }
-        }
-
-        /* Consolidated Print Styles - Fixed Alignment for A4 - Moved to end to avoid overrides */
         @media print {
             @page {
-                size: A4 portrait;
                 margin: 0;
+                size: A4 portrait;
             }
 
             header,
@@ -393,26 +241,17 @@ require_once 'includes/qr_helper.php';
             .logo-section,
             .no-print,
             .action-container,
-            .action-container *,
-            .page-header,
-            .main-content>*:not(.student-corner-container),
-            .student-corner-title {
+            .page-header {
                 display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                height: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
             }
 
             body,
             html {
-                height: 100% !important;
-                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
-                overflow: visible !important;
             }
 
             .main-content,
@@ -422,42 +261,69 @@ require_once 'includes/qr_helper.php';
                 padding: 0 !important;
                 width: 100% !important;
                 max-width: none !important;
-                display: block !important;
             }
 
             .certificate-wrapper {
                 padding: 0 !important;
-                margin: 0 !important;
                 background: white !important;
-                width: 100% !important;
-                display: flex !important;
-                justify-content: center !important;
-                overflow: visible !important;
             }
 
             .certificate-container.gict-official-cert {
-                margin: 0 auto !important;
+                margin: 0 !important;
                 box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
                 border: none !important;
-                /* Keep original proportions for pixel-perfect overlays */
-                width: 596px !important;
-                height: 842px !important;
-                /* Scale to fit A4 (roughly 1.33x) */
-                transform: scale(1.33) !important;
-                transform-origin: top center !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-
-                /* High Quality Print Rendering */
-                image-rendering: -webkit-optimize-contrast;
-                image-rendering: crisp-edges;
             }
 
-            .cert-overlay {
-                /* Ensure absolute vector sharpness for print */
-                -webkit-font-smoothing: subpixel-antialiased !important;
-                text-rendering: geometricPrecision !important;
-                color: #1a2a6c !important;
+            .gict-official-cert .border-outer,
+            .gict-official-cert .border-inner {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+
+        /* Responsive adjustments for viewing */
+        @media screen and (max-width: 850px) {
+            .certificate-container.gict-official-cert {
+                width: 100%;
+                min-height: auto;
+                aspect-ratio: 794 / 1123;
+                transform: none;
+            }
+
+            .gict-official-cert .gict-logo-text {
+                font-size: 6vw;
+            }
+
+            .gict-official-cert .cert-title h2 {
+                font-size: 8vw;
+            }
+
+            .gict-official-cert .cert-student-name {
+                font-size: 3vw;
+            }
+
+            .gict-official-cert .student-name-line {
+                width: 60%;
+            }
+
+            .gict-official-cert .course-line {
+                width: 70%;
+            }
+
+            .gict-official-cert .cert-course-name {
+                font-size: 2.5vw;
+            }
+
+            .gict-official-cert .cert-signatures {
+                margin: 20px 20px 0 20px;
+            }
+
+            .gict-official-cert .signature-block {
+                width: 30%;
             }
         }
     </style>
@@ -591,7 +457,8 @@ require_once 'includes/qr_helper.php';
 
                     <?php if ($error): ?>
                         <div class="error-message" style="width: 100%; margin-top: 20px;">
-                            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                            <i class="fas fa-exclamation-circle"></i>
+                            <?php echo htmlspecialchars($error); ?>
                         </div>
                     <?php endif; ?>
                 </form>
@@ -601,7 +468,8 @@ require_once 'includes/qr_helper.php';
             $atc_name = 'G.I.C.T COMPUTER COLLEGE OF IT & MANAGEMENT JAUNPUR';
             $student_photo = !empty($student['profile_image']) ? $student['profile_image'] : 'assets/images/default-student.png';
             ?>
-            <div class="certificate-wrapper">
+            <div class="certificate-wrapper"
+                style="width: 100%; display: flex; flex-direction: column; align-items: center;">
                 <div class="certificate-container gict-official-cert" id="certificate">
                     <!-- Data Overlays - Positioned at exact pixel coordinates on the template background -->
 
@@ -657,25 +525,25 @@ require_once 'includes/qr_helper.php';
                         </span>
                     </div>
                 </div>
-            </div>
 
-            <div class="action-container no-print">
-                <button onclick="window.print()" class="btn-verify" style="background: #3498db;">
-                    <i class="fas fa-print"></i> Print Certificate
-                </button>
-                <?php
-                // Encrypt the token using AES-256-CBC
-                $plaintext = ($student['enrollment_no'] ?? '') . '|' . ($student['date_of_birth'] ?? '');
-                $iv_length = openssl_cipher_iv_length($cipher_method);
-                $iv = openssl_random_pseudo_bytes($iv_length);
-                $encrypted = openssl_encrypt($plaintext, $cipher_method, $encryption_key, 0, $iv);
-                $token = base64_encode($encrypted . '::' . $iv);
-                $share_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?token=" . urlencode($token);
-                ?>
-                <button onclick="copyToClipboard('<?php echo $share_url ?? ''; ?>')" class="btn-verify"
-                    style="background: #27ae60;">
-                    <i class="fas fa-share-alt"></i> Copy Link
-                </button>
+                <div class="action-container no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" class="btn-verify" style="background: #3498db; margin-right: 10px;">
+                        <i class="fas fa-print"></i> Print Certificate
+                    </button>
+                    <?php
+                    // Encrypt the token using AES-256-CBC
+                    $plaintext = ($student['enrollment_no'] ?? '') . '|' . ($student['date_of_birth'] ?? '');
+                    $iv_length = openssl_cipher_iv_length($cipher_method);
+                    $iv = openssl_random_pseudo_bytes($iv_length);
+                    $encrypted = openssl_encrypt($plaintext, $cipher_method, $encryption_key, 0, $iv);
+                    $token = base64_encode($encrypted . '::' . $iv);
+                    $share_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?token=" . urlencode($token);
+                    ?>
+                    <button onclick="copyToClipboard('<?php echo $share_url ?? ''; ?>')" class="btn-verify"
+                        style="background: #27ae60;">
+                        <i class="fas fa-share-alt"></i> Copy Link
+                    </button>
+                </div>
             </div>
 
             <script>
