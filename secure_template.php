@@ -23,14 +23,14 @@ if ($token && isset($_SESSION['cert_image_tokens'][$token])) {
 }
 
 if ($is_allowed_referer || $is_viewing_cert || $is_token_valid) {
-    $imagePath = 'assets/certificates/gict_cert_template.jpg';
+    define('SECURE_ACCESS', true);
+    require_once 'includes/cert_template_data.php';
 
-    if (file_exists($imagePath)) {
+    if (isset($template_data)) {
         header('Content-Type: image/jpeg');
-        header('Content-Length: ' . filesize($imagePath));
         // Prevent caching for added security
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        readfile($imagePath);
+        echo base64_decode($template_data);
         exit;
     }
 }

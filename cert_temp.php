@@ -24,7 +24,7 @@ require_once 'includes/qr_helper.php';
             /* Exact width of your template jpg */
             height: 842px;
             /* Exact height of your template jpg */
-            background-image: url('assets/certificates/gict_cert_template.jpg');
+            background-image: url('secure_template.php<?php echo isset($_SESSION['cert_image_token']) ? "?t=" . $_SESSION['cert_image_token'] : ""; ?>');
             background-size: cover;
             background-position: center;
             position: relative;
@@ -427,6 +427,16 @@ require_once 'includes/qr_helper.php';
                         }
 
                         $show_form = false;
+
+                        // Authorize secure template access for this session
+                        if (session_status() === PHP_SESSION_NONE)
+                            session_start();
+                        $_SESSION['viewing_certificate'] = true;
+                        $img_token = bin2hex(random_bytes(16));
+                        $_SESSION['cert_image_token'] = $img_token;
+                        if (!isset($_SESSION['cert_image_tokens']))
+                            $_SESSION['cert_image_tokens'] = [];
+                        $_SESSION['cert_image_tokens'][$img_token] = time() + 300; // 5 min expiry
                     }
                 } else {
                     $error = "Invalid Date of Birth for the provided Enrollment No.";
