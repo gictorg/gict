@@ -661,56 +661,56 @@ require_once 'includes/qr_helper.php';
                             $issue_date = !empty($student['completion_date']) ? $student['completion_date'] : date('Y-m-d');
                             echo date('d-m-Y', strtotime($issue_date));
                             ?>
-                        </span>
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="action-container no-print">
-                <button onclick="window.print()" class="btn-verify" style="background: #3498db;">
-                    <i class="fas fa-print"></i> Print Certificate
-                </button>
-                <?php
-                // Encrypt the token using AES-256-CBC
-                $plaintext = ($student['enrollment_no'] ?? '') . '|' . ($student['date_of_birth'] ?? '');
-                $iv_length = openssl_cipher_iv_length($cipher_method);
-                $iv = openssl_random_pseudo_bytes($iv_length);
-                $encrypted = openssl_encrypt($plaintext, $cipher_method, $encryption_key, 0, $iv);
-                $token = base64_encode($encrypted . '::' . $iv);
-                $share_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?token=" . urlencode($token);
-                ?>
-                <button onclick="copyToClipboard('<?php echo $share_url ?? ''; ?>')" class="btn-verify"
-                    style="background: #27ae60;">
-                    <i class="fas fa-share-alt"></i> Copy Link
-                </button>
-            </div>
+                <div class="action-container no-print">
+                    <button onclick="window.print()" class="btn-verify" style="background: #3498db;">
+                        <i class="fas fa-print"></i> Print Certificate
+                    </button>
+                    <?php
+                    // Encrypt the token using AES-256-CBC
+                    $plaintext = ($student['enrollment_no'] ?? '') . '|' . ($student['date_of_birth'] ?? '');
+                    $iv_length = openssl_cipher_iv_length($cipher_method);
+                    $iv = openssl_random_pseudo_bytes($iv_length);
+                    $encrypted = openssl_encrypt($plaintext, $cipher_method, $encryption_key, 0, $iv);
+                    $token = base64_encode($encrypted . '::' . $iv);
+                    $share_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[PHP_SELF]?token=" . urlencode($token);
+                    ?>
+                    <button onclick="copyToClipboard('<?php echo $share_url ?? ''; ?>')" class="btn-verify"
+                        style="background: #27ae60;">
+                        <i class="fas fa-share-alt"></i> Copy Link
+                    </button>
+                </div>
 
-            <script>
-                function copyToClipboard(text) {
-                    if (!navigator.clipboard) {
-                        // Fallback for non-secure contexts
-                        var textArea = document.createElement("textarea");
-                        textArea.value = text;
-                        document.body.appendChild(textArea);
-                        textArea.focus();
-                        textArea.select();
-                        try {
-                            document.execCommand('copy');
-                            alert('Secure certificate link copied to clipboard!');
-                        } catch (err) {
-                            alert('Failed to copy. Please try again.');
+                <script>
+                    function copyToClipboard(text) {
+                        if (!navigator.clipboard) {
+                            // Fallback for non-secure contexts
+                            var textArea = document.createElement("textarea");
+                            textArea.value = text;
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            try {
+                                document.execCommand('copy');
+                                alert('Secure certificate link copied to clipboard!');
+                            } catch (err) {
+                                alert('Failed to copy. Please try again.');
+                            }
+                            document.body.removeChild(textArea);
+                            return;
                         }
-                        document.body.removeChild(textArea);
-                        return;
-                    }
 
-                    navigator.clipboard.writeText(text).then(() => {
-                        alert('Secure certificate link copied successfully!');
-                    }).catch(err => {
-                        alert('Failed to copy. Please try again.');
-                    });
-                }
-            </script>
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert('Secure certificate link copied successfully!');
+                        }).catch(err => {
+                            alert('Failed to copy. Please try again.');
+                        });
+                    }
+                </script>
         <?php endif; ?>
     </div>
 </div>
