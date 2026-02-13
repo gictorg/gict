@@ -79,14 +79,14 @@ require_once 'includes/session_manager.php';
                             <a href="#" class="nav-btn">COURSES <i class="fas fa-caret-down"></i></a>
                             <div class="nav-dropdown-content">
                                 <a href="type-test.php">Type Test</a>
+                                <a href="quiz-racing.php">Quiz Racing Game</a>
                             </div>
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">PROJECT <i class="fas fa-caret-down"></i></a>
-                            <!-- <div class="nav-dropdown-content">
-                                <a href="#">Option 1</a>
-                                <a href="#">Option 2</a>
-                            </div> -->
+                            <div class="nav-dropdown-content">
+                                <a href="project-srd.php">Quiz Racing Game - SRD</a>
+                            </div>
                         </div>
                         <div class="nav-dropdown">
                             <a href="#" class="nav-btn">GALLERY <i class="fas fa-caret-down"></i></a>
