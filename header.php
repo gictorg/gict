@@ -64,6 +64,11 @@ require_once 'includes/session_manager.php';
                     <a href="index.php" class="home-icon">
                         <i class="fas fa-home"></i>
                     </a>
+                    <div class="mobile-logo">
+                        <a href="index.php">
+                            <img src="assets/images/Add_a_heading.png" alt="GICT Logo">
+                        </a>
+                    </div>
                     <div class="nav-links" id="navLinks">
                         <div class="nav-dropdown">
                             <a href="about-gict.php" class="nav-btn">ABOUT US</a>

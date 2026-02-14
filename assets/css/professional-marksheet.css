@@ -364,3 +364,37 @@
         padding: 15px;
     }
 }
+
+/* Desktop/Monitor view - center button below marksheet */
+@media screen and (min-width: 821px) {
+    .professional-marksheet-wrapper {
+        display: block !important;
+        width: 100%;
+    }
+
+    .student-corner-container {
+        display: flex !important;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .marksheet-outer-container {
+        margin: 0 auto;
+    }
+
+    .action-container {
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        width: 100% !important;
+        max-width: 794px;
+        margin: 20px auto;
+        padding: 20px 0;
+        background: transparent !important;
+    }
+
+    .btn-marksheet {
+        min-width: 200px;
+    }
+}

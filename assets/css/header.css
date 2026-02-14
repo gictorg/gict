@@ -182,6 +182,10 @@ body {
     border-color: #f0f0f0;
 }
 
+.mobile-logo {
+    display: none;
+}
+
 .nav-links {
     display: flex;
     align-items: flex-start;
@@ -440,70 +444,95 @@ body {
         padding: 0 10px;
     }
 
-    .logo-section .container {
-        grid-template-columns: 1fr;
-        gap: 10px;
-        justify-items: center;
-        text-align: center;
+    .top-links,
+    .logo-section {
+        display: none !important;
     }
 
-    .logo-left,
-    .logo-center,
-    .logo-right {
-        justify-self: center;
-        text-align: center;
-    }
-
-    .logo-section img {
-        height: 60px;
-        margin: 0 auto;
-        display: block;
+    .header-container {
+        height: 60px !important;
     }
 
     /* Mobile navigation layout fixes */
     .main-nav .container {
         position: relative;
         justify-content: space-between;
-        padding: 0 15px;
+        padding: 0 10px;
+        display: flex !important;
+        height: 60px;
+        align-items: center;
     }
 
     .nav-left {
-        position: relative;
+        display: flex !important;
         width: 100%;
         justify-content: space-between;
         align-items: center;
+        height: 100%;
     }
 
     .main-nav .nav-left .home-icon {
         margin: 0;
         order: 1;
-        position: relative;
-        z-index: 10001;
-        /* Lower than overlay and nav-links */
-        flex-shrink: 0;
-    }
-
-    /* Mobile Menu Toggle Button - LIKE UNIVERSITY OF LUCKNOW */
-    .mobile-menu-toggle {
-        display: block !important;
-        order: 3;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #fff;
-        font-size: 18px;
-        cursor: pointer;
-        padding: 8px 12px;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-        position: relative;
-        margin: 0;
-        z-index: 10001;
-        flex-shrink: 0;
-        min-width: 44px;
-        min-height: 44px;
+        width: 44px;
+        height: 44px;
+        background: #fff !important;
+        border: none !important;
+        border-radius: 50% !important;
         display: flex !important;
         align-items: center;
         justify-content: center;
+        color: #000080 !important;
+    }
+
+    .main-nav .nav-left .home-icon i {
+        font-size: 22px;
+        color: #000080 !important;
+    }
+
+    .mobile-logo {
+        display: flex !important;
+        order: 2;
+        flex: 1;
+        justify-content: center;
+        align-items: center;
+        margin: 0 10px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 5px 15px;
+        border-radius: 8px;
+        height: auto;
+    }
+
+    .mobile-logo a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-logo img {
+        height: 42px;
+        width: auto;
+        display: block;
+    }
+
+    /* Mobile Menu Toggle Button */
+    .mobile-menu-toggle {
+        display: flex !important;
+        order: 3;
+        background: transparent !important;
+        border: none !important;
+        color: #fff !important;
+        font-size: 24px !important;
+        padding: 0;
+        margin: 0;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        position: relative !important;
+        right: auto !important;
+        top: auto !important;
+        transform: none !important;
     }
 
     .mobile-menu-toggle:hover {
