@@ -1,5 +1,8 @@
 <?php
-if (realpath(__FILE__) === realpath($_SERVER["SCRIPT_FILENAME"])) { header("HTTP/1.1 403 Forbidden"); exit("Direct access prohibited."); }
+if (realpath(__FILE__) === realpath($_SERVER["SCRIPT_FILENAME"])) {
+    header("HTTP/1.1 403 Forbidden");
+    exit("Direct access prohibited.");
+}
 /**
  * QR Code Helper for GICT Institute
  * Generates proper QR codes for student IDs using PHP QR Code library
@@ -52,6 +55,30 @@ if (!file_exists($libraryPath)) {
 function generateQRCode($studentId, $studentName, $size = 80)
 {
     return generateQRCodeHTML($studentId, $studentName, $size);
+}
+
+function generateUrlQRCode($url, $size = 80)
+{
+    $tempDir = sys_get_temp_dir();
+    $tempFile = tempnam($tempDir, 'qr') . '.png';
+
+    // Check if library exists
+    if (!class_exists('QRcode')) {
+        $libraryPath = __DIR__ . '/../phpqrcode/qrlib.php';
+        if (file_exists($libraryPath)) {
+            require_once $libraryPath;
+        }
+    }
+
+    if (class_exists('QRcode')) {
+        QRcode::png($url, $tempFile, QR_ECLEVEL_H, 4, 2);
+        $pngData = file_get_contents($tempFile);
+        unlink($tempFile);
+        $qrCodeDataUri = 'data:image/png;base64,' . base64_encode($pngData);
+        return '<img src="' . $qrCodeDataUri . '" alt="QR Code" class="qr-img">';
+    }
+
+    return '<div style="width: ' . $size . 'px; height: ' . $size . 'px; background: #eee; border: 1px solid #000;">QR Error</div>';
 }
 
 // Function to generate QR code for certificates

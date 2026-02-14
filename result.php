@@ -1,11 +1,13 @@
 <?php
 require_once 'config/database.php';
 require_once 'header.php';
+require_once 'includes/qr_helper.php';
 ?>
 
 <div class="main-content">
     <link rel="stylesheet" href="assets/css/student-corner.css">
     <link rel="stylesheet" href="assets/css/marksheet.css">
+    <link rel="stylesheet" href="assets/css/professional-marksheet.css">
 
     <div class="container student-corner-container">
         <?php
@@ -16,7 +18,7 @@ require_once 'header.php';
         $show_form = true;
 
         if (($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['enrollment_no'])) || isset($_GET['rid'])) {
-            $enrollment_no = isset($_GET['rid']) ? base64_decode($_GET['rid']) : trim($_POST['enrollment_no']);
+            $enrollment_no = isset($_GET['rid']) ? base64_decode($_GET['rid']) : trim(strtoupper($_POST['enrollment_no']));
             $submitted_dob = $_POST['dob'] ?? null;
 
             // 1. Fetch Student & Enrollment Info
@@ -26,6 +28,7 @@ require_once 'header.php';
                     u.username as enrollment_no,
                     u.full_name,
                     u.father_name,
+                    u.mother_name,
                     u.date_of_birth,
                     u.address,
                     u.profile_image,
@@ -123,6 +126,11 @@ require_once 'header.php';
                                 break;
                             }
                         }
+                        // Enable professional marksheet template view
+                        if (session_status() === PHP_SESSION_NONE)
+                            session_start();
+                        $_SESSION['marks_viewing'] = true;
+
                         $show_form = false;
                     }
                 } else {
@@ -158,202 +166,145 @@ require_once 'header.php';
                             style="width: 100%; margin-top: 20px; transition: opacity 0.5s ease-out;">
                             <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
                         </div>
-                        <script>
-                            setTimeout(function () {
-                                var errorAlert = document.getElementById('error-alert');
-                                if (errorAlert) {
-                                    errorAlert.style.opacity = '0';
-                                    setTimeout(function () {
-                                        errorAlert.style.display = 'none';
-                                    }, 500);
-                                }
-                            }, 2000);
+                        <script>                     setTimeout(function () { var errorAlert = document.getElementById('error-alert'); if (errorAlert) { errorAlert.style.opacity = '0'; setTimeout(function () { errorAlert.style.display = 'none'; }, 500); } }, 2000);
                         </script>
                     <?php endif; ?>
                 </form>
             </div>
         <?php else: ?>
             <!-- Professional Marksheet View -->
-            <div class="marksheet-container">
-                <div class="marksheet-inner">
-                    <?php if (!empty($student['marksheet_no'])): ?>
-                        <div class="marksheet-no-top-left">
-                            Certificate No.: <span><?php echo htmlspecialchars($student['marksheet_no']); ?></span>
-                        </div>
+            <div class="professional-marksheet-wrapper">
+                <div class="marksheet-outer-container" id="printableMarksheet"
+                    style="background-image: url('secure_marksheet_template.php<?php echo isset($_SESSION['marks_image_token']) ? "?t=" . $_SESSION['marks_image_token'] : ""; ?>');">
+                    <div class="m-overlay mo-name"><?php echo strtoupper($student['full_name']); ?></div>
+                    <div class="m-overlay mo-father"><?php echo strtoupper($student['father_name'] ?: 'N/A'); ?></div>
+                    <div class="m-overlay mo-atc">GICT COMPUTER COLLEGE OF IT & MANAGEMENT JAUNPUR</div>
+                    <div class="m-overlay mo-course"><?php echo strtoupper($student['sub_course_name']); ?></div>
+
+                    <?php if (!empty($student['profile_image'])): ?>
+                        <img src="<?php echo $student['profile_image']; ?>" class="m-overlay mo-photo" alt="Student Photo">
+                    <?php else: ?>
+                        <div class="m-overlay mo-photo"
+                            style="display: flex; justify-content: center; align-items: center; background: #f9f9f9; font-size: 10px; color: #aaa;">
+                            No Photo</div>
                     <?php endif; ?>
-                    <!-- Watermark -->
-                    <img src="assets/images/logo bgremove.png" class="marksheet-watermark" alt="">
-                    <div class="watermark-text"></div>
 
-                    <div class="marksheet-header">
-                        <img src="logo.png" alt="GICT Logo" class="institute-logo">
-                        <h1 class="institute-name"><?php echo htmlspecialchars($student['institute_name']); ?></h1>
-                        <p class="institute-address">
-                            <?php echo htmlspecialchars($student['institute_address']); ?>
-                        </p>
-                        <div class="marksheet-title">STATEMENT OF MARKS</div>
-                    </div>
-
-                    <div class="student-info-grid">
-                        <div class="student-details">
-                            <div class="detail-row">
-                                <span class="detail-label">Enrollment No:</span>
-                                <span
-                                    class="detail-value"><?php echo htmlspecialchars(strtoupper($student['enrollment_no'])); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Candidate Name:</span>
-                                <span class="detail-value"><?php echo htmlspecialchars($student['full_name']); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Father's Name:</span>
-                                <span
-                                    class="detail-value"><?php echo htmlspecialchars($student['father_name'] ?: 'N/A'); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Session:</span>
-                                <span class="detail-value"><?php echo htmlspecialchars($student['session']); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Course Name:</span>
-                                <span
-                                    class="detail-value"><?php echo htmlspecialchars($student['sub_course_name']); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Duration:</span>
-                                <span
-                                    class="detail-value"><?php echo htmlspecialchars($student['course_duration']); ?></span>
-                            </div>
-                            <div class="detail-row">
-                                <span class="detail-label">Institute/Center:</span>
-                                <span
-                                    class="detail-value"><?php echo htmlspecialchars($student['institute_name'] ?: 'GICT Main Center'); ?></span>
-                            </div>
-                        </div>
-                        <div class="student-photo-box">
-                            <img src="<?php echo !empty($student['profile_image']) ? htmlspecialchars($student['profile_image']) : 'assets/images/default-student.png'; ?>"
-                                alt="Student Photo">
-                        </div>
+                    <div class="m-overlay mo-course-code"><?php echo strtoupper($student['sub_course_id']); ?></div>
+                    <div class="m-overlay mo-student-id"><?php echo strtoupper($student['enrollment_no']); ?></div>
+                    <div class="m-overlay mo-dob"><?php echo date('d-m-Y', strtotime($student['date_of_birth'])); ?></div>
+                    <div class="m-overlay mo-marksheet-id">
+                        <?php echo $student['marksheet_no'] ?: 'GICT/' . date('Y') . '/' . $student['enrollment_id']; ?>
                     </div>
 
                     <?php
-                    $semesters = [];
-                    foreach ($marks as $mark) {
-                        $sem = $mark['semester'] ?: 1;
-                        $semesters[$sem][] = $mark;
-                    }
-                    ksort($semesters);
-
+                    $row_top = 435;
+                    $idx = 0;
                     $total_max = 0;
                     $total_obtained = 0;
+                    $total_th_obt = 0;
+                    $total_th_max = 0;
+                    $total_pr_obt = 0;
+                    $total_pr_max = 0;
+                    $current_semester = null;
+                    foreach ($marks as $mark):
+                        if ($mark['total_marks'] !== null):
+                            // Detect semester change
+                            if ($current_semester !== $mark['semester']):
+                                $current_semester = $mark['semester'];
+                                $sem_top = $row_top + ($idx * 24.5);
+                                ?>
+                                <div class="m-table-row" style="top: <?php echo $sem_top; ?>px;">
+                                    <div class="m-overlay mo-subject"
+                                        style="font-weight: 700; color: #3498db; text-decoration: underline;">
+                                        SEMESTER - <?php echo $current_semester; ?>
+                                    </div>
+                                </div>
+                                <?php
+                                $idx++;
+                            endif;
 
-                    foreach ($semesters as $sem_num => $sem_marks):
-                        $has_sem_marks = false;
-                        foreach ($sem_marks as $m) {
-                            if ($m['total_marks'] !== null) {
-                                $has_sem_marks = true;
-                                break;
-                            }
-                        }
-                        if (!$has_sem_marks)
-                            continue;
+                            $curr_top = $row_top + ($idx * 24.5);
+                            $total_max += $mark['max_marks'];
+                            $total_obtained += $mark['total_marks'];
 
-                        $sem_label = is_numeric($sem_num) ? "Semester " . $sem_num : $sem_num;
-                        ?>
-                        <div class="semester-divider"
-                            style="text-align: left; margin: 20px 0 10px; font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #c5a059; display: inline-block;">
-                            <?php echo htmlspecialchars($sem_label); ?>
+                            $th_max = $mark['theory_marks'] !== null ? 100 : 0;
+                            $pr_max = $mark['practical_marks'] !== null ? ($mark['max_marks'] - 100 > 0 ? $mark['max_marks'] - 100 : 50) : 0;
+
+                            $total_th_obt += (int) $mark['theory_marks'];
+                            $total_th_max += $th_max;
+                            $total_pr_obt += (int) $mark['practical_marks'];
+                            $total_pr_max += $pr_max;
+                            ?>
+                            <div class="m-table-row" style="top: <?php echo $curr_top; ?>px;">
+                                <div class="m-overlay mo-subject"><?php echo $mark['subject_name']; ?></div>
+                                <div class="m-overlay mo-th-obt">
+                                    <?php echo $mark['theory_marks'] !== null ? $mark['theory_marks'] : '--'; ?>
+                                </div>
+                                <div class="m-overlay mo-th-max"><?php echo $mark['theory_marks'] !== null ? 100 : '--'; ?></div>
+                                <div class="m-overlay mo-pr-obt">
+                                    <?php echo $mark['practical_marks'] !== null ? $mark['practical_marks'] : '--'; ?>
+                                </div>
+                                <div class="m-overlay mo-pr-max">
+                                    <?php echo $mark['practical_marks'] !== null ? ($mark['max_marks'] - 100 > 0 ? $mark['max_marks'] - 100 : 50) : '--'; ?>
+                                </div>
+                            </div>
+                            <?php
+                            $idx++;
+                        endif;
+                    endforeach;
+
+                    // Header Row for Grand Total
+                    $total_row_top = $row_top + ($idx * 24.5);
+                    ?>
+                    <?php
+                    // Position the summary total row at the fixed location on the template
+                    $summary_row_top = 718;
+                    ?>
+                    <div class="m-table-row" style="top: <?php echo $summary_row_top; ?>px;">
+                        <div class="m-overlay mo-subject"></div>
+                        <div class="m-overlay mo-sum-th-obt">
+                            <?php echo $total_th_obt; ?>
                         </div>
-                        <table class="marks-table">
-                            <thead>
-                                <tr>
-                                    <th class="subject-name">Subject / Module Name</th>
-                                    <th>Max Marks</th>
-                                    <th>Min Marks</th>
-                                    <th>Marks Obtained</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($sem_marks as $mark):
-                                    if ($mark['total_marks'] !== null):
-                                        $obt = (int) $mark['total_marks'];
-                                        $total_max += $mark['max_marks'];
-                                        $total_obtained += $obt;
-                                        ?>
-                                        <tr>
-                                            <td class="subject-name"><?php echo htmlspecialchars($mark['subject_name']); ?></td>
-                                            <td><?php echo $mark['max_marks']; ?></td>
-                                            <td><?php echo round($mark['max_marks'] * 0.33); ?></td>
-                                            <td><?php echo $mark['total_marks']; ?></td>
-                                        </tr>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endforeach; ?>
+                        <div class="m-overlay mo-sum-th-max">
+                            <?php echo $total_th_max; ?>
+                        </div>
+                        <div class="m-overlay mo-sum-pr-obt">
+                            <?php echo $total_pr_obt; ?>
+                        </div>
+                        <div class="m-overlay mo-sum-pr-max">
+                            <?php echo $total_pr_max; ?>
+                        </div>
+                    </div>
 
                     <?php
                     $percentage = ($total_max > 0) ? ($total_obtained / $total_max) * 100 : 0;
-                    $grade = '';
-                    if ($percentage >= 90)
-                        $grade = 'A+';
-                    elseif ($percentage >= 80)
-                        $grade = 'A';
-                    elseif ($percentage >= 70)
-                        $grade = 'B+';
-                    elseif ($percentage >= 60)
-                        $grade = 'B';
-                    elseif ($percentage >= 50)
-                        $grade = 'C';
-                    elseif ($percentage >= 40)
-                        $grade = 'D';
-                    else
-                        $grade = 'F';
+                    $res_status = ($percentage >= 33) ? 'PASS' : 'FAIL';
 
-                    $result_status = ($percentage >= 33) ? 'PASS' : 'FAIL';
+                    // Generate Verification URL for QR Code
+                    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+                    $host = $_SERVER['HTTP_HOST'];
+                    $verify_url = "$protocol://$host/result.php?id=" . urlencode($student['enrollment_no']) . "&dob=" . urlencode($student['date_of_birth']);
                     ?>
 
-                    <div class="marks-summary">
-                        <div class="summary-item">
-                            <span class="summary-label">Grand Total</span>
-                            <span class="summary-value"><?php echo $total_obtained; ?> / <?php echo $total_max; ?></span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Percentage</span>
-                            <span class="summary-value"><?php echo number_format($percentage, 2); ?>%</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Grade</span>
-                            <span class="summary-value"><?php echo $grade; ?></span>
-                        </div>
-                        <div class="summary-item result-item">
-                            <span class="summary-label">Result</span>
-                            <span
-                                class="summary-value result-status <?php echo ($result_status == 'PASS') ? 'status-pass' : 'status-fail'; ?>">
-                                <?php echo $result_status; ?>
-                            </span>
-                            <img src="assets/images/logo bgremove.png" class="result-seal" alt="GICT Seal">
-                        </div>
+                    <div class="m-overlay mo-result"
+                        style="color: <?php echo ($res_status == 'PASS' ? '#27ae60' : '#e74c3c'); ?>">
+                        <?php echo $res_status; ?>
                     </div>
+                    <div class="m-overlay mo-percentage"><?php echo number_format($percentage, 2); ?>%</div>
+                    <div class="m-overlay mo-total-max"><?php echo $total_max; ?></div>
+                    <div class="m-overlay mo-total-obt"><?php echo $total_obtained; ?></div>
 
-                    <div class="marksheet-footer">
-                        <div class="signature-box">
-                            <div class="sig-line"></div>
-                            <span class="sig-label">Prepared By</span>
-                        </div>
-                        <div class="signature-box">
-                            <div class="sig-line"></div>
-                            <span class="sig-label">Checked By</span>
-                            <div class="sig-name"><?php echo htmlspecialchars($student['checked_by'] ?: 'Faculty'); ?></div>
-                        </div>
-                        <div class="signature-box">
-                            <div class="sig-line"></div>
-                            <span class="sig-label">Controller of Examination</span>
-                        </div>
+
+                    <div class="m-overlay mo-date"><?php echo date('d-m-Y'); ?></div>
+
+
+                    <div class="m-overlay mo-qr">
+                        <?php echo generateUrlQRCode($verify_url, 85); ?>
                     </div>
                 </div>
 
-                <div class="action-container no-print" style="text-align: center; margin-top: 30px;">
+                <div class="action-container no-print"
+                    style="text-align: center; margin-top: 30px; display: flex; justify-content: center;">
                     <button onclick="window.print()" class="btn-verify" style="background: #3498db;">
                         <i class="fas fa-print"></i> Print Marksheet
                     </button>
