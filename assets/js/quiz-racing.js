@@ -183,6 +183,7 @@
     carLane: 1,
     carX: 0,
     falling: [],
+    sparks: [],
     lastSpawnAt: 0,
     lastFrameAt: 0,
     gameOver: false,
@@ -214,8 +215,14 @@
   }
 
   function spawnObject() {
-    var pool = getAllObjects();
-    var obj = pool[Math.floor(Math.random() * pool.length)];
+    var obj;
+    var correctPool = OBJECTS_BY_CATEGORY[state.questionCategory];
+    if (correctPool && correctPool.length && Math.random() < 0.7) {
+      obj = correctPool[Math.floor(Math.random() * correctPool.length)];
+    } else {
+      var pool = getAllObjects();
+      obj = pool[Math.floor(Math.random() * pool.length)];
+    }
     var lane = Math.floor(Math.random() * LANES);
     state.falling.push({
       label: obj.label,
@@ -288,16 +295,38 @@
   }
 
   function drawFalling() {
+    var neutral = '#4a6fa5';
     state.falling.forEach(function (o) {
-      ctx.fillStyle = o.category === state.questionCategory ? '#28a745' : '#dc3545';
+      ctx.fillStyle = neutral;
       ctx.fillRect(o.lane * laneW + (laneW - o.w) / 2, o.y, o.w, o.h);
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 1;
       ctx.strokeRect(o.lane * laneW + (laneW - o.w) / 2, o.y, o.w, o.h);
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(o.label, o.lane * laneW + laneW / 2, o.y + o.h / 2 + 4);
+    });
+  }
+
+  function addSpark(x, y, type, now) {
+    state.sparks.push({ x: x, y: y, type: type, createdAt: now });
+  }
+
+  function drawSparks(now) {
+    var maxAge = 350;
+    state.sparks = state.sparks.filter(function (s) {
+      var age = now - s.createdAt;
+      if (age > maxAge) return false;
+      var radius = 8 + (age / maxAge) * 25;
+      var alpha = 1 - age / maxAge;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = s.type === 'correct' ? '#28a745' : '#dc3545';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      return true;
     });
   }
 
@@ -344,7 +373,9 @@
     state.falling = state.falling.filter(function (o) {
       if (o.y > ch) return false;
       if (o.y + o.h >= carY && o.y <= carY + carH && o.lane === carLaneIdx) {
-        state.score += o.category === state.questionCategory ? CORRECT_SCORE : WRONG_SCORE;
+        var correct = o.category === state.questionCategory;
+        state.score += correct ? CORRECT_SCORE : WRONG_SCORE;
+        addSpark(o.lane * laneW + laneW / 2, o.y + o.h / 2, correct ? 'correct' : 'wrong', now);
         return false;
       }
       return true;
@@ -356,6 +387,7 @@
     drawRoad();
     drawFalling();
     drawCar();
+    drawSparks(now);
   }
 
   function startGame() {
@@ -368,6 +400,7 @@
     state.carLane = 1;
     state.carX = carXForLane(1);
     state.falling = [];
+    state.sparks = [];
     state.lastSpawnAt = 0;
     state.lastFrameAt = 0;
     state.gameOver = false;
