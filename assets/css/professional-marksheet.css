@@ -57,20 +57,7 @@
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
 
-    /* Visual Hint for Scrollable Area */
-    .professional-marksheet-wrapper::after {
-        content: "← Scroll to view full marksheet →";
-        display: block;
-        text-align: center;
-        padding: 15px;
-        color: #666;
-        font-size: 12px;
-        font-weight: 500;
-        background: #fff;
-        border-top: 1px solid #eee;
-        position: sticky;
-        left: 0;
-    }
+
 
     /* Custom Scrollbar */
     .professional-marksheet-wrapper::-webkit-scrollbar {
@@ -327,12 +314,53 @@
 
     .professional-marksheet-wrapper {
         padding: 0;
+        overflow: visible !important;
     }
 
     .marksheet-outer-container {
         box-shadow: none;
         margin: 0;
+        transform: none !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+}
+
+/* Action Container Styles */
+.action-container {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    background: #fff;
+    width: 100%;
+}
+
+.btn-marksheet {
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    background: #3498db;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.btn-marksheet:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+@media screen and (max-width: 600px) {
+    .btn-marksheet {
+        width: 100%;
+        justify-content: center;
+        padding: 15px;
     }
 }

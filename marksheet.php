@@ -288,7 +288,13 @@ $cipher_method = "aes-256-cbc";
                 <!-- Verification QR Code -->
                 <div class="m-overlay mo-qr">
                     <?= generateUrlQRCode($verify_url, 85) ?>
-                </div>
+                </div> <!-- end marksheet-outer-container -->
+            </div> <!-- end professional-marksheet-wrapper -->
+
+            <div class="action-container no-print">
+                <button onclick="window.print()" class="btn-marksheet">
+                    <i class="fas fa-print"></i> Print Marksheet
+                </button>
             </div>
         <?php endif; ?>
     </div>
